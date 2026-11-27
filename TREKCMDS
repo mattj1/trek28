@@ -1,0 +1,56 @@
+
+
+                       TREK 2.8  COMMAND SUMMARY
+
+
+
+    SELECTION KEYS                                  COMPUTER MODE KEYS
+
+F1     Select Ship  1                        Alt-C   Cancel Auto Seek
+F2        "     "   2                        Alt-A   Seek All Unmapped
+F3        "     "   3                        Alt-E   Seek Closest Energy
+F4        "     "   4                        Alt-M   Seek Closest Mine Sweep
+F5     Select Enemy to Seek                  Alt-D   Seek Closest Dock
+                                             Alt-I   Seek Closest Inviso
+                                             Alt-B   Seek Enemy Base
+                                             Alt-S   Seek Enemy Ship
+F9     Select Base View                      Alt-V   Avoid Enemy Ship
+F10    Change Ship I.D.                      Alt-T   Seek Closest Torpedos
+                                             Alt-X   Seek Closest Experimental
+TAB    Toggle Message Window                 Alt-Q   Seek Closest Faery Queen
+Esc    Pause Game                            Alt-G   Seek Closest Gateway
+                                             Alt-H   Seek Homing Device
+                                             Alt-F1 to F4 Seek Your Ships
+                                             Alt-F9  Seek Mini-Base
+
+
+     MOVEMENT KEYS                                  WEAPON KEYS
+
+ +  or <Down>   Increase Impulse Speed .1    Space   Fire Torpedo
+ -  or <Up>     Decrease Impulse Speed .1      C     Cancel Torpedo
+Del or <Right>  Turn Clockwise                 P     Fire Forward Phasers
+Ins or <Left>   Turn Counterclockwise          A     Fire Aft Phasers
+ E              Emergency Stop                 M     Drop Triton Mine
+ W              Warp Drive                     Z     Destruct Ship
+
+
+     SCAN RANGE KEYS                                AUXILLARY KEYS
+
+ 1     Scan  400 by  400 (Short Range)         S     Set Super Shields
+ 2     Scan 1600 by 1600 (Medium Range)        D     Drop Super Shields
+ 3     Scan 6400 by 6400 (Long Range)          I     Set Invisible
+ 4     Universe Map (16384 by 16384)           V     Set Visible
+                                               F     Flag (Claim) Planet
+                                               H     Drop Homing Device
+                                               G     Get Mines
+
+
+                             OPTION KEYS
+
+                       Ctrl-S   Sound On/Off
+                       Ctrl-F   Change Font
+                       Ctrl-P   Toggle Pallette
+                       Ctrl-C,Ctrl-C    Surrender
+
+
+ ---- Copyright (C) 1987, Carl McLawhorn  700 MyLynn Dr. Wendell, NC 27591 ----

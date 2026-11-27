@@ -1,0 +1,112 @@
+
+							  August 1,1987
+
+
+		TREK 2.8 Enhancements and Differences
+
+
+		TREK has been in a constant state of change since the
+	initial public domain release of TREK 2.3.  Many changes and
+	enhancements have been made, many in part based on player feed-
+	back.  In the next few paragraphs, I will attempt to bring you
+	up to date.
+
+
+	1. "Share-ware" Version -  Copy protection in version 2.7 was
+	a disaster.  It was not possible to run TREK from hard disks.
+	It was also impossible to run it on 3.5" drives.  User response
+	was even lower.  This version represents an attempt to try
+	the "shareware" alternative again.  Although the responses
+	are still relatively low, (about 1 a day) the highly supportive
+	letters have convinced me to try again.  Only with the support
+	of people like you can TREK be a continuing project.
+
+	2. DOS -  This version is not self booting.  It runs under
+	DOS 2.1 or higher.  This leaves me open to vandalization
+	but I think most of the computer vandals have "grown up"
+	more since TREK23 was first released.  The problems with
+	higher versions of DOS have been solved (I hope).
+
+	3. Scoring - There is a new method of scoring in this version.
+	Now the score is a composite of how well you conserve and
+	accumulate energy as well as how much damage you inflict on
+	your enemies.
+
+	4. Game speed - Overall game speed can now be controlled in
+	the setup menu.  This allows faster computers to be slowed
+	down to a more playable speed.
+
+	5. Formations - Ships can fly in formation by using ALT-F1
+	through ALT F4 to make one or more ships seek a lead ship.
+	Formations worked in TREK27, but they work much better in this
+	version.  When the lead ship changes coordinates due to a
+	"Dock" planet, black hole, or some "X" planets, the other ships
+	follow now, rather than being left stranded.
+
+	6. COM3 and COM4 - This version allows using any serial port
+	that you have configured on your system if properly setup in
+	the data area at 40:0.
+
+	7. New distribution policy - As shown on the first panel, I am
+	not allowing distribution of TREK by diskette unless there is
+	no charge.  This includes disk charges, handling charges, copying
+	charges, shipping charges and any other charges.  I have received
+	many calls and letters from people that think they have registered
+	by paying $5.00 to various "software libraries".  Until the
+	public is better informed by the "software libraries" about how
+	"shareware" works, I am not allowing distribution by this method.
+
+
+
+
+
+
+
+
+
+		This is purposely NOT a complete list of the changes!
+	There are several undocumented commands and features that were
+	added to make the game more interesting!  The next version will
+	fully document all these features and also add some new surprises.
+	Again, please encourage your friends to register.  I am still
+	asking only $10.00 for the latest version.  
+
+
+		I have two other multi-player games in development and
+	testing now.  One is a three-dimensional version of TREK that
+	has graphics similar to JET by Sublogic.  The other is a lunar
+	exploration game.  I will complete these games and place them
+	in the "shareware" arena if there is sufficient interest.  In
+	the nearer future, I hope to release a four-player version that
+	operates over modems.  If you are a Sysop that has multiple
+	lines and are interested in this, please write me and give me
+	some particulars about your system (COM addresses, interrupts,
+	modem types, etc.)
+
+
+
+
+		I would like to sincerely thank all of you that have
+	registered for TREK.  The quantity of responses to TREK may be
+	small, but the quality of the supporting letters from you is
+	overwhelming.  I am impressed with the great suggestions and
+	constructive criticisms that many of you have taken the time to
+	write down.  TREK has for the last five years been a user-designed
+	program.  If you do not see your ideas implemented in this version,
+	be patient.  As far as possible, I want TREK to be a composite of
+	what everyone wants in a two-player modem-based combative-strategy
+	game.
+
+
+		I also would like to apologize for the delay in releasing
+	version 2.8.  The target date was missed by about two months.
+	The reason for the delay was a reluctance to continue supporting
+	updates to TREK.  It takes about 300 hours to release a new level
+	and the user support made it hard to justify that amount of time.
+	As such, many of the enhancements were postponed for the next
+	time.  The primary purpose for releasing this version was to get
+	a "clean" version out in the "shareware" arena.  
+
+
+
+

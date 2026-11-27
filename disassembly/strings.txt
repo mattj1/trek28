@@ -1,0 +1,5 @@
+1000:463d	 Computer
+1000:ac92	Requires DOS 2.0 or Higher.
+
+1000:acb0	Not Enough Memory
+
