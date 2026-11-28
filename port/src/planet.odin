@@ -663,6 +663,26 @@ satellite_level :: proc(m: ^Machine, si: u16, cx: u16) -> (al: u8, carry: bool) 
 	return sum, true
 }
 
+// 1000:427d place_base_coords.
+// The name is inferred. Universe build calls this with SI on a base.
+// Two draws from random_base_coord land in the X and Y words.
+
+// @proc 1000:427d
+// status: tested
+// Odin: place_base_coords
+// 1000:427d  FUN_1000_427d:
+// 1000:427d      e8 0a 00                 CALL 0x1000:428a
+// 1000:4280      89 44 01                 MOV word ptr [SI + 0x1],AX
+// 1000:4283      e8 04 00                 CALL 0x1000:428a
+// 1000:4286      89 44 03                 MOV word ptr [SI + 0x3],AX
+// 1000:4289      c3                       RET
+
+place_base_coords :: proc(ds: ^DS_Segment, si: u16) {
+	raw := transmute(^[DS_SIZE]u8)ds
+	write_u16(raw, add16(si, 1), random_base_coord(ds))
+	write_u16(raw, add16(si, 3), random_base_coord(ds))
+}
+
 @(private)
 rcr8 :: proc(v: u8, carry: bool) -> (u8, bool) {
 	out_carry := v & 1 == 1

@@ -646,6 +646,37 @@ test_satellite_level :: proc(t: ^testing.T) {
 	testing.expect_value(t, carry, true)
 }
 
+@(test)
+test_place_base_coords :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	raw := transmute(^[DS_SIZE]u8)ds
+	base := u16(offset_of(DS_Segment, bases))
+
+	ds.frame_count = 4
+	ds.rng_seed = 6
+	ds.bases[0][0] = 0x80
+	ds.bases[0][5] = 0x11
+	ds.bases[1][1] = 0x22
+	place_base_coords(ds, base)
+	testing.expect_value(t, read_u16(raw, add16(base, 1)), u16(0x07B8))
+	testing.expect_value(t, read_u16(raw, add16(base, 3)), u16(0x382A))
+	testing.expect_value(t, ds.rng_seed, u16(0x382A))
+	testing.expect_value(t, ds.bases[0][0], u8(0x80))
+	testing.expect_value(t, ds.bases[0][5], u8(0x11))
+	testing.expect_value(t, ds.bases[1][1], u8(0x22))
+
+	// SI+3 at FFFF wraps the high byte onto 0000.
+	ds.frame_count = 4
+	ds.rng_seed = 6
+	ds.objects_per_level = 0x99
+	place_base_coords(ds, 0xFFFC)
+	testing.expect_value(t, raw[0xFFFD], u8(0xB8))
+	testing.expect_value(t, raw[0xFFFE], u8(0x07))
+	testing.expect_value(t, raw[0xFFFF], u8(0x2A))
+	testing.expect_value(t, raw[0x0000], u8(0x38))
+}
+
 @(private)
 place_object :: proc(m: ^Machine, at, x, y: u16) {
 	write_u16(&m.ds, add16(at, 1), x)

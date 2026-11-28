@@ -265,17 +265,7 @@ fun_41fa :: proc() {
 
 // 1000:425b reject_near_planet is in planet.odin.
 
-// @proc 1000:427d
-// listing: FUN_1000_427d
-// status: unread
-// 1000:427d  FUN_1000_427d:
-// 1000:427d      e8 0a 00                 CALL 0x1000:428a
-// 1000:4280      89 44 01                 MOV word ptr [SI + 0x1],AX
-// 1000:4283      e8 04 00                 CALL 0x1000:428a
-// 1000:4286      89 44 03                 MOV word ptr [SI + 0x3],AX
-// 1000:4289      c3                       RET
-fun_427d :: proc() {
-}
+// 1000:427d place_base_coords is in planet.odin.
 
 // 1000:428a random_base_coord is in planet.odin.
 

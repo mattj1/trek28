@@ -88,6 +88,7 @@ odin run src
 | `1000:1a68` | `beep` | tested. The name is inferred. Stores 1 in `sound_beep` when the side is local, through `store_if_local_ship`. The bytes from `1a71` stay unread |
 | `1000:1b78` | `set_base_view` | tested. The name is inferred. ORs bit `0x10` into `side_flags[current_side & 3]`. The bytes from `1b7f` stay unread |
 | `1000:197b` | `tick_message_countdown` | tested. The name is inferred. A zero countdown returns. At zero after the decrement it scrolls the queue, and a nonempty first line stores `0x14` |
+| `1000:427d` | `place_base_coords` | tested. The name is inferred. Two draws from `random_base_coord` are stored at `SI+1` and `SI+3`. A word at `FFFF` wraps onto `0000` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
