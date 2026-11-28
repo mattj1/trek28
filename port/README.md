@@ -90,6 +90,7 @@ odin run src
 | `1000:197b` | `tick_message_countdown` | tested. The name is inferred. A zero countdown returns. At zero after the decrement it scrolls the queue, and a nonempty first line stores `0x14` |
 | `1000:427d` | `place_base_coords` | tested. The name is inferred. Two draws from `random_base_coord` are stored at `SI+1` and `SI+3`. A word at `FFFF` wraps onto `0000` |
 | `1000:41fa` | `place_planet_coords` | tested. The name is inferred. A planet pair is kept when `reject_near_planet` and `reject_near_base` (`BP` `0x3E8`, `DX` `0x1770`) both accept it. Either rejection draws a new pair |
+| `1000:3e2a` | `discount_seek_distance` | tested. The name is inferred. Each energy threshold the ship fails to clear, from `0x61A8` down to `0x0FA0`, subtracts `0x12C` from AX while AX is at least `0x12C` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 

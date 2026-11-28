@@ -2684,3 +2684,63 @@ tick_message_countdown :: proc(ds: ^DS_Segment) {
 		ds.countdown_00e0 = 0x14
 	}
 }
+
+// 1000:3e2a discount_seek_distance.
+// The name is inferred. The caller has just stored AX as seek_distance.
+// Six unsigned energy thresholds, descending. Energy above a threshold
+// returns AX as it stands. Otherwise AX below 0x12C returns, and AX at
+// or above 0x12C loses 0x12C before the next threshold. Energy above
+// 0x61A8 subtracts nothing. Energy at or below 0x0FA0 can subtract six
+// times.
+
+// @proc 1000:3e2a
+// status: tested
+// Odin: discount_seek_distance
+// 1000:3e2a  FUN_1000_3e2a:
+// 1000:3e2a      81 7c 08 a8 61           CMP word ptr [SI + 0x8],0x61a8
+// 1000:3e2f      77 53                    JA 0x1000:3e84
+// 1000:3e31      3d 2c 01                 CMP AX,0x12c
+// 1000:3e34      72 4e                    JC 0x1000:3e84
+// 1000:3e36      2d 2c 01                 SUB AX,0x12c
+// 1000:3e39      81 7c 08 20 4e           CMP word ptr [SI + 0x8],0x4e20
+// 1000:3e3e      77 44                    JA 0x1000:3e84
+// 1000:3e40      3d 2c 01                 CMP AX,0x12c
+// 1000:3e43      72 3f                    JC 0x1000:3e84
+// 1000:3e45      2d 2c 01                 SUB AX,0x12c
+// 1000:3e48      81 7c 08 98 3a           CMP word ptr [SI + 0x8],0x3a98
+// 1000:3e4d      77 35                    JA 0x1000:3e84
+// 1000:3e4f      3d 2c 01                 CMP AX,0x12c
+// 1000:3e52      72 30                    JC 0x1000:3e84
+// 1000:3e54      2d 2c 01                 SUB AX,0x12c
+// 1000:3e57      81 7c 08 10 27           CMP word ptr [SI + 0x8],0x2710
+// 1000:3e5c      77 26                    JA 0x1000:3e84
+// 1000:3e5e      3d 2c 01                 CMP AX,0x12c
+// 1000:3e61      72 21                    JC 0x1000:3e84
+// 1000:3e63      2d 2c 01                 SUB AX,0x12c
+// 1000:3e66      81 7c 08 4c 1d           CMP word ptr [SI + 0x8],0x1d4c
+// 1000:3e6b      77 17                    JA 0x1000:3e84
+// 1000:3e6d      3d 2c 01                 CMP AX,0x12c
+// 1000:3e70      72 12                    JC 0x1000:3e84
+// 1000:3e72      2d 2c 01                 SUB AX,0x12c
+// 1000:3e75      81 7c 08 a0 0f           CMP word ptr [SI + 0x8],0xfa0
+// 1000:3e7a      77 08                    JA 0x1000:3e84
+// 1000:3e7c      3d 2c 01                 CMP AX,0x12c
+// 1000:3e7f      72 03                    JC 0x1000:3e84
+// 1000:3e81      2d 2c 01                 SUB AX,0x12c
+// 1000:3e84  LAB_1000_3e84:
+// 1000:3e84      c3                       RET
+
+discount_seek_distance :: proc(ship: ^Ship_Record, ax: u16) -> u16 {
+	value := ax
+	thresholds := [6]u16{0x61A8, 0x4E20, 0x3A98, 0x2710, 0x1D4C, 0x0FA0}
+	for threshold in thresholds {
+		if ship.energy > threshold {
+			return value
+		}
+		if value < 0x12C {
+			return value
+		}
+		value -= 0x12C
+	}
+	return value
+}

@@ -2826,6 +2826,43 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_discount_seek_distance :: proc(t: ^testing.T) {
+	ship := Ship_Record{}
+
+	// Above the first threshold, and the high bit, leave AX alone.
+	ship.energy = 0x61A9
+	testing.expect_value(t, discount_seek_distance(&ship, 0x1000), u16(0x1000))
+	ship.energy = 0xFFFF
+	testing.expect_value(t, discount_seek_distance(&ship, 0x12C), u16(0x12C))
+	ship.energy = 0x8000
+	testing.expect_value(t, discount_seek_distance(&ship, 0), u16(0))
+
+	// Equal to a threshold is not above it. 0x61A8 clears one step, then
+	// it is above 0x4E20.
+	ship.energy = 0x61A8
+	testing.expect_value(t, discount_seek_distance(&ship, 0x12C), u16(0))
+	testing.expect_value(t, discount_seek_distance(&ship, 0x12B), u16(0x12B))
+	testing.expect_value(t, discount_seek_distance(&ship, 0x258), u16(0x12C))
+
+	// 0x4E21 stops after one step. 0x4E20 takes two.
+	ship.energy = 0x4E21
+	testing.expect_value(t, discount_seek_distance(&ship, 0x1000), u16(0x1000 - 0x12C))
+	ship.energy = 0x4E20
+	testing.expect_value(t, discount_seek_distance(&ship, 0x1000), u16(0x1000 - 2 * 0x12C))
+
+	// 0x0FA1 stops before the last step. 0x0FA0 and 0 take all six.
+	ship.energy = 0x0FA1
+	testing.expect_value(t, discount_seek_distance(&ship, 0x1000), u16(0x1000 - 5 * 0x12C))
+	ship.energy = 0x0FA0
+	testing.expect_value(t, discount_seek_distance(&ship, 0x1000), u16(0x1000 - 6 * 0x12C))
+	ship.energy = 0
+	testing.expect_value(t, discount_seek_distance(&ship, 6 * 0x12C), u16(0))
+	testing.expect_value(t, discount_seek_distance(&ship, 2 * 0x12C), u16(0))
+	testing.expect_value(t, discount_seek_distance(&ship, 0x12C + 1), u16(1))
+	testing.expect_value(t, ship.energy, u16(0))
+}
+
+@(test)
 test_tick_message_countdown :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)
