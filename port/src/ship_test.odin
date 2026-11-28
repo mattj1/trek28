@@ -3785,6 +3785,159 @@ test_close_on_base :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.side_score[1], u16(0))
 }
 
+@(test)
+test_reach_base :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ship: Ship_Record
+	base := &ds.bases[0]
+
+	ship.flags = 0x00
+	ship.pending_charge = 1
+	ship.damage = 4
+	base[0] = 0xFF
+	base[0x0D] = 4
+	ds.byte_a29c = 0xFF
+	testing.expect_value(t, reach_base(ds, base, &ship, 0), false)
+	testing.expect_value(t, ship.pending_charge, u16(1))
+	testing.expect_value(t, ship.damage, u8(4))
+	testing.expect_value(t, base[0], u8(0xFF))
+	testing.expect_value(t, ds.byte_a29c, u8(0xFF))
+
+	// A base that is not in state 4 stores the destruct charge when AX is at most 0xFA.
+	ship.flags = 0x80
+	base[0x0D] = 3
+	testing.expect_value(t, reach_base(ds, base, &ship, 0xFB), false)
+	testing.expect_value(t, ship.pending_charge, u16(1))
+	testing.expect_value(t, reach_base(ds, base, &ship, 0xFA), false)
+	testing.expect_value(t, ship.pending_charge, u16(0xC350))
+	testing.expect_value(t, ship.damage, u8(4))
+	testing.expect_value(t, base[0], u8(0xFF))
+	testing.expect_value(t, ship.flags, u8(0x80))
+	testing.expect_value(t, ds.byte_a29c, u8(0xFF))
+
+	// State 4 refuses above 0xA0, and a formation link refuses above 0x5F.
+	base[0x0D] = 4
+	ship.formation = 0
+	testing.expect_value(t, reach_base(ds, base, &ship, 0xA1), false)
+	testing.expect_value(t, ship.flags, u8(0x80))
+	ship.formation = 1
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x60), false)
+	testing.expect_value(t, ship.flags, u8(0x80))
+	testing.expect_value(t, ds.byte_a29c, u8(0xFF))
+
+	// AX 0x5F with a formation link docks. A frame that is not a multiple of 8
+	// only ORs bit 2 into byte_a29c.
+	ds.frame_count = 1
+	ds.byte_a29c = 0x01
+	ship.energy = 0x2710
+	ship.torpedoes = 0
+	ship.mines = 0
+	ship.seek = 0x11
+	ship.impulse = 0x22
+	ship.damage = 9
+	ship.own_side = 2
+	ship.fire_control = 0
+	base[0] = 0xFF
+	base[6] = 3
+	base[7] = 5
+	set_base_energy(base, 0x65)
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x5F), true)
+	testing.expect_value(t, ship.flags, u8(0x80 | 0x40 | 0x04))
+	testing.expect_value(t, ship.seek, u8(0x11))
+	testing.expect_value(t, ship.impulse, u8(0x22))
+	testing.expect_value(t, ship.fire_control, u8(0))
+	testing.expect_value(t, ship.damage, u8(0))
+	testing.expect_value(t, base[0], u8(0x7F))
+	testing.expect_value(t, ship.energy, u16(0x2710))
+	testing.expect_value(t, base_energy(base), u16(0x65))
+	testing.expect_value(t, ds.byte_a29c, u8(0x05))
+
+	// No formation, AX 0xA0, seek nibble 0: bit 6, impulse cleared, seek 7.
+	ship.formation = 0
+	ship.flags = 0x80
+	ship.seek = 0x20
+	ship.impulse = 0x22
+	ship.damage = 3
+	ship.own_side = 2
+	base[0] = 0x80
+	ds.frame_count = 1
+	ds.byte_a29c = 0
+	testing.expect_value(t, reach_base(ds, base, &ship, 0xA0), true)
+	testing.expect_value(t, ship.flags, u8(0xC4))
+	testing.expect_value(t, ship.impulse, u8(0))
+	testing.expect_value(t, ship.seek, u8(7))
+	testing.expect_value(t, ship.fire_control, u8(2))
+	testing.expect_value(t, ship.damage, u8(0))
+	testing.expect_value(t, base[0], u8(0))
+
+	// Seek nibble 4 is cleared before that rewrite, so the same path stores 7.
+	ship.flags = 0x80
+	ship.seek = 0x04
+	ship.impulse = 9
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x3C), true)
+	testing.expect_value(t, ship.seek, u8(7))
+	testing.expect_value(t, ship.impulse, u8(0))
+	testing.expect_value(t, ship.flags, u8(0xC4))
+
+	// Below 0x3C the nibble-4 seek stays 0x80, and a zero impulse becomes 0x11.
+	ship.flags = 0x80
+	ship.seek = 0x04
+	ship.impulse = 0
+	ship.fire_control = 0
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x3B), true)
+	testing.expect_value(t, ship.flags, u8(0x84))
+	testing.expect_value(t, ship.seek, u8(0x80))
+	testing.expect_value(t, ship.impulse, u8(0x11))
+	testing.expect_value(t, ship.fire_control, u8(0))
+
+	// A nonzero impulse below 0x3C stays. A nonzero nibble at 0x3C sets bit 6 only.
+	ship.flags = 0x80
+	ship.seek = 0x01
+	ship.impulse = 5
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x3B), true)
+	testing.expect_value(t, ship.impulse, u8(5))
+	testing.expect_value(t, ship.seek, u8(0x01))
+	testing.expect_value(t, ship.flags, u8(0x84))
+	ship.flags = 0x80
+	ship.seek = 0x01
+	ship.impulse = 5
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x3C), true)
+	testing.expect_value(t, ship.flags, u8(0xC4))
+	testing.expect_value(t, ship.seek, u8(0x01))
+	testing.expect_value(t, ship.impulse, u8(5))
+
+	// Bit 6 already set keeps a nibble-4 seek at 0x80.
+	ship.flags = 0xC0
+	ship.seek = 4
+	ship.impulse = 6
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x50), true)
+	testing.expect_value(t, ship.flags, u8(0xC4))
+	testing.expect_value(t, ship.seek, u8(0x80))
+	testing.expect_value(t, ship.impulse, u8(6))
+
+	// Frame 0 runs the stock transfer. Base energy 0x65 feeds the ship.
+	ds.frame_count = 0
+	ds.byte_a29c = 0xFF
+	ship.flags = 0x80
+	ship.seek = 1
+	ship.energy = 0x2710
+	ship.torpedoes = 0x0A
+	ship.mines = 5
+	base[0] = 0x8F
+	base[6] = 3
+	base[7] = 5
+	set_base_energy(base, 0x65)
+	testing.expect_value(t, reach_base(ds, base, &ship, 0x10), true)
+	testing.expect_value(t, ship.energy, u16(0x2904))
+	testing.expect_value(t, base_energy(base), u16(0x33))
+	testing.expect_value(t, base[6], u8(3))
+	testing.expect_value(t, base[7], u8(5))
+	testing.expect_value(t, ds.byte_a29c, u8(6))
+	testing.expect_value(t, base[0], u8(0x0F))
+	testing.expect_value(t, ship.damage, u8(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

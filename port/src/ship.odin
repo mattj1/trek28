@@ -3374,3 +3374,118 @@ close_on_base :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record, ax: 
 	add_scaled_charge(ship, amount)
 	return true
 }
+
+// 1000:2cfa reach_base.
+// The name is inferred. The caller has DI on a ship, SI on a base of
+// the same team, and AX from a distance with shift 0. A ship whose
+// alive bit is clear returns with carry clear.
+//
+// A base whose state byte is not 4 writes 0xC350 into the pending
+// charge when AX is at most 0xFA, and returns with carry clear.
+// A base in state 4 returns with carry clear when AX is above 0xA0,
+// or when the formation word is nonzero and AX is above 0x5F.
+//
+// Otherwise flag bit 2 is set. A seek nibble of 4 becomes seek 0x80
+// and counts as nibble 0 for the rest of this call. While flag bit 6
+// is clear, AX below 0x3C stores impulse 0x11 when the impulse byte
+// is 0. AX at or above 0x3C sets bit 6, and a seek nibble of 0 clears
+// the impulse, stores seek 7, and copies own_side into fire_control.
+// The success path then clears damage, clears bit 7 of the base flag,
+// calls transfer_base_stock, and returns with carry set.
+
+// @proc 1000:2cfa
+// status: tested
+// Odin: reach_base
+// 1000:2cfa  FUN_1000_2cfa:
+// 1000:2cfa      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:2cfd      74 6f                    JZ 0x1000:2d6e
+// 1000:2cff      80 7c 0d 04              CMP byte ptr [SI + 0xd],0x4
+// 1000:2d03      74 0d                    JZ 0x1000:2d12
+// 1000:2d05      3d fa 00                 CMP AX,0xfa
+// 1000:2d08      77 64                    JA 0x1000:2d6e
+// 1000:2d0a      c7 45 0c 50 c3           MOV word ptr [DI + 0xc],0xc350
+// 1000:2d0f      eb 5d                    JMP 0x1000:2d6e
+// 1000:2d12  LAB_1000_2d12:
+// 1000:2d12      3d a0 00                 CMP AX,0xa0
+// 1000:2d15      77 57                    JA 0x1000:2d6e
+// 1000:2d17      83 7d 32 00              CMP word ptr [DI + 0x32],0x0
+// 1000:2d1b      74 05                    JZ 0x1000:2d22
+// 1000:2d1d      3d 5f 00                 CMP AX,0x5f
+// 1000:2d20      77 4c                    JA 0x1000:2d6e
+// 1000:2d22  LAB_1000_2d22:
+// 1000:2d22      80 0d 04                 OR byte ptr [DI],0x4
+// 1000:2d25      8a 55 11                 MOV DL,byte ptr [DI + 0x11]
+// 1000:2d28      80 e2 1f                 AND DL,0x1f
+// 1000:2d2b      80 fa 04                 CMP DL,0x4
+// 1000:2d2e      75 06                    JNZ 0x1000:2d36
+// 1000:2d30      b2 00                    MOV DL,0x0
+// 1000:2d32      c6 45 11 80              MOV byte ptr [DI + 0x11],0x80
+// 1000:2d36  LAB_1000_2d36:
+// 1000:2d36      f6 05 40                 TEST byte ptr [DI],0x40
+// 1000:2d39      75 27                    JNZ 0x1000:2d62
+// 1000:2d3b      3d 3c 00                 CMP AX,0x3c
+// 1000:2d3e      72 18                    JC 0x1000:2d58
+// 1000:2d40      80 0d 40                 OR byte ptr [DI],0x40
+// 1000:2d43      22 d2                    AND DL,DL
+// 1000:2d45      75 1b                    JNZ 0x1000:2d62
+// 1000:2d47      c6 45 0b 00              MOV byte ptr [DI + 0xb],0x0
+// 1000:2d4b      c6 45 11 07              MOV byte ptr [DI + 0x11],0x7
+// 1000:2d4f      8a 45 17                 MOV AL,byte ptr [DI + 0x17]
+// 1000:2d52      88 45 2b                 MOV byte ptr [DI + 0x2b],AL
+// 1000:2d55      eb 0b                    JMP 0x1000:2d62
+// 1000:2d58  LAB_1000_2d58:
+// 1000:2d58      f6 45 0b ff              TEST byte ptr [DI + 0xb],0xff
+// 1000:2d5c      75 04                    JNZ 0x1000:2d62
+// 1000:2d5e      c6 45 0b 11              MOV byte ptr [DI + 0xb],0x11
+// 1000:2d62  LAB_1000_2d62:
+// 1000:2d62      c6 45 0e 00              MOV byte ptr [DI + 0xe],0x0
+// 1000:2d66      80 24 7f                 AND byte ptr [SI],0x7f
+// 1000:2d69      e8 04 00                 CALL 0x1000:2d70
+// 1000:2d6c      f9                       STC
+// 1000:2d6d      c3                       RET
+// 1000:2d6e  LAB_1000_2d6e:
+// 1000:2d6e      f8                       CLC
+// 1000:2d6f      c3                       RET
+
+reach_base :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record, ax: u16) -> bool {
+	if ship.flags & 0x80 == 0 {
+		return false
+	}
+	if base[0x0D] != 4 {
+		if ax > 0xFA {
+			return false
+		}
+		ship.pending_charge = 0xC350
+		return false
+	}
+	if ax > 0xA0 {
+		return false
+	}
+	if ship.formation != 0 && ax > 0x5F {
+		return false
+	}
+	ship.flags |= 4
+	nibble := ship.seek & 0x1F
+	if nibble == 4 {
+		nibble = 0
+		ship.seek = 0x80
+	}
+	if ship.flags & 0x40 == 0 {
+		if ax < 0x3C {
+			if ship.impulse == 0 {
+				ship.impulse = 0x11
+			}
+		} else {
+			ship.flags |= 0x40
+			if nibble == 0 {
+				ship.impulse = 0
+				ship.seek = 7
+				ship.fire_control = ship.own_side
+			}
+		}
+	}
+	ship.damage = 0
+	base[0] &= 0x7F
+	transfer_base_stock(ds, base, ship)
+	return true
+}
