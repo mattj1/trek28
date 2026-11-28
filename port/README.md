@@ -37,6 +37,7 @@ odin run src
 | `1000:2002` | `spawn_debris` | tested. The first debris slot with a zero lifetime receives `0xC8`, the ship's X and Y, its plane, and its team |
 | `1000:2343` | `tick_mine_lifetimes` | tested. Lifetime 1 clears the mine and increments base stock, which wraps. Lifetime 2 decrements every call. A higher lifetime decrements when `frame_count & 7` is 0 |
 | `1000:16fe` | `update_pause` | tested. A zero mask clears the delay. Bit 7 clear arms `0x8F` or counts the delay down. Bit 7 set drops a side bit when that side is out or its id does not start with `m`, and a zero low nibble clears the mask |
+| `1000:1759` | `drain_key_ring` | tested. Copies up to four ring bytes into the packet. An empty ring or a zero key fills the rest with 0, or with `0x86` when the clock is stopped |
 | `1000:221e` | `slew_heading` | tested. Actual heading steps toward desired by 1 or 2 around the 16-step circle. Seek distance `<= 0xFA` copies desired into actual |
 | `1000:21af` | `step_impulse` | tested. Actual impulse steps by 1 when `impulse_wait` reaches 0, and charges `2 * gap`. A zero wait only arms the countdown |
 | `1000:218b` | `slew_impulse` | tested. Slews heading, pulls a desired impulse of 11 down to 10 while warp is 0, then stores the nibble from `step_impulse` |
@@ -49,4 +50,4 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:1759` drains up to four keys from the ring into the command packet. The assembly is in `src/proc_01.odin`.
+`1000:382a` takes one movement step from the word table at `CS:387C` and masks both axes with `0x3FFF`. The assembly is in `src/proc_03.odin`.

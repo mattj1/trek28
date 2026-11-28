@@ -781,3 +781,78 @@ update_pause :: proc(ds: ^DS_Segment) {
 		ds.pause_mask = 0
 	}
 }
+
+// 1000:1759 drain_key_ring.
+// The notes already use this name. Up to four bytes are copied from the ring
+// at 00E5 into key_packet. The read pointer wraps from 00ED back to 00E5.
+// An empty ring or a zero key fills the packet's remaining bytes with 0, or
+// with 0x86 when clock_enable is 0. A zero key is consumed before the fill.
+
+// @proc 1000:1759
+// status: tested
+// Odin: drain_key_ring
+// 1000:1759  FUN_1000_1759:
+// 1000:1759      bf 0d a2                 MOV DI,0xa20d
+// 1000:175c      b9 04 00                 MOV CX,0x4
+// 1000:175f  LAB_1000_175f:
+// 1000:175f      8b 1e e1 00              MOV BX,word ptr [0xe1]
+// 1000:1763      3b 1e e3 00              CMP BX,word ptr [0xe3]
+// 1000:1767      b0 00                    MOV AL,0x0
+// 1000:1769      74 18                    JZ 0x1000:1783
+// 1000:176b      8a 07                    MOV AL,byte ptr [BX]
+// 1000:176d      43                       INC BX
+// 1000:176e      81 fb ed 00              CMP BX,0xed
+// 1000:1772      75 03                    JNZ 0x1000:1777
+// 1000:1774      bb e5 00                 MOV BX,0xe5
+// 1000:1777  LAB_1000_1777:
+// 1000:1777      89 1e e1 00              MOV word ptr [0xe1],BX
+// 1000:177b      22 c0                    AND AL,AL
+// 1000:177d      74 04                    JZ 0x1000:1783
+// 1000:177f      aa                       STOSB ES:DI
+// 1000:1780      e2 dd                    LOOP 0x1000:175f
+// 1000:1782      c3                       RET
+// 1000:1783  LAB_1000_1783:
+// 1000:1783      80 3e 03 a2 00           CMP byte ptr [0xa203],0x0
+// 1000:1788      75 02                    JNZ 0x1000:178c
+// 1000:178a      b0 86                    MOV AL,0x86
+// 1000:178c  LAB_1000_178c:
+// 1000:178c      f3 aa                    STOSB.REP ES:DI
+// 1000:178e      c3                       RET
+
+drain_key_ring :: proc(ds: ^DS_Segment) {
+	// REP STOSB writes the slots still counted, including the one being filled.
+	fill :: proc(ds: ^DS_Segment, at, count: int) {
+		al := u8(0)
+		if ds.clock_enable == 0 {
+			al = 0x86
+		}
+		for i in 0 ..< count {
+			ds.key_packet[at + i] = al
+		}
+	}
+
+	at := 0
+	left := 4
+	for {
+		if ds.key_read == ds.key_write {
+			fill(ds, at, left)
+			return
+		}
+		key := ds.key_ring[ds.key_read - 0x00E5]
+		next := ds.key_read + 1
+		if next == 0x00ED {
+			next = 0x00E5
+		}
+		ds.key_read = next
+		if key == 0 {
+			fill(ds, at, left)
+			return
+		}
+		ds.key_packet[at] = key
+		at += 1
+		left -= 1
+		if left == 0 {
+			return
+		}
+	}
+}

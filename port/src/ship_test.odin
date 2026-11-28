@@ -891,6 +891,108 @@ test_update_pause :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.pause_mask, u8(0))
 }
 
+@(test)
+test_drain_key_ring :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.clock_enable = 1
+	ds.key_read = 0x00E5
+	ds.key_write = 0x00E9
+	ds.key_ring[0] = 0x41
+	ds.key_ring[1] = 0x42
+	ds.key_ring[2] = 0x43
+	ds.key_ring[3] = 0x44
+	for &b in ds.key_packet {
+		b = 0xFF
+	}
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0x41))
+	testing.expect_value(t, ds.key_packet[1], u8(0x42))
+	testing.expect_value(t, ds.key_packet[2], u8(0x43))
+	testing.expect_value(t, ds.key_packet[3], u8(0x44))
+	testing.expect_value(t, ds.key_read, u16(0x00E9))
+	testing.expect_value(t, ds.key_write, u16(0x00E9))
+
+	ds.key_packet = {0xFF, 0xFF, 0xFF, 0xFF}
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0))
+	testing.expect_value(t, ds.key_packet[1], u8(0))
+	testing.expect_value(t, ds.key_packet[2], u8(0))
+	testing.expect_value(t, ds.key_packet[3], u8(0))
+	testing.expect_value(t, ds.key_read, u16(0x00E9))
+
+	ds.clock_enable = 0
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0x86))
+	testing.expect_value(t, ds.key_packet[3], u8(0x86))
+
+	ds.clock_enable = 1
+	ds.key_read = 0x00E5
+	ds.key_write = 0x00E7
+	ds.key_ring[0] = 0x11
+	ds.key_ring[1] = 0x22
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0x11))
+	testing.expect_value(t, ds.key_packet[1], u8(0x22))
+	testing.expect_value(t, ds.key_packet[2], u8(0))
+	testing.expect_value(t, ds.key_packet[3], u8(0))
+	testing.expect_value(t, ds.key_read, u16(0x00E7))
+
+	// A zero key is consumed, and the bytes after it stay in the ring.
+	ds.key_read = 0x00E5
+	ds.key_write = 0x00E8
+	ds.key_ring[0] = 0x41
+	ds.key_ring[1] = 0
+	ds.key_ring[2] = 0x42
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0x41))
+	testing.expect_value(t, ds.key_packet[1], u8(0))
+	testing.expect_value(t, ds.key_packet[2], u8(0))
+	testing.expect_value(t, ds.key_packet[3], u8(0))
+	testing.expect_value(t, ds.key_read, u16(0x00E7))
+	testing.expect_value(t, ds.key_ring[2], u8(0x42))
+
+	ds.clock_enable = 0
+	ds.key_read = 0x00E5
+	ds.key_write = 0x00E8
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0x41))
+	testing.expect_value(t, ds.key_packet[1], u8(0x86))
+	testing.expect_value(t, ds.key_packet[2], u8(0x86))
+	testing.expect_value(t, ds.key_packet[3], u8(0x86))
+
+	// The read pointer wraps from 00ED to 00E5.
+	ds.clock_enable = 1
+	ds.key_read = 0x00EC
+	ds.key_write = 0x00E6
+	ds.key_ring[7] = 0x11
+	ds.key_ring[0] = 0x22
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(0x11))
+	testing.expect_value(t, ds.key_packet[1], u8(0x22))
+	testing.expect_value(t, ds.key_packet[2], u8(0))
+	testing.expect_value(t, ds.key_packet[3], u8(0))
+	testing.expect_value(t, ds.key_read, u16(0x00E6))
+	testing.expect_value(t, ds.key_write, u16(0x00E6))
+
+	ds.key_read = 0x00EA
+	ds.key_write = 0x00E8
+	ds.key_ring[5] = 1
+	ds.key_ring[6] = 2
+	ds.key_ring[7] = 3
+	ds.key_ring[0] = 4
+	ds.key_ring[1] = 5
+	ds.key_ring[2] = 6
+	drain_key_ring(ds)
+	testing.expect_value(t, ds.key_packet[0], u8(1))
+	testing.expect_value(t, ds.key_packet[1], u8(2))
+	testing.expect_value(t, ds.key_packet[2], u8(3))
+	testing.expect_value(t, ds.key_packet[3], u8(4))
+	testing.expect_value(t, ds.key_read, u16(0x00E6))
+	testing.expect_value(t, ds.key_write, u16(0x00E8))
+	testing.expect_value(t, ds.key_ring[1], u8(5))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

@@ -494,39 +494,7 @@ fun_16e9 :: proc() {
 
 // 1000:16fe update_pause is in ship.odin.
 
-// @proc 1000:1759
-// listing: FUN_1000_1759
-// notes: drain_key_ring
-// status: unread
-// 1000:1759  FUN_1000_1759:
-// 1000:1759      bf 0d a2                 MOV DI,0xa20d
-// 1000:175c      b9 04 00                 MOV CX,0x4
-// 1000:175f  LAB_1000_175f:
-// 1000:175f      8b 1e e1 00              MOV BX,word ptr [0xe1]
-// 1000:1763      3b 1e e3 00              CMP BX,word ptr [0xe3]
-// 1000:1767      b0 00                    MOV AL,0x0
-// 1000:1769      74 18                    JZ 0x1000:1783
-// 1000:176b      8a 07                    MOV AL,byte ptr [BX]
-// 1000:176d      43                       INC BX
-// 1000:176e      81 fb ed 00              CMP BX,0xed
-// 1000:1772      75 03                    JNZ 0x1000:1777
-// 1000:1774      bb e5 00                 MOV BX,0xe5
-// 1000:1777  LAB_1000_1777:
-// 1000:1777      89 1e e1 00              MOV word ptr [0xe1],BX
-// 1000:177b      22 c0                    AND AL,AL
-// 1000:177d      74 04                    JZ 0x1000:1783
-// 1000:177f      aa                       STOSB ES:DI
-// 1000:1780      e2 dd                    LOOP 0x1000:175f
-// 1000:1782      c3                       RET
-// 1000:1783  LAB_1000_1783:
-// 1000:1783      80 3e 03 a2 00           CMP byte ptr [0xa203],0x0
-// 1000:1788      75 02                    JNZ 0x1000:178c
-// 1000:178a      b0 86                    MOV AL,0x86
-// 1000:178c  LAB_1000_178c:
-// 1000:178c      f3 aa                    STOSB.REP ES:DI
-// 1000:178e      c3                       RET
-fun_1759 :: proc() {
-}
+// 1000:1759 drain_key_ring is in ship.odin.
 
 // @proc 1000:178f
 // listing: FUN_1000_178f
