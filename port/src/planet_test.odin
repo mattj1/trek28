@@ -185,6 +185,50 @@ test_random_planet_coord :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_relocate_planet :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	di := u16(offset_of(DS_Segment, planets))
+
+	// Frame 4, seed 0. The first planet draw is 0x3828, the second is 0x29CA.
+	// No live base, so that pair is kept. The level byte is not written.
+	ds.frame_count = 4
+	ds.rng_seed = 0
+	ds.mode_bits = 0
+	write_u8(&m.ds, di, 0xFF)
+	write_u8(&m.ds, add16(di, 5), 3)
+	write_u8(&m.ds, add16(di, 6), 9)
+	write_u8(&m.ds, add16(di, 7), 9)
+	write_u8(&m.ds, add16(di, 8), 9)
+	write_u8(&m.ds, add16(di, 0x0A), 0)
+	relocate_planet(m, di)
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x3828))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(0x29CA))
+	testing.expect_value(t, read_u8(&m.ds, di), u8(0x0E))
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 5)), u8(3))
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 6)), u8(0))
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 7)), u8(0))
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 8)), u8(0))
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 0x0A)), u8(0xFF))
+	testing.expect_value(t, ds.rng_seed, u16(0xE9CA))
+
+	// Mode bit 0 turns the type into 0xFE. A live base on the first pair
+	// forces a second draw, at 0x0A36, 0x37EF.
+	ds.rng_seed = 0
+	ds.mode_bits = 1
+	base := u16(offset_of(DS_Segment, bases))
+	place_object(m, base, 0x3828, 0x29CA)
+	write_u16(&m.ds, add16(base, 8), 50)
+	relocate_planet(m, di)
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x0A36))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(0x37EF))
+	testing.expect_value(t, read_u8(&m.ds, di), u8(0xFE))
+	testing.expect_value(t, ds.rng_seed, u16(0x77EF))
+}
+
+@(test)
 test_random_planet_type :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)

@@ -106,32 +106,7 @@ fun_202f :: proc() {
 fun_22a2 :: proc() {
 }
 
-// @proc 1000:2310
-// listing: FUN_1000_2310
-// status: unread
-// 1000:2310  FUN_1000_2310:
-// 1000:2310      57                       PUSH DI
-// 1000:2311      87 fe                    XCHG SI,DI
-// 1000:2313  LAB_1000_2313:
-// 1000:2313      e8 85 1f                 CALL 0x1000:429b
-// 1000:2316      89 44 01                 MOV word ptr [SI + 0x1],AX
-// 1000:2319      e8 7f 1f                 CALL 0x1000:429b
-// 1000:231c      89 44 03                 MOV word ptr [SI + 0x3],AX
-// 1000:231f      bd e8 03                 MOV BP,0x3e8
-// 1000:2322      ba 58 1b                 MOV DX,0x1b58
-// 1000:2325      e8 ef 1e                 CALL 0x1000:4217
-// 1000:2328      72 e9                    JC 0x1000:2313
-// 1000:232a      b0 0e                    MOV AL,0xe
-// 1000:232c      e8 c1 1e                 CALL 0x1000:41f0
-// 1000:232f      88 04                    MOV byte ptr [SI],AL
-// 1000:2331      c6 44 07 00              MOV byte ptr [SI + 0x7],0x0
-// 1000:2335      c6 44 08 00              MOV byte ptr [SI + 0x8],0x0
-// 1000:2339      c6 44 06 00              MOV byte ptr [SI + 0x6],0x0
-// 1000:233d      c6 44 0a ff              MOV byte ptr [SI + 0xa],0xff
-// 1000:2341      5f                       POP DI
-// 1000:2342      c3                       RET
-fun_2310 :: proc() {
-}
+// 1000:2310 relocate_planet is in planet.odin.
 
 // 1000:2343 tick_mine_lifetimes is in ship.odin.
 

@@ -144,6 +144,57 @@ random_planet_type :: proc(m: ^Machine) -> u8 {
 	return m.cs[0x42BD + int(ax)]
 }
 
+// 1000:2310 relocate_planet.
+// The name is inferred. DI is the planet. The 8086 exchanges SI with DI,
+// so the caller's SI is left pointing at that planet. The only caller
+// does not read SI afterwards.
+// Two planet coordinates are stored, then reject_near_base with BP 0x3E8
+// and DX 0x1B58. Carry sends it back for a new pair. The type is 0x0E
+// passed through timed_type. Phase, orbit kind, and lifetime are cleared,
+// and the team byte at +0A becomes 0xFF.
+
+// @proc 1000:2310
+// status: tested
+// Odin: relocate_planet
+// 1000:2310  FUN_1000_2310:
+// 1000:2310      57                       PUSH DI
+// 1000:2311      87 fe                    XCHG SI,DI
+// 1000:2313  LAB_1000_2313:
+// 1000:2313      e8 85 1f                 CALL 0x1000:429b
+// 1000:2316      89 44 01                 MOV word ptr [SI + 0x1],AX
+// 1000:2319      e8 7f 1f                 CALL 0x1000:429b
+// 1000:231c      89 44 03                 MOV word ptr [SI + 0x3],AX
+// 1000:231f      bd e8 03                 MOV BP,0x3e8
+// 1000:2322      ba 58 1b                 MOV DX,0x1b58
+// 1000:2325      e8 ef 1e                 CALL 0x1000:4217
+// 1000:2328      72 e9                    JC 0x1000:2313
+// 1000:232a      b0 0e                    MOV AL,0xe
+// 1000:232c      e8 c1 1e                 CALL 0x1000:41f0
+// 1000:232f      88 04                    MOV byte ptr [SI],AL
+// 1000:2331      c6 44 07 00              MOV byte ptr [SI + 0x7],0x0
+// 1000:2335      c6 44 08 00              MOV byte ptr [SI + 0x8],0x0
+// 1000:2339      c6 44 06 00              MOV byte ptr [SI + 0x6],0x0
+// 1000:233d      c6 44 0a ff              MOV byte ptr [SI + 0xa],0xff
+// 1000:2341      5f                       POP DI
+// 1000:2342      c3                       RET
+
+relocate_planet :: proc(m: ^Machine, di: u16) {
+	ds := transmute(^DS_Segment)&m.ds
+	si := di
+	for {
+		write_u16(&m.ds, add16(si, 1), random_planet_coord(ds))
+		write_u16(&m.ds, add16(si, 3), random_planet_coord(ds))
+		if !reject_near_base(m, si, 0x3E8, 0x1B58) {
+			break
+		}
+	}
+	write_u8(&m.ds, si, timed_type(ds, 0x0E))
+	write_u8(&m.ds, add16(si, 7), 0)
+	write_u8(&m.ds, add16(si, 8), 0)
+	write_u8(&m.ds, add16(si, 6), 0)
+	write_u8(&m.ds, add16(si, 0x0A), 0xFF)
+}
+
 // 1000:43b1 step_orbit.
 // The notes already use this name. DI is one 11-byte planet.
 // Kind 0 at +08 returns with the phase and the position unchanged.
