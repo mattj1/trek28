@@ -331,3 +331,144 @@ apply_damage_thresholds :: proc(ship: ^Ship_Record) {
 	ship.byte_2a = 0
 	ship.get_mine = 0
 }
+
+// 1000:2055 charge_impulse_and_heal.
+// The notes already use this name. DI is one ship. The side byte is
+// side_89d8 indexed by current_side, and the frame tests read the low byte
+// of frame_count.
+//
+// A side byte of exactly 1 stores energy 0 and returns. Otherwise a nonzero
+// weapons cooldown decrements, and energy at or below 0x7D0 stores warp 0.
+// The impulse charge and the heal run when the frame byte's low two bits are
+// clear. The actual impulse nibble costs 0, 5, 10, 15, or 10. Energy at or
+// below 0x3E8 halves that cost. Flag bit 0x20 adds energy / 0x4B, an
+// unsigned division. The sum goes through add_pending_charge. Damage then
+// decrements when it is nonzero, on every such frame if bit 2 of the frame
+// byte is set, and otherwise only when the actual nibble is at most 2.
+
+// @proc 1000:2055
+// status: tested
+// Odin: charge_impulse_and_heal
+// 1000:2055  FUN_1000_2055:
+// 1000:2055      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:2059      b7 00                    MOV BH,0x0
+// 1000:205b      80 bf d8 89 01           CMP byte ptr [BX + 0x89d8],0x1
+// 1000:2060      75 06                    JNZ 0x1000:2068
+// 1000:2062      c7 45 08 00 00           MOV word ptr [DI + 0x8],0x0
+// 1000:2067      c3                       RET
+// 1000:2068  LAB_1000_2068:
+// 1000:2068      f6 45 15 ff              TEST byte ptr [DI + 0x15],0xff
+// 1000:206c      74 03                    JZ 0x1000:2071
+// 1000:206e      fe 4d 15                 DEC byte ptr [DI + 0x15]
+// 1000:2071  LAB_1000_2071:
+// 1000:2071      81 7d 08 d0 07           CMP word ptr [DI + 0x8],0x7d0
+// 1000:2076      77 04                    JA 0x1000:207c
+// 1000:2078      c6 45 14 00              MOV byte ptr [DI + 0x14],0x0
+// 1000:207c  LAB_1000_207c:
+// 1000:207c      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:2081      75 5f                    JNZ 0x1000:20e2
+// 1000:2083      ba 00 00                 MOV DX,0x0
+// 1000:2086      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:2089      24 0f                    AND AL,0xf
+// 1000:208b      74 14                    JZ 0x1000:20a1
+// 1000:208d      b2 05                    MOV DL,0x5
+// 1000:208f      3c 04                    CMP AL,0x4
+// 1000:2091      72 0e                    JC 0x1000:20a1
+// 1000:2093      b2 0a                    MOV DL,0xa
+// 1000:2095      3c 08                    CMP AL,0x8
+// 1000:2097      72 08                    JC 0x1000:20a1
+// 1000:2099      b2 0f                    MOV DL,0xf
+// 1000:209b      3c 0b                    CMP AL,0xb
+// 1000:209d      72 02                    JC 0x1000:20a1
+// 1000:209f      b2 0a                    MOV DL,0xa
+// 1000:20a1  LAB_1000_20a1:
+// 1000:20a1      81 7d 08 e8 03           CMP word ptr [DI + 0x8],0x3e8
+// 1000:20a6      77 02                    JA 0x1000:20aa
+// 1000:20a8      d1 ea                    SHR DX,0x1
+// 1000:20aa  LAB_1000_20aa:
+// 1000:20aa      8b c2                    MOV AX,DX
+// 1000:20ac      f6 05 20                 TEST byte ptr [DI],0x20
+// 1000:20af      74 0e                    JZ 0x1000:20bf
+// 1000:20b1      52                       PUSH DX
+// 1000:20b2      b9 4b 00                 MOV CX,0x4b
+// 1000:20b5      8b 45 08                 MOV AX,word ptr [DI + 0x8]
+// 1000:20b8      33 d2                    XOR DX,DX
+// 1000:20ba      f7 f1                    DIV CX
+// 1000:20bc      5a                       POP DX
+// 1000:20bd      03 c2                    ADD AX,DX
+// 1000:20bf  LAB_1000_20bf:
+// 1000:20bf      e8 d9 02                 CALL 0x1000:239b
+// 1000:20c2      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:20c7      75 19                    JNZ 0x1000:20e2
+// 1000:20c9      f6 06 d2 89 04           TEST byte ptr [0x89d2],0x4
+// 1000:20ce      75 09                    JNZ 0x1000:20d9
+// 1000:20d0      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:20d3      24 0f                    AND AL,0xf
+// 1000:20d5      3c 02                    CMP AL,0x2
+// 1000:20d7      77 09                    JA 0x1000:20e2
+// 1000:20d9  LAB_1000_20d9:
+// 1000:20d9      f6 45 0e ff              TEST byte ptr [DI + 0xe],0xff
+// 1000:20dd      74 03                    JZ 0x1000:20e2
+// 1000:20df      fe 4d 0e                 DEC byte ptr [DI + 0xe]
+// 1000:20e2  LAB_1000_20e2:
+// 1000:20e2      c3                       RET
+
+charge_impulse_and_heal :: proc(ds: ^DS_Segment, ship: ^Ship_Record) {
+	// Actual nibble. 0 costs nothing. 1..3 cost 5, 4..7 cost 10, 8..10 cost
+	// 15, and 11..15 cost 10. The comparisons are unsigned, matching JC.
+	impulse_cost :: proc(nibble: u8) -> u16 {
+		if nibble == 0 {
+			return 0
+		}
+		if nibble < 4 {
+			return 5
+		}
+		if nibble < 8 {
+			return 10
+		}
+		if nibble < 0x0B {
+			return 15
+		}
+		return 10
+	}
+
+	if ds.side_89d8[ds.current_side] == 1 {
+		ship.energy = 0
+		return
+	}
+	if ship.weapons_cooldown != 0 {
+		ship.weapons_cooldown -= 1
+	}
+	if ship.energy <= 0x07D0 {
+		ship.warp = 0
+	}
+	// TEST byte ptr [frame_count], 3. The high byte of the word is not read.
+	frame := u8(ds.frame_count)
+	if frame & 3 != 0 {
+		return
+	}
+
+	cost := impulse_cost(ship.impulse & 0x0F)
+	if ship.energy <= 0x03E8 {
+		cost >>= 1
+	}
+	ax := cost
+	if ship.flags & 0x20 != 0 {
+		// Unsigned DIV of the energy word by 0x4B. The quotient is added to
+		// the cost. The add wraps; these inputs stay inside a word.
+		ax, _ = intrinsics.overflow_add(ship.energy / 0x4B, cost)
+	}
+	add_pending_charge(ship, ax)
+
+	// 1000:20c2 repeats the test at 2081. The charge call does not write the
+	// frame count, so both tests see the same byte.
+	if frame & 3 != 0 {
+		return
+	}
+	if frame & 4 == 0 && (ship.impulse & 0x0F) > 2 {
+		return
+	}
+	if ship.damage != 0 {
+		ship.damage -= 1
+	}
+}

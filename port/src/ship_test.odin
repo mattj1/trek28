@@ -349,6 +349,221 @@ test_apply_damage_thresholds :: proc(t: ^testing.T) {
 	testing.expect_value(t, ship.flags, u8(0x80))
 }
 
+@(test)
+test_charge_impulse_and_heal :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.ships[2][2].energy = 0x1111
+
+	// A side byte of exactly 1 zeros energy and leaves the rest of the record.
+	ds.current_side = 0
+	ds.side_89d8[0] = 1
+	ds.frame_count = 0
+	ship := &ds.ships[0][0]
+	ship.energy = 0x1000
+	ship.weapons_cooldown = 5
+	ship.warp = 3
+	ship.pending_charge = 9
+	ship.damage = 4
+	ship.impulse = 0x58
+	ship.flags = 0xA0
+	ship.heading = 0x21
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.energy, u16(0))
+	testing.expect_value(t, ship.weapons_cooldown, u8(5))
+	testing.expect_value(t, ship.warp, u8(3))
+	testing.expect_value(t, ship.pending_charge, u16(9))
+	testing.expect_value(t, ship.damage, u8(4))
+	testing.expect_value(t, ship.impulse, u8(0x58))
+	testing.expect_value(t, ship.flags, u8(0xA0))
+	testing.expect_value(t, ship.heading, u8(0x21))
+
+	// current_side selects the byte. Side 1 is 1, so this ship is zeroed.
+	ds.side_89d8 = {0, 1, 0, 0}
+	ds.current_side = 1
+	ship = &ds.ships[1][2]
+	ship.energy = 50
+	ship.weapons_cooldown = 2
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.energy, u16(0))
+	testing.expect_value(t, ship.weapons_cooldown, u8(2))
+
+	// Side 0 is 0. Frame 1 still ticks the cooldown and clears warp at 0x7D0.
+	ds.current_side = 0
+	ds.frame_count = 1
+	ship = &ds.ships[0][1]
+	ship.energy = 0x07D0
+	ship.warp = 9
+	ship.weapons_cooldown = 1
+	ship.impulse = 0x4F
+	ship.pending_charge = 11
+	ship.damage = 6
+	ship.flags = 0x80
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.energy, u16(0x07D0))
+	testing.expect_value(t, ship.warp, u8(0))
+	testing.expect_value(t, ship.weapons_cooldown, u8(0))
+	testing.expect_value(t, ship.pending_charge, u16(11))
+	testing.expect_value(t, ship.damage, u8(6))
+
+	// Energy 0x7D1 keeps warp. A zero cooldown stays 0. Frame 3 skips the charge.
+	ds.frame_count = 3
+	ship.energy = 0x07D1
+	ship.warp = 4
+	ship.weapons_cooldown = 0
+	ship.pending_charge = 11
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.warp, u8(4))
+	testing.expect_value(t, ship.weapons_cooldown, u8(0))
+	testing.expect_value(t, ship.pending_charge, u16(11))
+	testing.expect_value(t, ship.energy, u16(0x07D1))
+
+	// A side byte of 0x81 is not 1. The high byte of the frame word is ignored.
+	ds.side_89d8[0] = 0x81
+	ds.frame_count = 0x0101
+	ship.energy = 0x2000
+	ship.warp = 6
+	ship.weapons_cooldown = 8
+	ship.pending_charge = 3
+	ship.damage = 2
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.energy, u16(0x2000))
+	testing.expect_value(t, ship.warp, u8(6))
+	testing.expect_value(t, ship.weapons_cooldown, u8(7))
+	testing.expect_value(t, ship.pending_charge, u16(3))
+	testing.expect_value(t, ship.damage, u8(2))
+
+	// Energy above both thresholds. Frame 0 charges the actual nibble and does
+	// not heal while damage is 0.
+	ds.side_89d8[0] = 0
+	ds.frame_count = 0
+	costs := []u16{0, 5, 5, 5, 10, 10, 10, 10, 15, 15, 15, 10, 10, 10, 10, 10}
+	for nibble in 0 ..< 16 {
+		ship.energy = 0x2000
+		ship.warp = 6
+		ship.weapons_cooldown = 0
+		ship.flags = 0x80
+		ship.impulse = 0xA0 | u8(nibble)
+		ship.pending_charge = 0
+		ship.damage = 0
+		charge_impulse_and_heal(ds, ship)
+		testing.expectf(t, ship.pending_charge == costs[nibble], "nibble %d charge %d", nibble, ship.pending_charge)
+		testing.expectf(t, ship.damage == 0, "nibble %d damage %d", nibble, ship.damage)
+		testing.expectf(t, ship.warp == 6, "nibble %d warp %d", nibble, ship.warp)
+		testing.expectf(t, ship.impulse == 0xA0 | u8(nibble), "nibble %d impulse %d", nibble, ship.impulse)
+	}
+
+	// 0x3E8 halves the cost. 0x3E9 keeps it. Nibble 8 costs 15, so the halves are 7 and 15.
+	ship.energy = 0x03E8
+	ship.impulse = 0x08
+	ship.pending_charge = 0
+	ship.damage = 0
+	ship.flags = 0x80
+	ship.warp = 2
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(7))
+	testing.expect_value(t, ship.warp, u8(0))
+
+	ship.energy = 0x03E9
+	ship.pending_charge = 0
+	ship.warp = 2
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(15))
+	testing.expect_value(t, ship.warp, u8(0))
+
+	// Flag bit 0x20 adds energy / 0x4B to the unhalved cost. 3000 / 75 + 10 = 50.
+	ship.energy = 3000
+	ship.flags = 0xA0
+	ship.impulse = 0x14
+	ship.pending_charge = 0
+	ship.damage = 4
+	ship.warp = 5
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(50))
+	testing.expect_value(t, ship.damage, u8(4))
+	testing.expect_value(t, ship.warp, u8(5))
+	testing.expect_value(t, ship.flags, u8(0xA0))
+
+	// The same energy without the flag charges only the nibble cost.
+	ship.flags = 0x80
+	ship.pending_charge = 20
+	ship.damage = 4
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(30))
+	testing.expect_value(t, ship.damage, u8(4))
+
+	// Low energy halves before the division is added. 150 / 75 + (15 >> 1) = 9.
+	ship.energy = 150
+	ship.flags = 0xA0
+	ship.impulse = 0x08
+	ship.pending_charge = 0
+	ship.damage = 0
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(9))
+
+	// 0xFFFF / 75 + 10 = 883. That stays below the damage bump at 0x400.
+	ship.energy = 0xFFFF
+	ship.flags = 0xA0
+	ship.impulse = 0x0F
+	ship.pending_charge = 0
+	ship.damage = 9
+	ship.warp = 1
+	ds.frame_count = 8
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(883))
+	testing.expect_value(t, ship.damage, u8(9))
+	testing.expect_value(t, ship.warp, u8(1))
+
+	// Frame 0 heals when the actual nibble is at most 2, and leaves higher nibbles.
+	ds.frame_count = 0
+	ship.energy = 0x2000
+	ship.flags = 0x80
+	ship.impulse = 0x02
+	ship.pending_charge = 0
+	ship.damage = 4
+	ship.warp = 6
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(5))
+	testing.expect_value(t, ship.damage, u8(3))
+
+	ship.impulse = 0x03
+	ship.pending_charge = 0
+	ship.damage = 4
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(5))
+	testing.expect_value(t, ship.damage, u8(4))
+
+	ship.impulse = 0x00
+	ship.pending_charge = 0
+	ship.damage = 0
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ship.damage, u8(0))
+
+	// Frame 4 has bit 2 set, so nibble 15 heals too. 0x0104 uses the same low byte.
+	ds.frame_count = 0x0104
+	ship.impulse = 0x0F
+	ship.pending_charge = 0
+	ship.damage = 1
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(10))
+	testing.expect_value(t, ship.damage, u8(0))
+
+	// A charge already at 0xFFFE saturates. The added 5 does not bump damage.
+	ds.frame_count = 0
+	ship.energy = 0x2000
+	ship.impulse = 0x01
+	ship.pending_charge = 0xFFFE
+	ship.damage = 0
+	charge_impulse_and_heal(ds, ship)
+	testing.expect_value(t, ship.pending_charge, u16(0xFFFF))
+	testing.expect_value(t, ship.damage, u8(0))
+
+	testing.expect_value(t, ds.frame_count, u16(0))
+	testing.expect_value(t, ds.ships[2][2].energy, u16(0x1111))
+	testing.expect_value(t, ds.ships[2][2].pending_charge, u16(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

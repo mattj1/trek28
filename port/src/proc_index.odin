@@ -82,7 +82,6 @@ listing_procs := [?]Proc_Ref{
 	{"1000:1f1c", true, fun_1f1c},
 	{"1000:2002", true, fun_2002},
 	{"1000:202f", true, fun_202f},
-	{"1000:2055", true, fun_2055},
 	{"1000:210a", true, fun_210a},
 	{"1000:226c", true, fun_226c},
 	{"1000:22a2", true, fun_22a2},
@@ -262,6 +261,7 @@ listing_procs := [?]Proc_Ref{
 
 // Procedures whose working body lives in another file.
 translated_procs := [?]string{
+	"1000:2055",
 	"1000:20e3",
 	"1000:218b",
 	"1000:21af",

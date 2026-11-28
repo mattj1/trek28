@@ -158,75 +158,7 @@ fun_2002 :: proc() {
 fun_202f :: proc() {
 }
 
-// @proc 1000:2055
-// listing: FUN_1000_2055
-// notes: charge_impulse_and_heal
-// status: unread
-// 1000:2055  FUN_1000_2055:
-// 1000:2055      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
-// 1000:2059      b7 00                    MOV BH,0x0
-// 1000:205b      80 bf d8 89 01           CMP byte ptr [BX + 0x89d8],0x1
-// 1000:2060      75 06                    JNZ 0x1000:2068
-// 1000:2062      c7 45 08 00 00           MOV word ptr [DI + 0x8],0x0
-// 1000:2067      c3                       RET
-// 1000:2068  LAB_1000_2068:
-// 1000:2068      f6 45 15 ff              TEST byte ptr [DI + 0x15],0xff
-// 1000:206c      74 03                    JZ 0x1000:2071
-// 1000:206e      fe 4d 15                 DEC byte ptr [DI + 0x15]
-// 1000:2071  LAB_1000_2071:
-// 1000:2071      81 7d 08 d0 07           CMP word ptr [DI + 0x8],0x7d0
-// 1000:2076      77 04                    JA 0x1000:207c
-// 1000:2078      c6 45 14 00              MOV byte ptr [DI + 0x14],0x0
-// 1000:207c  LAB_1000_207c:
-// 1000:207c      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
-// 1000:2081      75 5f                    JNZ 0x1000:20e2
-// 1000:2083      ba 00 00                 MOV DX,0x0
-// 1000:2086      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
-// 1000:2089      24 0f                    AND AL,0xf
-// 1000:208b      74 14                    JZ 0x1000:20a1
-// 1000:208d      b2 05                    MOV DL,0x5
-// 1000:208f      3c 04                    CMP AL,0x4
-// 1000:2091      72 0e                    JC 0x1000:20a1
-// 1000:2093      b2 0a                    MOV DL,0xa
-// 1000:2095      3c 08                    CMP AL,0x8
-// 1000:2097      72 08                    JC 0x1000:20a1
-// 1000:2099      b2 0f                    MOV DL,0xf
-// 1000:209b      3c 0b                    CMP AL,0xb
-// 1000:209d      72 02                    JC 0x1000:20a1
-// 1000:209f      b2 0a                    MOV DL,0xa
-// 1000:20a1  LAB_1000_20a1:
-// 1000:20a1      81 7d 08 e8 03           CMP word ptr [DI + 0x8],0x3e8
-// 1000:20a6      77 02                    JA 0x1000:20aa
-// 1000:20a8      d1 ea                    SHR DX,0x1
-// 1000:20aa  LAB_1000_20aa:
-// 1000:20aa      8b c2                    MOV AX,DX
-// 1000:20ac      f6 05 20                 TEST byte ptr [DI],0x20
-// 1000:20af      74 0e                    JZ 0x1000:20bf
-// 1000:20b1      52                       PUSH DX
-// 1000:20b2      b9 4b 00                 MOV CX,0x4b
-// 1000:20b5      8b 45 08                 MOV AX,word ptr [DI + 0x8]
-// 1000:20b8      33 d2                    XOR DX,DX
-// 1000:20ba      f7 f1                    DIV CX
-// 1000:20bc      5a                       POP DX
-// 1000:20bd      03 c2                    ADD AX,DX
-// 1000:20bf  LAB_1000_20bf:
-// 1000:20bf      e8 d9 02                 CALL 0x1000:239b
-// 1000:20c2      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
-// 1000:20c7      75 19                    JNZ 0x1000:20e2
-// 1000:20c9      f6 06 d2 89 04           TEST byte ptr [0x89d2],0x4
-// 1000:20ce      75 09                    JNZ 0x1000:20d9
-// 1000:20d0      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
-// 1000:20d3      24 0f                    AND AL,0xf
-// 1000:20d5      3c 02                    CMP AL,0x2
-// 1000:20d7      77 09                    JA 0x1000:20e2
-// 1000:20d9  LAB_1000_20d9:
-// 1000:20d9      f6 45 0e ff              TEST byte ptr [DI + 0xe],0xff
-// 1000:20dd      74 03                    JZ 0x1000:20e2
-// 1000:20df      fe 4d 0e                 DEC byte ptr [DI + 0xe]
-// 1000:20e2  LAB_1000_20e2:
-// 1000:20e2      c3                       RET
-fun_2055 :: proc() {
-}
+// 1000:2055 charge_impulse_and_heal is in ship.odin.
 
 // 1000:20e3 apply_damage_thresholds is in ship.odin.
 

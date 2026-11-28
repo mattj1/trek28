@@ -35,6 +35,7 @@ odin run src
 | `1000:21af` | `step_impulse` | tested. Actual impulse steps by 1 when `impulse_wait` reaches 0, and charges `2 * gap`. A zero wait only arms the countdown |
 | `1000:218b` | `slew_impulse` | tested. Slews heading, pulls a desired impulse of 11 down to 10 while warp is 0, then stores the nibble from `step_impulse` |
 | `1000:20e3` | `apply_damage_thresholds` | tested. Damage from 8 clears flag bits 4 and 5. From `0x0C` it zeros seek. From `0x10` it stores weapons cooldown `0x18` on every call. From `0x14` it zeros `byte_2a` and `get_mine` |
+| `1000:2055` | `charge_impulse_and_heal` | tested. A side byte of 1 zeros energy. Otherwise the weapons cooldown ticks, low energy clears warp, and every fourth frame charges the actual impulse and may heal one damage |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -42,4 +43,4 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:2055` is the next procedure to translate. It is the charge-and-heal pass that runs just before `slew_impulse` on an alive ship. The assembly is in `src/proc_02.odin`.
+`1000:226c` drains invisibility on an alive ship after `slew_impulse`. It reads the handicap byte through `1000:23b3`. The assembly is in `src/proc_02.odin`.
