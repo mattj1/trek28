@@ -4020,6 +4020,155 @@ test_scale_hit_charge :: proc(t: ^testing.T) {
 	testing.expect_value(t, target.flags, u8(0))
 }
 
+@(test)
+test_resolve_shot_hit :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	si := u16(offset_of(DS_Segment, ships))
+	di := add16(si, 0x3B)
+	shooter := &ds.ships[0][0]
+	target := &ds.ships[0][1]
+
+	place :: proc(shooter, target: ^Ship_Record, shot: u8, gap: u16) {
+		shooter.shot = shot
+		shooter.shot_x = 0x1000
+		shooter.shot_y = 0x1000
+		shooter.shot_level = 1
+		shooter.pending_charge = 0
+		shooter.team = 1
+		shooter.own_side = 0
+		target.x = 0x1000
+		target.y = add16(0x1000, gap)
+		target.plane = 1
+		target.pending_charge = 0
+		target.damage = 0
+		target.byte_16 = 0
+		target.team = 2
+		target.flags = 0x80
+	}
+
+	// Matching team and flag bits 0x44 return before the distance.
+	place(shooter, target, 5, 0)
+	target.flags = 0xC4
+	target.team = 1
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, shooter.shot, u8(5))
+	testing.expect_value(t, target.pending_charge, u16(0))
+	testing.expect_value(t, target.byte_16, u8(0))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// A different plane is 0xFFFE, past every range.
+	place(shooter, target, 5, 0)
+	target.plane = 2
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, shooter.shot, u8(5))
+	testing.expect_value(t, target.byte_16, u8(0))
+	testing.expect_value(t, target.pending_charge, u16(0))
+
+	// Y gap 0x25C is distance 0x25C, above 0x258.
+	place(shooter, target, 5, 0x25C)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(0))
+	testing.expect_value(t, shooter.shot, u8(5))
+
+	// 0x258 sets the team bit and stops before the charge. 0x90 does too.
+	place(shooter, target, 5, 0x258)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(2))
+	testing.expect_value(t, target.pending_charge, u16(0))
+	testing.expect_value(t, shooter.shot, u8(5))
+	place(shooter, target, 5, 0x90)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(2))
+	testing.expect_value(t, shooter.shot, u8(5))
+
+	// 0x8C is inside. Shot 5 becomes 3 and multiplies by 0x41.
+	place(shooter, target, 5, 0x8C)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, shooter.shot, u8(3))
+	testing.expect_value(t, target.byte_16, u8(2))
+	testing.expect_value(t, target.pending_charge, u16(5 * 0x41))
+	testing.expect_value(t, ds.side_score[0], u16(3))
+
+	// The same spot with shot 2 keeps the shot and uses 8 * 0xC8 + 0x96.
+	place(shooter, target, 2, 0)
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, shooter.shot, u8(2))
+	testing.expect_value(t, target.pending_charge, u16(2 * 0x6D6))
+	testing.expect_value(t, ds.side_score[0], u16(35))
+	testing.expect_value(t, shooter.pending_charge, u16(0))
+
+	// Same team does not set bit 1, and still charges.
+	place(shooter, target, 2, 0)
+	target.team = 1
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(0))
+	testing.expect_value(t, target.pending_charge, u16(2 * 0x6D6))
+
+	// Flag bits 0x44 on another team block a shot of at least 4 after the bit is set.
+	place(shooter, target, 5, 0)
+	target.flags = 0xC4
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(2))
+	testing.expect_value(t, shooter.shot, u8(5))
+	testing.expect_value(t, target.pending_charge, u16(0))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// A shot below 4 still charges through those flag bits.
+	place(shooter, target, 3, 0)
+	target.flags = 0xC4
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, shooter.shot, u8(3))
+	testing.expect_value(t, target.pending_charge, u16(3 * 0x6D6))
+	testing.expect_value(t, ds.side_score[0], u16(53))
+
+	// Bit 7 at 0x258 sets bit 5 and does not charge. 0x1C4 does the same.
+	place(shooter, target, 0x84, 0x258)
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(0x20))
+	testing.expect_value(t, target.pending_charge, u16(0))
+	testing.expect_value(t, shooter.shot, u8(0x84))
+	place(shooter, target, 0x84, 0x1C4)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(0x20))
+	testing.expect_value(t, target.pending_charge, u16(0))
+
+	// 0x1C0 charges 5 * (0x1EA - 0x1C0). Nibble 3 sets the bit and stops.
+	place(shooter, target, 0x84, 0x1C0)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.pending_charge, u16(5 * 0x2A))
+	testing.expect_value(t, ds.side_score[0], u16(2))
+	place(shooter, target, 0x83, 0)
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(0x20))
+	testing.expect_value(t, target.pending_charge, u16(0))
+	testing.expect_value(t, shooter.shot, u8(0x83))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// The same spot with nibble 4 charges 5 * 0x1EA. Bit 6 adds two more gaps and 0x19.
+	place(shooter, target, 0x84, 0)
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.pending_charge, u16(5 * 0x1EA))
+	testing.expect_value(t, shooter.shot, u8(0x84))
+	testing.expect_value(t, ds.side_score[0], u16(25))
+	place(shooter, target, 0xC4, 0)
+	ds.side_score[0] = 0
+	resolve_shot_hit(m, si, di)
+	testing.expect_value(t, target.byte_16, u8(0x20))
+	testing.expect_value(t, target.pending_charge, u16(7 * 0x1EA + 0x19))
+	testing.expect_value(t, shooter.shot, u8(0xC4))
+	testing.expect_value(t, ds.side_score[0], u16(35))
+	testing.expect_value(t, shooter.pending_charge, u16(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

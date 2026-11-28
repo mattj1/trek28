@@ -3546,3 +3546,150 @@ scale_hit_charge :: proc(m: ^Machine, source, target: ^Ship_Record, ax: u16) {
 	ds := transmute(^DS_Segment)&m.ds
 	add_score_div100(ds, source.own_side, scored)
 }
+
+// 1000:2e3d resolve_shot_hit.
+// The name is inferred. SI is the ship that owns the shot and DI is
+// the ship under it. The caller walks the 16 ships. When DI has flag
+// bits 0x44 and the teams match, this returns before measuring.
+//
+// The distance is from the shot at SI+19 to DI, shift 2. A shot with
+// bit 7 sets byte 0x16 bit 5 when that distance is at most 0x258.
+// At most 0x1C2, the charge is 5 * (0x1EA - AX), or 7 times that gap
+// plus 0x19 when shot bit 6 is set. A shot nibble below 4 then returns
+// without charging.
+//
+// Any other shot sets byte 0x16 bit 1 when the teams differ and the
+// distance is at most 0x258. At most 0x8C, the charge is the shot byte
+// times 8 * (0xC8 - AX) + 0x96. A shot of at least 4 with flag bits
+// 0x44 still set returns first. Otherwise that shot becomes 3 and the
+// multiplier is 0x41. The score uses the amount add_scaled_charge stored.
+
+// @proc 1000:2e3d
+// status: tested
+// Odin: resolve_shot_hit
+// 1000:2e3d  FUN_1000_2e3d:
+// 1000:2e3d      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2e40      74 09                    JZ 0x1000:2e4b
+// 1000:2e42      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
+// 1000:2e45      3a 44 18                 CMP AL,byte ptr [SI + 0x18]
+// 1000:2e48      75 01                    JNZ 0x1000:2e4b
+// 1000:2e4a      c3                       RET
+// 1000:2e4b  LAB_1000_2e4b:
+// 1000:2e4b      56                       PUSH SI
+// 1000:2e4c      83 c6 19                 ADD SI,0x19
+// 1000:2e4f      b1 02                    MOV CL,0x2
+// 1000:2e51      e8 70 f5                 CALL 0x1000:23c4
+// 1000:2e54      5e                       POP SI
+// 1000:2e55      f6 44 19 80              TEST byte ptr [SI + 0x19],0x80
+// 1000:2e59      74 31                    JZ 0x1000:2e8c
+// 1000:2e5b      3d 58 02                 CMP AX,0x258
+// 1000:2e5e      77 73                    JA 0x1000:2ed3
+// 1000:2e60      80 4d 16 20              OR byte ptr [DI + 0x16],0x20
+// 1000:2e64      3d c2 01                 CMP AX,0x1c2
+// 1000:2e67      77 6a                    JA 0x1000:2ed3
+// 1000:2e69      ba ea 01                 MOV DX,0x1ea
+// 1000:2e6c      2b d0                    SUB DX,AX
+// 1000:2e6e      8b c2                    MOV AX,DX
+// 1000:2e70      d1 e0                    SHL AX,0x1
+// 1000:2e72      03 d0                    ADD DX,AX
+// 1000:2e74      03 d0                    ADD DX,AX
+// 1000:2e76      f6 44 19 40              TEST byte ptr [SI + 0x19],0x40
+// 1000:2e7a      74 05                    JZ 0x1000:2e81
+// 1000:2e7c      03 d0                    ADD DX,AX
+// 1000:2e7e      83 c2 19                 ADD DX,0x19
+// 1000:2e81  LAB_1000_2e81:
+// 1000:2e81      8a 44 19                 MOV AL,byte ptr [SI + 0x19]
+// 1000:2e84      24 0f                    AND AL,0xf
+// 1000:2e86      2c 04                    SUB AL,0x4
+// 1000:2e88      78 49                    JS 0x1000:2ed3
+// 1000:2e8a      eb 3c                    JMP 0x1000:2ec8
+// 1000:2e8c  LAB_1000_2e8c:
+// 1000:2e8c      3d 58 02                 CMP AX,0x258
+// 1000:2e8f      77 42                    JA 0x1000:2ed3
+// 1000:2e91      8a 55 18                 MOV DL,byte ptr [DI + 0x18]
+// 1000:2e94      3a 54 18                 CMP DL,byte ptr [SI + 0x18]
+// 1000:2e97      74 04                    JZ 0x1000:2e9d
+// 1000:2e99      80 4d 16 02              OR byte ptr [DI + 0x16],0x2
+// 1000:2e9d  LAB_1000_2e9d:
+// 1000:2e9d      3d 8c 00                 CMP AX,0x8c
+// 1000:2ea0      77 31                    JA 0x1000:2ed3
+// 1000:2ea2      ba c8 00                 MOV DX,0xc8
+// 1000:2ea5      2b d0                    SUB DX,AX
+// 1000:2ea7      d1 e2                    SHL DX,0x1
+// 1000:2ea9      d1 e2                    SHL DX,0x1
+// 1000:2eab      d1 e2                    SHL DX,0x1
+// 1000:2ead      81 c2 96 00              ADD DX,0x96
+// 1000:2eb1      8a 44 19                 MOV AL,byte ptr [SI + 0x19]
+// 1000:2eb4      3c 04                    CMP AL,0x4
+// 1000:2eb6      72 0c                    JC 0x1000:2ec4
+// 1000:2eb8      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2ebb      75 16                    JNZ 0x1000:2ed3
+// 1000:2ebd      c6 44 19 03              MOV byte ptr [SI + 0x19],0x3
+// 1000:2ec1      ba 41 00                 MOV DX,0x41
+// 1000:2ec4  LAB_1000_2ec4:
+// 1000:2ec4      f7 e2                    MUL DX
+// 1000:2ec6      8b d0                    MOV DX,AX
+// 1000:2ec8  LAB_1000_2ec8:
+// 1000:2ec8      8b c2                    MOV AX,DX
+// 1000:2eca      e8 ae f4                 CALL 0x1000:237b
+// 1000:2ecd      8a 5c 17                 MOV BL,byte ptr [SI + 0x17]
+// 1000:2ed0      e8 01 00                 CALL 0x1000:2ed4
+// 1000:2ed3  LAB_1000_2ed3:
+// 1000:2ed3      c3                       RET
+
+resolve_shot_hit :: proc(m: ^Machine, si, di: u16) {
+	charge_and_score :: proc(ds: ^DS_Segment, shooter, target: ^Ship_Record, amount: u16) {
+		scored := add_scaled_charge(target, amount)
+		add_score_div100(ds, shooter.own_side, scored)
+	}
+
+	shooter := transmute(^Ship_Record)&m.ds[si]
+	target := transmute(^Ship_Record)&m.ds[di]
+	if target.flags & 0x44 != 0 && target.team == shooter.team {
+		return
+	}
+	ax, _ := distance_if_same_plane(m, add16(si, 0x19), di, 2)
+	ds := transmute(^DS_Segment)&m.ds
+	if shooter.shot & 0x80 != 0 {
+		if ax > 0x258 {
+			return
+		}
+		target.byte_16 |= 0x20
+		if ax > 0x1C2 {
+			return
+		}
+		gap := sub16(0x1EA, ax)
+		doubled := shl_word(gap, 1)
+		damage := add16(add16(gap, doubled), doubled)
+		if shooter.shot & 0x40 != 0 {
+			damage = add16(add16(damage, doubled), 0x19)
+		}
+		if shooter.shot & 0x0F < 4 {
+			return
+		}
+		charge_and_score(ds, shooter, target, damage)
+		return
+	}
+
+	if ax > 0x258 {
+		return
+	}
+	if target.team != shooter.team {
+		target.byte_16 |= 2
+	}
+	if ax > 0x8C {
+		return
+	}
+	gap := sub16(0xC8, ax)
+	damage := add16(shl_word(gap, 3), 0x96)
+	shot := shooter.shot
+	if shot >= 4 {
+		if target.flags & 0x44 != 0 {
+			return
+		}
+		shooter.shot = 3
+		damage = 0x41
+	}
+	product := u16(u32(shot) * u32(damage))
+	charge_and_score(ds, shooter, target, product)
+}
