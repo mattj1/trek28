@@ -71,6 +71,7 @@ odin run src
 | `1000:31d1` | `decay_impulse` | tested. The name is inferred. The impulse byte decrements when seek's low 5 bits are 0, byte `0x16` has bit 2, byte `0x2A` is above 2, and the actual nibble is above 6 |
 | `1000:37a1` | `cap_weapons_cooldown` | tested. The name is inferred. A cooldown above `0x0C` is stored as `0x0C` |
 | `1000:2b52` | `abs_word` | tested. The name is inferred. Bit 15 selects `NEG`. `0x8000` stays `0x8000` |
+| `1000:1a97` | `store_if_local_ship` | tested. AX is stored at DS:BX when `(current_side XOR local_side) & 3` is 0. A word at `FFFF` wraps onto `0000` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 

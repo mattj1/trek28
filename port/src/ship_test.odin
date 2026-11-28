@@ -2190,6 +2190,45 @@ test_to_upper :: proc(t: ^testing.T) {
 	testing.expect_value(t, to_upper(0xFF), u8(0xFF))
 }
 
+@(test)
+test_store_if_local_ship :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	raw := transmute(^[DS_SIZE]u8)ds
+
+	ds.current_side = 0
+	ds.local_side = 0
+	ds.side_score[1] = 0x1111
+	store_if_local_ship(ds, u16(offset_of(DS_Segment, side_score)) + 2, 0x1234)
+	testing.expect_value(t, ds.side_score[1], u16(0x1234))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// Side 4 matches side 0. Side 5 matches side 1.
+	ds.current_side = 4
+	ds.local_side = 0
+	store_if_local_ship(ds, 0xFFFF, 0xABCD)
+	testing.expect_value(t, raw[0xFFFF], u8(0xCD))
+	testing.expect_value(t, raw[0], u8(0xAB))
+
+	ds.current_side = 5
+	ds.local_side = 1
+	ds.side_score[2] = 0
+	store_if_local_ship(ds, u16(offset_of(DS_Segment, side_score)) + 4, 0x55AA)
+	testing.expect_value(t, ds.side_score[2], u16(0x55AA))
+
+	// A mismatch leaves the word alone, including a side pair that differs in the low 2 bits.
+	ds.current_side = 1
+	ds.local_side = 0
+	store_if_local_ship(ds, u16(offset_of(DS_Segment, side_score)) + 4, 0x0001)
+	testing.expect_value(t, ds.side_score[2], u16(0x55AA))
+
+	ds.current_side = 0
+	ds.local_side = 2
+	store_if_local_ship(ds, 0xFFFF, 0x0102)
+	testing.expect_value(t, raw[0xFFFF], u8(0xCD))
+	testing.expect_value(t, raw[0], u8(0xAB))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
