@@ -2826,6 +2826,89 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_hit_base :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	base := &ds.bases[0]
+	ship := Ship_Record{}
+
+	base[0] = 0x01
+	base[0x0B] = 0
+	set_base_energy(base, 0x1000)
+	ship.shot = 4
+	ship.own_side = 1
+	ds.local_side = 0
+	ds.sound_list = 0x1111
+	hit_base(ds, base, &ship, 0xA1)
+	testing.expect_value(t, base[0], u8(0x01))
+	testing.expect_value(t, ship.shot, u8(4))
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+	testing.expect_value(t, ds.sound_list, u16(0x1111))
+	testing.expect_value(t, ds.side_score[1], u16(0))
+
+	// 0xA0 hits. A shot below 4 only sets the flag bit.
+	ship.shot = 3
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base[0], u8(0x81))
+	testing.expect_value(t, ship.shot, u8(3))
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+	testing.expect_value(t, ds.sound_list, u16(0x1111))
+
+	// Shot 4 scores 50, becomes 3, and the local base arms the sound list.
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0)
+	testing.expect_value(t, ship.shot, u8(3))
+	testing.expect_value(t, ds.side_score[1], u16(50))
+	testing.expect_value(t, ds.sound_list, u16(0x00EE))
+	testing.expect_value(t, base_energy(base), u16(0x1000 - 0x1F4))
+	testing.expect_value(t, base[0x0B], u8(0))
+
+	// A different base side leaves the sound pointer alone.
+	ds.sound_list = 0x1111
+	base[0x0B] = 1
+	ship.shot = 0x7F
+	ship.own_side = 4
+	set_base_energy(base, 0x4E20)
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, ds.sound_list, u16(0x1111))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	testing.expect_value(t, ds.side_score[1], u16(50))
+	testing.expect_value(t, ship.shot, u8(3))
+	testing.expect_value(t, base_energy(base), u16(0x4E20 - 0x1F4))
+
+	// The sign bit floors the energy. 0x8000 - 0x1F4 stays positive.
+	set_base_energy(base, 0x8000)
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base_energy(base), u16(0x7E0C))
+
+	set_base_energy(base, 0x81F3)
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base_energy(base), u16(0x7FFF))
+
+	set_base_energy(base, 0x81F4)
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base_energy(base), u16(0))
+
+	set_base_energy(base, 0x1F4)
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base_energy(base), u16(0))
+
+	set_base_energy(base, 0x1F3)
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base_energy(base), u16(0))
+
+	set_base_energy(base, 0)
+	ship.shot = 4
+	hit_base(ds, base, &ship, 0xA0)
+	testing.expect_value(t, base_energy(base), u16(0))
+}
+
+@(test)
 test_discount_seek_distance :: proc(t: ^testing.T) {
 	ship := Ship_Record{}
 

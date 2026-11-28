@@ -247,31 +247,7 @@ fun_2b5b :: proc() {
 fun_2ba7 :: proc() {
 }
 
-// @proc 1000:2be8
-// listing: FUN_1000_2be8
-// status: unread
-// 1000:2be8  FUN_1000_2be8:
-// 1000:2be8      3d a0 00                 CMP AX,0xa0
-// 1000:2beb      77 30                    JA 0x1000:2c1d
-// 1000:2bed      80 0c 80                 OR byte ptr [SI],0x80
-// 1000:2bf0      80 7d 19 04              CMP byte ptr [DI + 0x19],0x4
-// 1000:2bf4      72 27                    JC 0x1000:2c1d
-// 1000:2bf6      a0 6f a2                 MOV AL,[0xa26f]
-// 1000:2bf9      3a 44 0b                 CMP AL,byte ptr [SI + 0xb]
-// 1000:2bfc      75 06                    JNZ 0x1000:2c04
-// 1000:2bfe      c7 06 62 a2 ee 00        MOV word ptr [0xa262],0xee
-// 1000:2c04  LAB_1000_2c04:
-// 1000:2c04      8a 5d 17                 MOV BL,byte ptr [DI + 0x17]
-// 1000:2c07      b8 88 13                 MOV AX,0x1388
-// 1000:2c0a      e8 c7 02                 CALL 0x1000:2ed4
-// 1000:2c0d      c6 45 19 03              MOV byte ptr [DI + 0x19],0x3
-// 1000:2c11      81 6c 08 f4 01           SUB word ptr [SI + 0x8],0x1f4
-// 1000:2c16      79 05                    JNS 0x1000:2c1d
-// 1000:2c18      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
-// 1000:2c1d  LAB_1000_2c1d:
-// 1000:2c1d      c3                       RET
-fun_2be8 :: proc() {
-}
+// 1000:2be8 hit_base is in ship.odin.
 
 // @proc 1000:2c1e
 // listing: FUN_1000_2c1e

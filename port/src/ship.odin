@@ -2744,3 +2744,57 @@ discount_seek_distance :: proc(ship: ^Ship_Record, ax: u16) -> u16 {
 	}
 	return value
 }
+
+// 1000:2be8 hit_base.
+// The name is inferred. AX above 0xA0 returns. Otherwise bit 7 of the
+// base flag is set. A shot below 4 returns. A base side equal to
+// local_side points sound_list at sound_divisors (0x00EE). The ship's
+// own side scores 0x1388 through add_score_div100, the shot becomes 3,
+// and the base energy loses 0x1F4. JNS keeps a result whose sign bit
+// is clear, including 0x8000 - 0x1F4. A set sign bit stores 0.
+
+// @proc 1000:2be8
+// status: tested
+// Odin: hit_base
+// 1000:2be8  FUN_1000_2be8:
+// 1000:2be8      3d a0 00                 CMP AX,0xa0
+// 1000:2beb      77 30                    JA 0x1000:2c1d
+// 1000:2bed      80 0c 80                 OR byte ptr [SI],0x80
+// 1000:2bf0      80 7d 19 04              CMP byte ptr [DI + 0x19],0x4
+// 1000:2bf4      72 27                    JC 0x1000:2c1d
+// 1000:2bf6      a0 6f a2                 MOV AL,[0xa26f]
+// 1000:2bf9      3a 44 0b                 CMP AL,byte ptr [SI + 0xb]
+// 1000:2bfc      75 06                    JNZ 0x1000:2c04
+// 1000:2bfe      c7 06 62 a2 ee 00        MOV word ptr [0xa262],0xee
+// 1000:2c04  LAB_1000_2c04:
+// 1000:2c04      8a 5d 17                 MOV BL,byte ptr [DI + 0x17]
+// 1000:2c07      b8 88 13                 MOV AX,0x1388
+// 1000:2c0a      e8 c7 02                 CALL 0x1000:2ed4
+// 1000:2c0d      c6 45 19 03              MOV byte ptr [DI + 0x19],0x3
+// 1000:2c11      81 6c 08 f4 01           SUB word ptr [SI + 0x8],0x1f4
+// 1000:2c16      79 05                    JNS 0x1000:2c1d
+// 1000:2c18      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:2c1d  LAB_1000_2c1d:
+// 1000:2c1d      c3                       RET
+
+hit_base :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record, ax: u16) {
+	if ax > 0xA0 {
+		return
+	}
+	base[0] |= 0x80
+	if ship.shot < 4 {
+		return
+	}
+	if ds.local_side == base[0x0B] {
+		ds.sound_list = 0x00EE
+	}
+	add_score_div100(ds, ship.own_side, 0x1388)
+	ship.shot = 3
+	energy := u16(base[8]) | u16(base[9]) << 8
+	next, _ := intrinsics.overflow_sub(energy, u16(0x1F4))
+	if next & 0x8000 != 0 {
+		next = 0
+	}
+	base[8] = u8(next)
+	base[9] = u8(next >> 8)
+}
