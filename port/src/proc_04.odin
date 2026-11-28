@@ -281,20 +281,7 @@ fun_427d :: proc() {
 
 // 1000:429b random_planet_coord is in planet.odin.
 
-// @proc 1000:42ac
-// listing: FUN_1000_42ac
-// status: unread
-// 1000:42ac  FUN_1000_42ac:
-// 1000:42ac      e8 cb 00                 CALL 0x1000:437a
-// 1000:42af      53                       PUSH BX
-// 1000:42b0      25 1f 00                 AND AX,0x1f
-// 1000:42b3      bb bd 42                 MOV BX,0x42bd
-// 1000:42b6      03 d8                    ADD BX,AX
-// 1000:42b8      2e 8a 07                 MOV AL,byte ptr CS:[BX]
-// 1000:42bb      5b                       POP BX
-// 1000:42bc      c3                       RET
-fun_42ac :: proc() {
-}
+// 1000:42ac random_planet_type is in planet.odin.
 
 // @proc 1000:42dd
 // listing: FUN_1000_42dd

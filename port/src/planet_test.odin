@@ -185,6 +185,28 @@ test_random_planet_coord :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_random_planet_type :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+
+	// Frame 4, seed 0. 0xC1B8 & 0x1F is 24, and CS:42BD[24] is 5.
+	ds.frame_count = 4
+	ds.rng_seed = 0
+	testing.expect_value(t, random_planet_type(m), u8(5))
+	testing.expect_value(t, ds.rng_seed, u16(0xC1B8))
+
+	// Frame 0, seed 3584. The low 5 bits are 31, the last table byte.
+	ds.frame_count = 0
+	ds.rng_seed = 3584
+	testing.expect_value(t, random_planet_type(m), u8(0x0E))
+	testing.expect_value(t, ds.rng_seed, u16(0x41BF))
+	testing.expect_value(t, m.cs[0x42BD], u8(1))
+	testing.expect_value(t, m.cs[0x42BD + 31], u8(0x0E))
+}
+
+@(test)
 test_step_orbit :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)

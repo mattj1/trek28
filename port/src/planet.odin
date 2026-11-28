@@ -121,6 +121,29 @@ random_planet_coord :: proc(ds: ^DS_Segment) -> u16 {
 	}
 }
 
+// 1000:42ac random_planet_type.
+// The name is inferred. The low 5 bits of mix_rng index the 32-byte
+// type table at CS:42BD. AH is clear, so the word result is that byte.
+
+// @proc 1000:42ac
+// status: tested
+// Odin: random_planet_type
+// 1000:42ac  FUN_1000_42ac:
+// 1000:42ac      e8 cb 00                 CALL 0x1000:437a
+// 1000:42af      53                       PUSH BX
+// 1000:42b0      25 1f 00                 AND AX,0x1f
+// 1000:42b3      bb bd 42                 MOV BX,0x42bd
+// 1000:42b6      03 d8                    ADD BX,AX
+// 1000:42b8      2e 8a 07                 MOV AL,byte ptr CS:[BX]
+// 1000:42bb      5b                       POP BX
+// 1000:42bc      c3                       RET
+
+random_planet_type :: proc(m: ^Machine) -> u8 {
+	ds := transmute(^DS_Segment)&m.ds
+	ax := mix_rng(ds) & 0x1F
+	return m.cs[0x42BD + int(ax)]
+}
+
 // 1000:43b1 step_orbit.
 // The notes already use this name. DI is one 11-byte planet.
 // Kind 0 at +08 returns with the phase and the position unchanged.
