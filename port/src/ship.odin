@@ -1383,3 +1383,190 @@ spawn_ship :: proc(ds: ^DS_Segment, ship: ^Ship_Record, index: u8) -> bool {
 	ship.byte_29 = 1
 	return false
 }
+
+// 1000:1f1c update_side_ships.
+// The notes already use this name. DI is the four ship records of one side.
+// 1000:1ee6 stores current_side as 0..3 and points DI at that side.
+//
+// byte_a295 counts records that are still alive at the end of the walk.
+// Bit 7 runs charge_impulse_and_heal, slew_impulse, drain_invisibility,
+// apply_damage_thresholds, and apply_energy_charge. If bit 7 is clear
+// after that, the walk falls through into the dead path, so a death flag
+// of 8 or 12 is decremented on this same call. A zero flag byte calls
+// spawn_ship with the slot index. Carry set leaves the count down. Any
+// other flag byte counts down, and reaching zero calls spawn_debris.
+//
+// A nonzero side_end returns after the walk. side_89d8 equal to 1 stores
+// end code 3 and leaves side_89dc alone. Otherwise a base energy of 0
+// clears ships remaining and decrements +0D when that byte is nonzero.
+// side_89dc receives the wrapping sum of the alive count and ships
+// remaining. A zero sum stores end code 1. A nonzero end code then clears
+// ships remaining, base energy, and +0D, clears flag bytes whose bit 7
+// is set on the side's own four records, stores 0 in id byte 5, and
+// zeroes the score. side_end, side_89d8, side_89dc, and side_score use
+// current_side directly. Bases, the wiped ships, and ids are masked
+// with 3, matching 1000:1ece.
+
+// @proc 1000:1f1c
+// status: tested
+// Odin: update_side_ships
+// 1000:1f1c  FUN_1000_1f1c:
+// 1000:1f1c      b1 00                    MOV CL,0x0
+// 1000:1f1e      c6 06 95 a2 00           MOV byte ptr [0xa295],0x0
+// 1000:1f23  LAB_1000_1f23:
+// 1000:1f23      fe 06 95 a2              INC byte ptr [0xa295]
+// 1000:1f27      51                       PUSH CX
+// 1000:1f28      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:1f2b      74 14                    JZ 0x1000:1f41
+// 1000:1f2d      e8 25 01                 CALL 0x1000:2055
+// 1000:1f30      e8 58 02                 CALL 0x1000:218b
+// 1000:1f33      e8 36 03                 CALL 0x1000:226c
+// 1000:1f36      e8 aa 01                 CALL 0x1000:20e3
+// 1000:1f39      e8 ce 01                 CALL 0x1000:210a
+// 1000:1f3c      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:1f3f      75 1d                    JNZ 0x1000:1f5e
+// 1000:1f41  LAB_1000_1f41:
+// 1000:1f41      fe 0e 95 a2              DEC byte ptr [0xa295]
+// 1000:1f45      f6 05 ff                 TEST byte ptr [DI],0xff
+// 1000:1f48      75 0d                    JNZ 0x1000:1f57
+// 1000:1f4a      59                       POP CX
+// 1000:1f4b      51                       PUSH CX
+// 1000:1f4c      e8 0a 25                 CALL 0x1000:4459
+// 1000:1f4f      72 0d                    JC 0x1000:1f5e
+// 1000:1f51      fe 06 95 a2              INC byte ptr [0xa295]
+// 1000:1f55      eb 07                    JMP 0x1000:1f5e
+// 1000:1f57  LAB_1000_1f57:
+// 1000:1f57      fe 0d                    DEC byte ptr [DI]
+// 1000:1f59      75 03                    JNZ 0x1000:1f5e
+// 1000:1f5b      e8 a4 00                 CALL 0x1000:2002
+// 1000:1f5e  LAB_1000_1f5e:
+// 1000:1f5e      83 c7 3b                 ADD DI,0x3b
+// 1000:1f61      59                       POP CX
+// 1000:1f62      fe c1                    INC CL
+// 1000:1f64      80 f9 04                 CMP CL,0x4
+// 1000:1f67      72 ba                    JC 0x1000:1f23
+// 1000:1f69      e8 62 ff                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:1f74  [ptr] 1000:9014 1000:9022 1000:9030 1000:903e
+// 1000:1f74  LAB_1000_1f74:
+// 1000:1f74      8b f3                    MOV SI,BX
+// 1000:1f76      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:1f7a      b7 00                    MOV BH,0x0
+// 1000:1f7c      80 bf e0 89 00           CMP byte ptr [BX + 0x89e0],0x0
+// 1000:1f81      75 7e                    JNZ 0x1000:2001
+// 1000:1f83      80 bf d8 89 01           CMP byte ptr [BX + 0x89d8],0x1
+// 1000:1f88      75 05                    JNZ 0x1000:1f8f
+// 1000:1f8a      b0 03                    MOV AL,0x3
+// 1000:1f8c      eb 26                    JMP 0x1000:1fb4
+// 1000:1f8f  LAB_1000_1f8f:
+// 1000:1f8f      83 7c 08 00              CMP word ptr [SI + 0x8],0x0
+// 1000:1f93      75 0d                    JNZ 0x1000:1fa2
+// 1000:1f95      c6 44 0a 00              MOV byte ptr [SI + 0xa],0x0
+// 1000:1f99      80 7c 0d 00              CMP byte ptr [SI + 0xd],0x0
+// 1000:1f9d      74 03                    JZ 0x1000:1fa2
+// 1000:1f9f      fe 4c 0d                 DEC byte ptr [SI + 0xd]
+// 1000:1fa2  LAB_1000_1fa2:
+// 1000:1fa2      a0 95 a2                 MOV AL,[0xa295]
+// 1000:1fa5      02 44 0a                 ADD AL,byte ptr [SI + 0xa]
+// 1000:1fa8      88 87 dc 89              MOV byte ptr [BX + 0x89dc],AL
+// 1000:1fac      3c 00                    CMP AL,0x0
+// 1000:1fae      b0 01                    MOV AL,0x1
+// 1000:1fb0      74 02                    JZ 0x1000:1fb4
+// 1000:1fb2      b0 00                    MOV AL,0x0
+// 1000:1fb4  LAB_1000_1fb4:
+// 1000:1fb4      88 87 e0 89              MOV byte ptr [BX + 0x89e0],AL
+// 1000:1fb8      3c 00                    CMP AL,0x0
+// 1000:1fba      74 45                    JZ 0x1000:2001
+// 1000:1fbc      c6 44 0a 00              MOV byte ptr [SI + 0xa],0x0
+// 1000:1fc0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:1fc5      c6 44 0d 00              MOV byte ptr [SI + 0xd],0x0
+// 1000:1fc9      e8 02 ff                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:1fd4  [ptr] 1000:8c64 1000:8d50 1000:8e3c 1000:8f28
+// 1000:1fd4  LAB_1000_1fd4:
+// 1000:1fd4      b9 04 00                 MOV CX,0x4
+// 1000:1fd7  LAB_1000_1fd7:
+// 1000:1fd7      f6 07 80                 TEST byte ptr [BX],0x80
+// 1000:1fda      74 03                    JZ 0x1000:1fdf
+// 1000:1fdc      c6 07 00                 MOV byte ptr [BX],0x0
+// 1000:1fdf  LAB_1000_1fdf:
+// 1000:1fdf      83 c3 3b                 ADD BX,0x3b
+// 1000:1fe2      e2 f3                    LOOP 0x1000:1fd7
+// 1000:1fe4      e8 e7 fe                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:1fef  [ptr] 1000:a226 1000:a231 1000:a23c 1000:a247
+// 1000:1fef  LAB_1000_1fef:
+// 1000:1fef      c6 47 05 00              MOV byte ptr [BX + 0x5],0x0
+// 1000:1ff3      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:1ff7      32 ff                    XOR BH,BH
+// 1000:1ff9      d1 e3                    SHL BX,0x1
+// 1000:1ffb      c7 87 e4 89 00 00        MOV word ptr [BX + 0x89e4],0x0
+// 1000:2001  LAB_1000_2001:
+// 1000:2001      c3                       RET
+
+update_side_ships :: proc(ds: ^DS_Segment, ships: ^[4]Ship_Record) {
+	ds.byte_a295 = 0
+	for index in 0 ..< 4 {
+		ds.byte_a295 += 1
+		ship := &ships[index]
+		if ship.flags & 0x80 != 0 {
+			charge_impulse_and_heal(ds, ship)
+			slew_impulse(ship)
+			drain_invisibility(ds, ship)
+			apply_damage_thresholds(ship)
+			apply_energy_charge(ds, ship)
+			if ship.flags & 0x80 != 0 {
+				continue
+			}
+		}
+		ds.byte_a295 -= 1
+		if ship.flags == 0 {
+			if !spawn_ship(ds, ship, u8(index)) {
+				ds.byte_a295 += 1
+			}
+		} else {
+			ship.flags -= 1
+			if ship.flags == 0 {
+				spawn_debris(ds, ship)
+			}
+		}
+	}
+
+	side := ds.current_side
+	if ds.side_end[side] != 0 {
+		return
+	}
+
+	base := &ds.bases[side & 3]
+	end_code: u8 = 0
+	if ds.side_89d8[side] == 1 {
+		end_code = 3
+	} else {
+		energy := u16(base[8]) | u16(base[9]) << 8
+		if energy == 0 {
+			base[0x0A] = 0
+			if base[0x0D] != 0 {
+				base[0x0D] -= 1
+			}
+		}
+		sum, _ := intrinsics.overflow_add(ds.byte_a295, base[0x0A])
+		ds.side_89dc[side] = sum
+		if sum == 0 {
+			end_code = 1
+		}
+	}
+	ds.side_end[side] = end_code
+	if end_code == 0 {
+		return
+	}
+
+	base[0x0A] = 0
+	base[8] = 0
+	base[9] = 0
+	base[0x0D] = 0
+	side_ships := &ds.ships[side & 3]
+	for &slot in side_ships {
+		if slot.flags & 0x80 != 0 {
+			slot.flags = 0
+		}
+	}
+	ds.ids[side & 3][5] = 0
+	ds.side_score[side] = 0
+}

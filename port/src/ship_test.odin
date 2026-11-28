@@ -1415,6 +1415,357 @@ test_move_ships_and_shots :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_update_side_ships :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	blank :: proc(ds: ^DS_Segment) {
+		ds.ships = {}
+		ds.bases = {}
+		ds.debris = {}
+		ds.side_end = {}
+		ds.side_89d8 = {}
+		ds.side_89dc = {}
+		ds.side_score = {}
+		ds.ids = {}
+		ds.byte_a295 = 0
+		ds.frame_count = 1
+		ds.current_side = 0
+		ds.mode_bits = 0
+	}
+
+	// One alive ship and three empty slots. The base has no ships left.
+	blank(ds)
+	alive := &ds.ships[0][0]
+	alive.flags = 0x80
+	alive.energy = 5000
+	alive.formation = 7
+	for index in 1 ..< 4 {
+		ds.ships[0][index].formation = 9
+		ds.ships[0][index].byte_34 = 4
+		ds.ships[0][index].seek = 2
+	}
+	ds.bases[0][0x0A] = 0
+	set_base_energy(&ds.bases[0], 1000)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.byte_a295, u8(1))
+	testing.expect_value(t, ds.side_89dc[0], u8(1))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+	testing.expect_value(t, alive.flags, u8(0x80))
+	testing.expect_value(t, alive.energy, u16(5000))
+	testing.expect_value(t, alive.formation, u16(7))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(1000))
+	for index in 1 ..< 4 {
+		testing.expect_value(t, ds.ships[0][index].flags, u8(0))
+		testing.expect_value(t, ds.ships[0][index].formation, u16(0))
+		testing.expect_value(t, ds.ships[0][index].byte_34, u8(0))
+		testing.expect_value(t, ds.ships[0][index].seek, u8(0))
+	}
+
+	// Two ships spawn. The last two slots refuse once the stock is gone.
+	blank(ds)
+	ds.bases[0][0x0A] = 2
+	set_base_energy(&ds.bases[0], 5000)
+	ds.bases[0][6] = 0x14
+	ds.ids[0][0] = 1
+	ds.ids[0][4] = 0
+	ds.ships[0][2].formation = 3
+	ds.ships[0][3].formation = 3
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[0][0].heading, u8(0x00))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(0x03E8))
+	testing.expect_value(t, ds.ships[0][0].impulse, u8(0x11))
+	testing.expect_value(t, ds.ships[0][0].torpedoes, u8(0))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[0][1].heading, u8(0x44))
+	testing.expect_value(t, ds.ships[0][2].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][2].formation, u16(0))
+	testing.expect_value(t, ds.ships[0][3].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][3].formation, u16(0))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(4800))
+	testing.expect_value(t, ds.bases[0][6], u8(0x14))
+	testing.expect_value(t, ds.ids[0][0], u8(1))
+	testing.expect_value(t, ds.ids[0][4], u8(0))
+	testing.expect_value(t, ds.byte_a295, u8(2))
+	testing.expect_value(t, ds.side_89dc[0], u8(2))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+
+	// Slot 2 is the one that spawns. Its heading is index times 68.
+	blank(ds)
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 5000
+	ds.ships[0][1].flags = 0x80
+	ds.ships[0][1].energy = 5000
+	ds.ships[0][3].formation = 8
+	ds.bases[0][0x0A] = 1
+	set_base_energy(&ds.bases[0], 1000)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(5000))
+	testing.expect_value(t, ds.ships[0][0].heading, u8(0))
+	testing.expect_value(t, ds.ships[0][1].energy, u16(5000))
+	testing.expect_value(t, ds.ships[0][2].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[0][2].heading, u8(0x88))
+	testing.expect_value(t, ds.ships[0][2].energy, u16(0x03E8))
+	testing.expect_value(t, ds.ships[0][3].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][3].formation, u16(0))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(900))
+	testing.expect_value(t, ds.byte_a295, u8(3))
+	testing.expect_value(t, ds.side_89dc[0], u8(3))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+
+	// A flag of 1 reaches zero and copies the wreck. A flag of 5 counts down.
+	blank(ds)
+	ds.ships[0][0].flags = 1
+	ds.ships[0][0].x = 0x1234
+	ds.ships[0][0].y = 0x00AB
+	ds.ships[0][0].plane = 4
+	ds.ships[0][0].team = 6
+	ds.ships[0][1].flags = 5
+	ds.ships[0][2].flags = 3
+	ds.ships[0][3].flags = 3
+	ds.bases[0][0x0A] = 1
+	set_base_energy(&ds.bases[0], 1000)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(4))
+	testing.expect_value(t, ds.ships[0][2].flags, u8(2))
+	testing.expect_value(t, ds.ships[0][3].flags, u8(2))
+	testing.expect_value(t, ds.debris[0][0], u8(0xC8))
+	testing.expect_value(t, ds.debris[0][1], u8(0x34))
+	testing.expect_value(t, ds.debris[0][2], u8(0x12))
+	testing.expect_value(t, ds.debris[0][3], u8(0xAB))
+	testing.expect_value(t, ds.debris[0][4], u8(0x00))
+	testing.expect_value(t, ds.debris[0][5], u8(4))
+	testing.expect_value(t, ds.debris[0][6], u8(6))
+	testing.expect_value(t, ds.debris[1][0], u8(0))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(1))
+	testing.expect_value(t, ds.byte_a295, u8(0))
+	testing.expect_value(t, ds.side_89dc[0], u8(1))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+
+	// Energy death stores flag 8, and this walk immediately decrements it to 7.
+	blank(ds)
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 50
+	ds.ships[0][0].pending_charge = 100
+	ds.ships[0][1].flags = 2
+	ds.ships[0][2].flags = 2
+	ds.ships[0][3].flags = 2
+	ds.bases[0][0x0A] = 1
+	set_base_energy(&ds.bases[0], 1000)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(7))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(50))
+	testing.expect_value(t, ds.ships[0][0].pending_charge, u16(0))
+	testing.expect_value(t, ds.ships[0][0].mines, u8(0))
+	testing.expect_value(t, ds.debris[0][0], u8(0))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(1))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(1))
+	testing.expect_value(t, ds.byte_a295, u8(0))
+	testing.expect_value(t, ds.side_89dc[0], u8(1))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+
+	// A charge of at least 0xC350 stores flag 12, then this walk decrements it to 11.
+	blank(ds)
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 50
+	ds.ships[0][0].pending_charge = 0xC350
+	ds.ships[0][1].flags = 2
+	ds.ships[0][2].flags = 2
+	ds.ships[0][3].flags = 2
+	ds.bases[0][0x0A] = 1
+	set_base_energy(&ds.bases[0], 1000)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(11))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(50))
+	testing.expect_value(t, ds.ships[0][0].pending_charge, u16(0))
+	testing.expect_value(t, ds.debris[0][0], u8(0))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(1))
+
+	// A side that is already out still updates ships, then returns. The empty slots spawn.
+	blank(ds)
+	ds.side_end[0] = 2
+	ds.side_89dc[0] = 9
+	ds.side_score[0] = 40
+	ds.ids[0][5] = 6
+	ds.ships[0][0].flags = 1
+	ds.ships[0][0].x = 0x0007
+	ds.ships[0][0].y = 0x0008
+	ds.ships[0][0].plane = 1
+	ds.ships[0][0].team = 2
+	ds.bases[0][0x0A] = 3
+	set_base_energy(&ds.bases[0], 2000)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0))
+	testing.expect_value(t, ds.debris[0][0], u8(0xC8))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[0][1].heading, u8(0x44))
+	testing.expect_value(t, ds.ships[0][2].heading, u8(0x88))
+	testing.expect_value(t, ds.ships[0][3].heading, u8(0xCC))
+	testing.expect_value(t, ds.byte_a295, u8(3))
+	testing.expect_value(t, ds.side_end[0], u8(2))
+	testing.expect_value(t, ds.side_89dc[0], u8(9))
+	testing.expect_value(t, ds.side_score[0], u16(40))
+	testing.expect_value(t, ds.ids[0][5], u8(6))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(1700))
+
+	// side_89d8 of 1 stores end code 3. The ship survives the zeroed energy, then the wipe clears it.
+	blank(ds)
+	ds.frame_count = 0
+	ds.side_89d8[0] = 1
+	ds.side_89dc[0] = 9
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 5000
+	ds.ships[0][1].flags = 2
+	ds.ships[0][2].flags = 2
+	ds.ships[0][3].flags = 2
+	ds.bases[0][0x0A] = 4
+	ds.bases[0][0x0D] = 4
+	set_base_energy(&ds.bases[0], 1000)
+	ds.ids[0][0] = 0x42
+	ds.ids[0][4] = 2
+	ds.ids[0][5] = 7
+	ds.side_score[0] = 30
+	ds.side_score[1] = 50
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(10))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(1))
+	testing.expect_value(t, ds.ships[0][2].flags, u8(1))
+	testing.expect_value(t, ds.ships[0][3].flags, u8(1))
+	testing.expect_value(t, ds.side_end[0], u8(3))
+	testing.expect_value(t, ds.side_89dc[0], u8(9))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0))
+	testing.expect_value(t, ds.bases[0][0x0D], u8(0))
+	testing.expect_value(t, ds.ids[0][5], u8(0))
+	testing.expect_value(t, ds.ids[0][4], u8(2))
+	testing.expect_value(t, ds.ids[0][0], u8(0x42))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	testing.expect_value(t, ds.side_score[1], u16(50))
+
+	// Base energy 0 clears the ship stock and decrements +0D. A living ship keeps the end code at 0.
+	blank(ds)
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 5000
+	ds.ships[0][1].flags = 2
+	ds.ships[0][2].flags = 2
+	ds.ships[0][3].flags = 2
+	ds.bases[0][0x0A] = 5
+	ds.bases[0][0x0D] = 4
+	set_base_energy(&ds.bases[0], 0)
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(5000))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, ds.bases[0][0x0D], u8(3))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0))
+	testing.expect_value(t, ds.byte_a295, u8(1))
+	testing.expect_value(t, ds.side_89dc[0], u8(1))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+
+	// One living ship plus a remaining count of 0xFF wraps the sum and wipes the side.
+	blank(ds)
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 5000
+	ds.ships[0][1].flags = 2
+	ds.ships[0][2].flags = 2
+	ds.ships[0][3].flags = 2
+	ds.bases[0][0x0A] = 0xFF
+	ds.bases[0][0x0D] = 4
+	set_base_energy(&ds.bases[0], 1000)
+	ds.side_score[0] = 12
+	ds.ids[0][5] = 3
+	update_side_ships(ds, &ds.ships[0])
+	testing.expect_value(t, ds.byte_a295, u8(1))
+	testing.expect_value(t, ds.side_89dc[0], u8(0))
+	testing.expect_value(t, ds.side_end[0], u8(1))
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(5000))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(1))
+	testing.expect_value(t, ds.ships[0][2].flags, u8(1))
+	testing.expect_value(t, ds.ships[0][3].flags, u8(1))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0))
+	testing.expect_value(t, ds.bases[0][0x0D], u8(0))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	testing.expect_value(t, ds.ids[0][5], u8(0))
+
+	// Side 1's walk leaves side 0 alone.
+	blank(ds)
+	ds.current_side = 1
+	ds.ships[1][0].flags = 0x80
+	ds.ships[1][0].energy = 5000
+	ds.ships[1][1].formation = 9
+	ds.bases[1][0x0A] = 0
+	set_base_energy(&ds.bases[1], 1000)
+	ds.bases[0][0x0A] = 9
+	set_base_energy(&ds.bases[0], 0x1111)
+	ds.side_89dc[0] = 8
+	ds.side_score[0] = 77
+	ds.ids[0][5] = 4
+	ds.ids[0][4] = 1
+	update_side_ships(ds, &ds.ships[1])
+	testing.expect_value(t, ds.byte_a295, u8(1))
+	testing.expect_value(t, ds.side_89dc[1], u8(1))
+	testing.expect_value(t, ds.side_end[1], u8(0))
+	testing.expect_value(t, ds.ships[1][0].flags, u8(0x80))
+	testing.expect_value(t, ds.ships[1][0].energy, u16(5000))
+	testing.expect_value(t, ds.ships[1][1].flags, u8(0))
+	testing.expect_value(t, ds.ships[1][1].formation, u16(0))
+	testing.expect_value(t, ds.bases[1][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[1]), u16(1000))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(9))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0x1111))
+	testing.expect_value(t, ds.side_89dc[0], u8(8))
+	testing.expect_value(t, ds.side_end[0], u8(0))
+	testing.expect_value(t, ds.side_score[0], u16(77))
+	testing.expect_value(t, ds.ids[0][5], u8(4))
+	testing.expect_value(t, ds.ids[0][4], u8(1))
+
+	// The wipe clears the side's own records, including ones this call did not walk.
+	blank(ds)
+	local: [4]Ship_Record
+	local[0].formation = 4
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 400
+	ds.ships[0][1].flags = 2
+	ds.ships[1][0].flags = 0x80
+	ds.bases[0][0x0A] = 0
+	ds.bases[0][0x0D] = 4
+	set_base_energy(&ds.bases[0], 1000)
+	ds.side_score[0] = 15
+	ds.side_score[1] = 60
+	ds.ids[0][0] = 0x41
+	ds.ids[0][5] = 3
+	ds.ids[1][5] = 8
+	update_side_ships(ds, &local)
+	testing.expect_value(t, local[0].flags, u8(0))
+	testing.expect_value(t, local[0].formation, u16(0))
+	testing.expect_value(t, ds.ships[0][0].flags, u8(0))
+	testing.expect_value(t, ds.ships[0][0].energy, u16(400))
+	testing.expect_value(t, ds.ships[0][1].flags, u8(2))
+	testing.expect_value(t, ds.ships[1][0].flags, u8(0x80))
+	testing.expect_value(t, ds.side_end[0], u8(1))
+	testing.expect_value(t, ds.side_89dc[0], u8(0))
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0))
+	testing.expect_value(t, ds.bases[0][0x0D], u8(0))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	testing.expect_value(t, ds.side_score[1], u16(60))
+	testing.expect_value(t, ds.ids[0][0], u8(0x41))
+	testing.expect_value(t, ds.ids[0][5], u8(0))
+	testing.expect_value(t, ds.ids[1][5], u8(8))
+}
+
+@(test)
 test_spawn_ship :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

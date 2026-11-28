@@ -42,6 +42,7 @@ odin run src
 | `1000:382a` | `step_position` | tested. One step from the word table at `CS:387C`. Heading bits 2–3 rotate the vector, and both axes are masked with `0x3FFF` |
 | `1000:37ac` | `move_ships_and_shots` | tested. Walks the 24 records at `8A8C`. An alive record steps on its actual impulse. Warp at impulse 11 or more charges `0x64` and adds 9 to the speed. A shot steps from `+1F`, then counts down and clears at `0x80` or `0xC0` |
 | `1000:4459` | `spawn_ship` | tested. A base with no ships left, or energy at or below 200, returns carry and only clears formation, byte 34, and seek. Otherwise it spends one ship and 100 energy, zeroes the record, and fills side, team, plane, position, and a heading of index times 68 |
+| `1000:1f1c` | `update_side_ships` | tested. Four records run the alive chain, a countdown, or a spawn. A side already out returns. End code 3, or a zero sum of living ships and ships remaining, wipes the base, the alive flags, id byte 5, and the score |
 | `1000:221e` | `slew_heading` | tested. Actual heading steps toward desired by 1 or 2 around the 16-step circle. Seek distance `<= 0xFA` copies desired into actual |
 | `1000:21af` | `step_impulse` | tested. Actual impulse steps by 1 when `impulse_wait` reaches 0, and charges `2 * gap`. A zero wait only arms the countdown |
 | `1000:218b` | `slew_impulse` | tested. Slews heading, pulls a desired impulse of 11 down to 10 while warp is 0, then stores the nibble from `step_impulse` |
@@ -55,4 +56,4 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:1f1c` `update_side_ships` walks the four ships of the current side. An alive ship runs the charge, slew, invisibility, damage, and energy procedures. A zero flag byte tries to spawn. Any other flag byte counts down, and at zero copies the wreck into a debris slot. The assembly is in `src/proc_02.odin`.
+`1000:1ee6` updates every side. It calls `1000:22a2` and `1000:202f` before `update_side_ships`. `1000:22a2` calls the planet procedures `3228`, `43b1`, `437a`, and `2310`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported.

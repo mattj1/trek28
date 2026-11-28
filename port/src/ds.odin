@@ -291,7 +291,7 @@ DS_Segment :: struct #packed {
 	side_flags: [4]u8,
 	// 89D8. One byte per side. Key 0x85 ORs bit 0. 1000:1f83 and 1000:205b compare the byte with 1, and 1000:2055 then zeros that ship's energy. The other bits are open.
 	side_89d8: [4]u8,
-	// 89DC. One byte per side. 1000:4b65 prints it after '#' on the score line. 1000:1fa8 stores AL through BX. Instructions stores 0x0A in the first two bytes. What increments it in play is open.
+	// 89DC. One byte per side. 1000:1fa8 stores the sum of the walk's living ships and the base's ships remaining. 1000:4b65 prints it after '#' on the score line. Instructions stores 0x0A in the first two bytes.
 	side_89dc: [4]u8,
 	// 89E0. 0 while that side is still in. Nonzero selects the end text. 1000:16f0 compares the word at 89E0, and 1000:16f7 stores 0x0303 at 89E2. Those are paired byte writes.
 	side_end: [4]u8,
@@ -423,7 +423,7 @@ DS_Segment :: struct #packed {
 	view_max_y: u16,
 	// A293. Write position in offscreen. 1000:5669 stores row * 0x54 + column + 0x3F01.
 	frame_cursor: u16,
-	// A295. 1000:1f1e zeros it, then the ship walk increments and decrements it. Role is open.
+	// A295. 1000:1f1c zeros it and counts ships that stay alive through that side's walk. The tail adds the base's ships remaining and stores the sum in side_89dc.
 	byte_a295: u8,
 	// A296. 1000:4bda reads it into BL and 1000:4bec writes BL back. Role is open.
 	byte_a296: u8,
