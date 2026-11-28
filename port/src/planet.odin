@@ -215,6 +215,78 @@ planet_array_for_record :: proc(ds: ^DS_Segment, si: u16) -> (array: ^[0x50][11]
 	return planet_array_for_level(ds, raw[add16(si, 5)])
 }
 
+// 1000:425b reject_near_planet.
+// The name is inferred. Carry set means another occupied planet on
+// this level is closer than 0x28A. SI is the record being placed.
+// The level byte at SI+5 selects the array. A record with X word 0 is
+// empty, and SI itself is skipped. distance_if_same_plane uses shift 2.
+// 0xFFFF and 0xFFFE are not below 0x28A, so a different plane or a
+// distance that does not fit does not reject.
+// 8086 LOOP with CX=0 repeats 65536 times. The count is objects_per_level,
+// and a zero count walks nothing here.
+
+// @proc 1000:425b
+// status: tested
+// Odin: reject_near_planet
+// 1000:425b  FUN_1000_425b:
+// 1000:425b      51                       PUSH CX
+// 1000:425c      e8 c6 ef                 CALL 0x1000:3225
+// 1000:425f  LAB_1000_425f:
+// 1000:425f      83 7d 01 00              CMP word ptr [DI + 0x1],0x0
+// 1000:4263      74 10                    JZ 0x1000:4275
+// 1000:4265      3b f7                    CMP SI,DI
+// 1000:4267      74 0c                    JZ 0x1000:4275
+// 1000:4269      51                       PUSH CX
+// 1000:426a      b1 02                    MOV CL,0x2
+// 1000:426c      e8 55 e1                 CALL 0x1000:23c4
+// 1000:426f      59                       POP CX
+// 1000:4270      3d 8a 02                 CMP AX,0x28a
+// 1000:4273      72 06                    JC 0x1000:427b
+// 1000:4275  LAB_1000_4275:
+// 1000:4275      83 c7 0b                 ADD DI,0xb
+// 1000:4278      e2 e5                    LOOP 0x1000:425f
+// 1000:427a      f8                       CLC
+// 1000:427b  LAB_1000_427b:
+// 1000:427b      59                       POP CX
+// 1000:427c      c3                       RET
+
+reject_near_planet :: proc(m: ^Machine, si: u16) -> bool {
+	ds := transmute(^DS_Segment)&m.ds
+	array, count := planet_array_for_record(ds, si)
+	base := planet_array_offset(ds, array)
+	for i in 0 ..< count {
+		di := add16(base, u16(i) * 0x0B)
+		if read_u16(&m.ds, add16(di, 1)) == 0 {
+			continue
+		}
+		if si == di {
+			continue
+		}
+		ax, _ := distance_if_same_plane(m, si, di, 2)
+		if ax < 0x28A {
+			return true
+		}
+	}
+	return false
+}
+
+// The four planet arrays are contiguous. A count above 0x50 walks
+// out of the selected array into whatever follows it.
+@(private)
+planet_array_offset :: proc(ds: ^DS_Segment, array: ^[0x50][11]u8) -> u16 {
+	base := u16(offset_of(DS_Segment, planets))
+	if array == &ds.planets[0] {
+		return base
+	}
+	if array == &ds.planets[1] {
+		return add16(base, 0x370)
+	}
+	if array == &ds.planets[2] {
+		return add16(base, 0x6E0)
+	}
+	return add16(base, 0xA50)
+}
+
 // 1000:41f0 timed_type.
 // The name is inferred. When mode bit 0 is set, the type byte in AL
 // is ORed with 0xF0. Otherwise AL is unchanged.

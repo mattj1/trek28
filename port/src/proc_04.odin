@@ -263,32 +263,7 @@ fun_41fa :: proc() {
 
 // 1000:4217 reject_near_base is in planet.odin.
 
-// @proc 1000:425b
-// listing: FUN_1000_425b
-// status: unread
-// 1000:425b  FUN_1000_425b:
-// 1000:425b      51                       PUSH CX
-// 1000:425c      e8 c6 ef                 CALL 0x1000:3225
-// 1000:425f  LAB_1000_425f:
-// 1000:425f      83 7d 01 00              CMP word ptr [DI + 0x1],0x0
-// 1000:4263      74 10                    JZ 0x1000:4275
-// 1000:4265      3b f7                    CMP SI,DI
-// 1000:4267      74 0c                    JZ 0x1000:4275
-// 1000:4269      51                       PUSH CX
-// 1000:426a      b1 02                    MOV CL,0x2
-// 1000:426c      e8 55 e1                 CALL 0x1000:23c4
-// 1000:426f      59                       POP CX
-// 1000:4270      3d 8a 02                 CMP AX,0x28a
-// 1000:4273      72 06                    JC 0x1000:427b
-// 1000:4275  LAB_1000_4275:
-// 1000:4275      83 c7 0b                 ADD DI,0xb
-// 1000:4278      e2 e5                    LOOP 0x1000:425f
-// 1000:427a      f8                       CLC
-// 1000:427b  LAB_1000_427b:
-// 1000:427b      59                       POP CX
-// 1000:427c      c3                       RET
-fun_425b :: proc() {
-}
+// 1000:425b reject_near_planet is in planet.odin.
 
 // @proc 1000:427d
 // listing: FUN_1000_427d

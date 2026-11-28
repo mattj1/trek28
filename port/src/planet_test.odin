@@ -56,6 +56,81 @@ test_mix_rng :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_reject_near_planet :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	origin := planet_at(0, 0)
+	other := planet_at(0, 1)
+
+	// A zero count walks nothing. 8086 LOOP would repeat 65536 times.
+	ds.objects_per_level = 0
+	place_object(m, origin, 10, 10)
+	write_u8(&m.ds, add16(origin, 5), 0)
+	testing.expect_value(t, reject_near_planet(m, origin), false)
+
+	// The record itself is skipped, and an X of 0 is empty.
+	ds.objects_per_level = 2
+	place_object(m, other, 0, 10)
+	write_u8(&m.ds, add16(other, 5), 0)
+	testing.expect_value(t, reject_near_planet(m, origin), false)
+
+	// Same point and same plane rejects.
+	place_object(m, other, 10, 10)
+	testing.expect_value(t, reject_near_planet(m, origin), true)
+
+	// A different plane returns 0xFFFE, which is not below 0x28A.
+	write_u8(&m.ds, add16(other, 5), 1)
+	testing.expect_value(t, reject_near_planet(m, origin), false)
+	write_u8(&m.ds, add16(other, 5), 0)
+
+	// Too far returns 0xFFFF and does not reject.
+	place_object(m, other, 10, 0x2010)
+	testing.expect_value(t, reject_near_planet(m, origin), false)
+
+	// A gap of 0x200 still comes back below 0x28A. A gap of 0x300 does not.
+	// Equality would not reject. The sqrt step rounds, so the raw gap is not the compare.
+	place_object(m, other, 10, 10 + 0x200)
+	ax, _ := distance_if_same_plane(m, origin, other, 2)
+	testing.expect(t, ax < 0x28A)
+	testing.expect_value(t, reject_near_planet(m, origin), true)
+	place_object(m, other, 10, 10 + 0x300)
+	ax, _ = distance_if_same_plane(m, origin, other, 2)
+	testing.expect(t, ax >= 0x28A)
+	testing.expect_value(t, reject_near_planet(m, origin), false)
+
+	// Level 1 walks planets[1]. A neighbor on level 0 does not count.
+	level1 := planet_at(1, 0)
+	level1_next := planet_at(1, 1)
+	place_object(m, level1, 20, 20)
+	write_u8(&m.ds, add16(level1, 5), 1)
+	place_object(m, origin, 20, 20)
+	write_u8(&m.ds, add16(origin, 5), 0)
+	place_object(m, level1_next, 0, 0)
+	write_u8(&m.ds, add16(level1_next, 5), 1)
+	testing.expect_value(t, reject_near_planet(m, level1), false)
+	place_object(m, level1_next, 20, 20)
+	testing.expect_value(t, reject_near_planet(m, level1), true)
+
+	// Count 0x51 walks out of planets[0] into planets[1].
+	ds.objects_per_level = 0x51
+	place_object(m, other, 0, 0)
+	place_object(m, origin, 30, 30)
+	write_u8(&m.ds, add16(origin, 5), 0)
+	place_object(m, level1, 0, 0)
+	testing.expect_value(t, reject_near_planet(m, origin), false)
+	place_object(m, level1, 30, 30)
+	write_u8(&m.ds, add16(level1, 5), 0)
+	testing.expect_value(t, reject_near_planet(m, origin), true)
+}
+
+@(private)
+planet_at :: proc(level, index: u16) -> u16 {
+	return add16(u16(offset_of(DS_Segment, planets)), add16(level * 0x370, index * 0x0B))
+}
+
+@(test)
 test_random_base_coord :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)
