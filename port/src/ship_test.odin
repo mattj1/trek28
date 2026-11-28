@@ -782,6 +782,52 @@ test_spawn_debris :: proc(t: ^testing.T) {
 	testing.expect_value(t, ship.x, u16(1))
 }
 
+@(test)
+test_tick_mine_lifetimes :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.bases[0][6] = 20
+	ds.bases[0][0] = 0x80
+	ds.bases[1][6] = 0xFF
+	ds.mines[0][0][0] = 0
+	ds.mines[0][0][1] = 0x11
+	ds.mines[0][1][0] = 1
+	ds.mines[0][1][3] = 0x22
+	ds.mines[0][2][0] = 2
+	ds.mines[0][3][0] = 3
+	ds.mines[0][4][0] = 0x10
+	ds.mines[1][0][0] = 1
+	ds.mines[1][1][0] = 1
+	ds.mines[3][19][0] = 4
+	ds.frame_count = 1
+
+	tick_mine_lifetimes(ds)
+	testing.expect_value(t, ds.mines[0][0][0], u8(0))
+	testing.expect_value(t, ds.mines[0][0][1], u8(0x11))
+	testing.expect_value(t, ds.mines[0][1][0], u8(0))
+	testing.expect_value(t, ds.mines[0][1][3], u8(0x22))
+	testing.expect_value(t, ds.mines[0][2][0], u8(1))
+	testing.expect_value(t, ds.mines[0][3][0], u8(3))
+	testing.expect_value(t, ds.mines[0][4][0], u8(0x10))
+	testing.expect_value(t, ds.bases[0][6], u8(21))
+	testing.expect_value(t, ds.bases[0][0], u8(0x80))
+	// Two expirations on side 1 wrap the stock byte.
+	testing.expect_value(t, ds.mines[1][0][0], u8(0))
+	testing.expect_value(t, ds.mines[1][1][0], u8(0))
+	testing.expect_value(t, ds.bases[1][6], u8(1))
+	testing.expect_value(t, ds.mines[3][19][0], u8(4))
+
+	// Frame low byte 0 decrements lifetimes above 2. The high byte is ignored.
+	ds.frame_count = 0x0100
+	ds.mines[0][2][0] = 2
+	tick_mine_lifetimes(ds)
+	testing.expect_value(t, ds.mines[0][2][0], u8(1))
+	testing.expect_value(t, ds.mines[0][3][0], u8(2))
+	testing.expect_value(t, ds.mines[0][4][0], u8(0x0F))
+	testing.expect_value(t, ds.mines[3][19][0], u8(3))
+	testing.expect_value(t, ds.bases[0][6], u8(21))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

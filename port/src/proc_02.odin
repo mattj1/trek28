@@ -291,41 +291,7 @@ fun_22a2 :: proc() {
 fun_2310 :: proc() {
 }
 
-// @proc 1000:2343
-// listing: FUN_1000_2343
-// status: unread
-// 1000:2343  FUN_1000_2343:
-// 1000:2343      be 14 90                 MOV SI,0x9014
-// 1000:2346      bf 4c 90                 MOV DI,0x904c
-// 1000:2349      b9 04 00                 MOV CX,0x4
-// 1000:234c  LAB_1000_234c:
-// 1000:234c      51                       PUSH CX
-// 1000:234d      b9 14 00                 MOV CX,0x14
-// 1000:2350  LAB_1000_2350:
-// 1000:2350      8a 05                    MOV AL,byte ptr [DI]
-// 1000:2352      22 c0                    AND AL,AL
-// 1000:2354      74 19                    JZ 0x1000:236f
-// 1000:2356      fe c8                    DEC AL
-// 1000:2358      74 0f                    JZ 0x1000:2369
-// 1000:235a      fe c8                    DEC AL
-// 1000:235c      74 07                    JZ 0x1000:2365
-// 1000:235e      f6 06 d2 89 07           TEST byte ptr [0x89d2],0x7
-// 1000:2363      75 0a                    JNZ 0x1000:236f
-// 1000:2365  LAB_1000_2365:
-// 1000:2365      fe 0d                    DEC byte ptr [DI]
-// 1000:2367      eb 06                    JMP 0x1000:236f
-// 1000:2369  LAB_1000_2369:
-// 1000:2369      c6 05 00                 MOV byte ptr [DI],0x0
-// 1000:236c      fe 44 06                 INC byte ptr [SI + 0x6]
-// 1000:236f  LAB_1000_236f:
-// 1000:236f      83 c7 08                 ADD DI,0x8
-// 1000:2372      e2 dc                    LOOP 0x1000:2350
-// 1000:2374      59                       POP CX
-// 1000:2375      83 c6 0e                 ADD SI,0xe
-// 1000:2378      e2 d2                    LOOP 0x1000:234c
-// 1000:237a      c3                       RET
-fun_2343 :: proc() {
-}
+// 1000:2343 tick_mine_lifetimes is in ship.odin.
 
 // 1000:237b add_scaled_charge is in ship.odin.
 

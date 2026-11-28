@@ -644,3 +644,65 @@ spawn_debris :: proc(ds: ^DS_Segment, ship: ^Ship_Record) {
 		return
 	}
 }
+
+// 1000:2343 tick_mine_lifetimes.
+// The name is inferred from the lifetime byte. Four bases, 20 mines each.
+// A lifetime of 0 stays. A lifetime of 1 is cleared and the base stock at
+// +06 increments, wrapping in the byte. A lifetime of 2 decrements on every
+// call. A lifetime above 2 decrements when the low byte of frame_count has
+// its low three bits clear.
+
+// @proc 1000:2343
+// status: tested
+// Odin: tick_mine_lifetimes
+// 1000:2343  FUN_1000_2343:
+// 1000:2343      be 14 90                 MOV SI,0x9014
+// 1000:2346      bf 4c 90                 MOV DI,0x904c
+// 1000:2349      b9 04 00                 MOV CX,0x4
+// 1000:234c  LAB_1000_234c:
+// 1000:234c      51                       PUSH CX
+// 1000:234d      b9 14 00                 MOV CX,0x14
+// 1000:2350  LAB_1000_2350:
+// 1000:2350      8a 05                    MOV AL,byte ptr [DI]
+// 1000:2352      22 c0                    AND AL,AL
+// 1000:2354      74 19                    JZ 0x1000:236f
+// 1000:2356      fe c8                    DEC AL
+// 1000:2358      74 0f                    JZ 0x1000:2369
+// 1000:235a      fe c8                    DEC AL
+// 1000:235c      74 07                    JZ 0x1000:2365
+// 1000:235e      f6 06 d2 89 07           TEST byte ptr [0x89d2],0x7
+// 1000:2363      75 0a                    JNZ 0x1000:236f
+// 1000:2365  LAB_1000_2365:
+// 1000:2365      fe 0d                    DEC byte ptr [DI]
+// 1000:2367      eb 06                    JMP 0x1000:236f
+// 1000:2369  LAB_1000_2369:
+// 1000:2369      c6 05 00                 MOV byte ptr [DI],0x0
+// 1000:236c      fe 44 06                 INC byte ptr [SI + 0x6]
+// 1000:236f  LAB_1000_236f:
+// 1000:236f      83 c7 08                 ADD DI,0x8
+// 1000:2372      e2 dc                    LOOP 0x1000:2350
+// 1000:2374      59                       POP CX
+// 1000:2375      83 c6 0e                 ADD SI,0xe
+// 1000:2378      e2 d2                    LOOP 0x1000:234c
+// 1000:237a      c3                       RET
+
+tick_mine_lifetimes :: proc(ds: ^DS_Segment) {
+	frame := u8(ds.frame_count)
+	for side in 0 ..< 4 {
+		for &mine in ds.mines[side] {
+			life := mine[0]
+			if life == 0 {
+				continue
+			}
+			if life == 1 {
+				mine[0] = 0
+				stock, _ := intrinsics.overflow_add(ds.bases[side][6], 1)
+				ds.bases[side][6] = stock
+				continue
+			}
+			if life == 2 || frame & 7 == 0 {
+				mine[0] = life - 1
+			}
+		}
+	}
+}
