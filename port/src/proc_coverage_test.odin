@@ -8,6 +8,7 @@ LISTING :: #load("../../disassembly/functions.txt")
 DISTANCE_SRC :: #load("distance.odin")
 SQRT_SRC :: #load("sqrt.odin")
 SHIP_SRC :: #load("ship.odin")
+PLANET_SRC :: #load("planet.odin")
 
 // Named entries the listing gives, which functions.txt does not.
 ORPHAN_PROCS :: [?]string{
@@ -44,10 +45,11 @@ test_every_listing_proc_is_represented :: proc(t: ^testing.T) {
 	distance_src := string(DISTANCE_SRC)
 	sqrt_src := string(SQRT_SRC)
 	ship_src := string(SHIP_SRC)
+	planet_src := string(PLANET_SRC)
 	buf: [32]u8
 	for addr in translated_procs {
 		marker := fmt.bprintf(buf[:], "@proc %s", addr)
-		found := strings.contains(distance_src, marker) || strings.contains(sqrt_src, marker) || strings.contains(ship_src, marker)
+		found := strings.contains(distance_src, marker) || strings.contains(sqrt_src, marker) || strings.contains(ship_src, marker) || strings.contains(planet_src, marker)
 		testing.expect(t, found)
 		got[addr] = {}
 	}

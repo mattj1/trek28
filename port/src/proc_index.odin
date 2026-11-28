@@ -129,7 +129,6 @@ listing_procs := [?]Proc_Ref{
 	{"1000:42ac", true, fun_42ac},
 	{"1000:42dd", true, fun_42dd},
 	{"1000:4312", true, fun_4312},
-	{"1000:437a", true, fun_437a},
 	{"1000:43b1", true, fun_43b1},
 	{"1000:4530", true, fun_4530},
 	{"1000:4649", true, fun_4649},
@@ -270,6 +269,7 @@ translated_procs := [?]string{
 	"1000:3228",
 	"1000:37ac",
 	"1000:382a",
+	"1000:437a",
 	"1000:4459",
 }
 
