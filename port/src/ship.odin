@@ -3115,3 +3115,121 @@ commit_message_line :: proc(ds: ^DS_Segment, di: u16) -> u16 {
 	}
 	return add16(di, 0x28)
 }
+
+// 1000:2d70 transfer_base_stock.
+// The name is inferred. The caller leaves DI on the ship and SI on the
+// base. Unless the low 3 bits of the frame are 0, this only ORs bit 2
+// into byte_a29c and returns.
+//
+// On a multiple of 8, byte_a29c is cleared. Ship energy at or below
+// 0x2710 with base energy above 0x64 takes 0x32 from the base and adds
+// 0x1F4 to the ship, and bit 0 stays clear. Otherwise bit 0 is set. In
+// that case, ship energy at or above 0x3A98 and base energy in
+// [0x19, 0x4E20) moves 0x64 onto the base, takes 0x3E8 from the ship,
+// and increments a base torpedo stock at or below 0x63.
+//
+// A ship with fewer than 10 torpedoes takes one from a nonzero base
+// stock. Otherwise bit 1 is set. That transfer sees the torpedo stock
+// after the energy move.
+//
+// Frame bit 3 skips the mines and leaves bit 2 clear. Otherwise a ship
+// with fewer than 5 mines takes one from a nonzero base stock, or bit
+// 2 is set. The compare of byte_a29c with 7 falls through to the return.
+
+// @proc 1000:2d70
+// status: tested
+// Odin: transfer_base_stock
+// 1000:2d70  FUN_1000_2d70:
+// 1000:2d70      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:2d73      24 07                    AND AL,0x7
+// 1000:2d75      75 7e                    JNZ 0x1000:2df5
+// 1000:2d77      c6 06 9c a2 00           MOV byte ptr [0xa29c],0x0
+// 1000:2d7c      81 7d 08 10 27           CMP word ptr [DI + 0x8],0x2710
+// 1000:2d81      77 11                    JA 0x1000:2d94
+// 1000:2d83      83 7c 08 64              CMP word ptr [SI + 0x8],0x64
+// 1000:2d87      76 0b                    JBE 0x1000:2d94
+// 1000:2d89      83 6c 08 32              SUB word ptr [SI + 0x8],0x32
+// 1000:2d8d      81 45 08 f4 01           ADD word ptr [DI + 0x8],0x1f4
+// 1000:2d92      eb 2b                    JMP 0x1000:2dbf
+// 1000:2d94  LAB_1000_2d94:
+// 1000:2d94      81 7d 08 98 3a           CMP word ptr [DI + 0x8],0x3a98
+// 1000:2d99      72 1f                    JC 0x1000:2dba
+// 1000:2d9b      81 7c 08 20 4e           CMP word ptr [SI + 0x8],0x4e20
+// 1000:2da0      73 18                    JNC 0x1000:2dba
+// 1000:2da2      83 7c 08 19              CMP word ptr [SI + 0x8],0x19
+// 1000:2da6      72 12                    JC 0x1000:2dba
+// 1000:2da8      83 44 08 64              ADD word ptr [SI + 0x8],0x64
+// 1000:2dac      81 6d 08 e8 03           SUB word ptr [DI + 0x8],0x3e8
+// 1000:2db1      80 7c 07 63              CMP byte ptr [SI + 0x7],0x63
+// 1000:2db5      77 03                    JA 0x1000:2dba
+// 1000:2db7      fe 44 07                 INC byte ptr [SI + 0x7]
+// 1000:2dba  LAB_1000_2dba:
+// 1000:2dba      80 0e 9c a2 01           OR byte ptr [0xa29c],0x1
+// 1000:2dbf  LAB_1000_2dbf:
+// 1000:2dbf      80 7d 07 0a              CMP byte ptr [DI + 0x7],0xa
+// 1000:2dc3      73 0f                    JNC 0x1000:2dd4
+// 1000:2dc5      f6 44 07 ff              TEST byte ptr [SI + 0x7],0xff
+// 1000:2dc9      74 09                    JZ 0x1000:2dd4
+// 1000:2dcb      fe 4c 07                 DEC byte ptr [SI + 0x7]
+// 1000:2dce      fe 45 07                 INC byte ptr [DI + 0x7]
+// 1000:2dd1      eb 06                    JMP 0x1000:2dd9
+// 1000:2dd4  LAB_1000_2dd4:
+// 1000:2dd4      80 0e 9c a2 02           OR byte ptr [0xa29c],0x2
+// 1000:2dd9  LAB_1000_2dd9:
+// 1000:2dd9      f6 06 d2 89 08           TEST byte ptr [0x89d2],0x8
+// 1000:2dde      75 1a                    JNZ 0x1000:2dfa
+// 1000:2de0      80 7d 06 05              CMP byte ptr [DI + 0x6],0x5
+// 1000:2de4      73 0f                    JNC 0x1000:2df5
+// 1000:2de6      80 7c 06 00              CMP byte ptr [SI + 0x6],0x0
+// 1000:2dea      74 09                    JZ 0x1000:2df5
+// 1000:2dec      fe 4c 06                 DEC byte ptr [SI + 0x6]
+// 1000:2def      fe 45 06                 INC byte ptr [DI + 0x6]
+// 1000:2df2      eb 06                    JMP 0x1000:2dfa
+// 1000:2df5  LAB_1000_2df5:
+// 1000:2df5      80 0e 9c a2 04           OR byte ptr [0xa29c],0x4
+// 1000:2dfa  LAB_1000_2dfa:
+// 1000:2dfa      80 3e 9c a2 07           CMP byte ptr [0xa29c],0x7
+// 1000:2dff      75 00                    JNZ 0x1000:2e01
+// 1000:2e01  LAB_1000_2e01:
+// 1000:2e01      c3                       RET
+
+transfer_base_stock :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record) {
+	frame := u8(ds.frame_count)
+	if frame & 7 != 0 {
+		ds.byte_a29c |= 4
+		return
+	}
+	ds.byte_a29c = 0
+	base_energy := u16(base[8]) | u16(base[9]) << 8
+	if ship.energy <= 0x2710 && base_energy > 0x64 {
+		base_energy, _ = intrinsics.overflow_sub(base_energy, u16(0x32))
+		ship.energy, _ = intrinsics.overflow_add(ship.energy, u16(0x1F4))
+	} else {
+		if ship.energy >= 0x3A98 && base_energy < 0x4E20 && base_energy >= 0x19 {
+			base_energy, _ = intrinsics.overflow_add(base_energy, u16(0x64))
+			ship.energy, _ = intrinsics.overflow_sub(ship.energy, u16(0x3E8))
+			if base[7] <= 0x63 {
+				base[7] += 1
+			}
+		}
+		ds.byte_a29c |= 1
+	}
+	base[8] = u8(base_energy)
+	base[9] = u8(base_energy >> 8)
+
+	if ship.torpedoes < 0x0A && base[7] != 0 {
+		base[7] -= 1
+		ship.torpedoes += 1
+	} else {
+		ds.byte_a29c |= 2
+	}
+
+	if frame & 8 == 0 {
+		if ship.mines < 5 && base[6] != 0 {
+			base[6] -= 1
+			ship.mines += 1
+		} else {
+			ds.byte_a29c |= 4
+		}
+	}
+}

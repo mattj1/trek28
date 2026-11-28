@@ -435,7 +435,7 @@ DS_Segment :: struct #packed {
 	pad_a29a: [1]u8,
 	// A29B. Print color 1..3. 1000:5554 stores 1..3 here when the inline string asks for a color.
 	draw_color: u8,
-	// A29C. 1000:2d77 stores 0. 1000:2dba ORs 1 and 1000:2dd4 ORs 2. Role is open.
+	// A29C. 1000:2d70 clears it when the low 3 bits of the frame are 0. Bit 0 means base energy was not moved into the ship. Bit 1 means a torpedo was not moved into the ship. Bit 2 means a mine was not moved, and it is also set when the frame is not a multiple of 8. The compare with 7 at 2dfa falls through.
 	byte_a29c: u8,
 	// A29D. Between byte_a29c and message_queue.
 	pad_a29d: [1]u8,

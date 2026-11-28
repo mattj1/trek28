@@ -420,64 +420,7 @@ fun_2c6d :: proc() {
 fun_2cfa :: proc() {
 }
 
-// @proc 1000:2d70
-// listing: FUN_1000_2d70
-// status: unread
-// 1000:2d70  FUN_1000_2d70:
-// 1000:2d70      a0 d2 89                 MOV AL,[0x89d2]
-// 1000:2d73      24 07                    AND AL,0x7
-// 1000:2d75      75 7e                    JNZ 0x1000:2df5
-// 1000:2d77      c6 06 9c a2 00           MOV byte ptr [0xa29c],0x0
-// 1000:2d7c      81 7d 08 10 27           CMP word ptr [DI + 0x8],0x2710
-// 1000:2d81      77 11                    JA 0x1000:2d94
-// 1000:2d83      83 7c 08 64              CMP word ptr [SI + 0x8],0x64
-// 1000:2d87      76 0b                    JBE 0x1000:2d94
-// 1000:2d89      83 6c 08 32              SUB word ptr [SI + 0x8],0x32
-// 1000:2d8d      81 45 08 f4 01           ADD word ptr [DI + 0x8],0x1f4
-// 1000:2d92      eb 2b                    JMP 0x1000:2dbf
-// 1000:2d94  LAB_1000_2d94:
-// 1000:2d94      81 7d 08 98 3a           CMP word ptr [DI + 0x8],0x3a98
-// 1000:2d99      72 1f                    JC 0x1000:2dba
-// 1000:2d9b      81 7c 08 20 4e           CMP word ptr [SI + 0x8],0x4e20
-// 1000:2da0      73 18                    JNC 0x1000:2dba
-// 1000:2da2      83 7c 08 19              CMP word ptr [SI + 0x8],0x19
-// 1000:2da6      72 12                    JC 0x1000:2dba
-// 1000:2da8      83 44 08 64              ADD word ptr [SI + 0x8],0x64
-// 1000:2dac      81 6d 08 e8 03           SUB word ptr [DI + 0x8],0x3e8
-// 1000:2db1      80 7c 07 63              CMP byte ptr [SI + 0x7],0x63
-// 1000:2db5      77 03                    JA 0x1000:2dba
-// 1000:2db7      fe 44 07                 INC byte ptr [SI + 0x7]
-// 1000:2dba  LAB_1000_2dba:
-// 1000:2dba      80 0e 9c a2 01           OR byte ptr [0xa29c],0x1
-// 1000:2dbf  LAB_1000_2dbf:
-// 1000:2dbf      80 7d 07 0a              CMP byte ptr [DI + 0x7],0xa
-// 1000:2dc3      73 0f                    JNC 0x1000:2dd4
-// 1000:2dc5      f6 44 07 ff              TEST byte ptr [SI + 0x7],0xff
-// 1000:2dc9      74 09                    JZ 0x1000:2dd4
-// 1000:2dcb      fe 4c 07                 DEC byte ptr [SI + 0x7]
-// 1000:2dce      fe 45 07                 INC byte ptr [DI + 0x7]
-// 1000:2dd1      eb 06                    JMP 0x1000:2dd9
-// 1000:2dd4  LAB_1000_2dd4:
-// 1000:2dd4      80 0e 9c a2 02           OR byte ptr [0xa29c],0x2
-// 1000:2dd9  LAB_1000_2dd9:
-// 1000:2dd9      f6 06 d2 89 08           TEST byte ptr [0x89d2],0x8
-// 1000:2dde      75 1a                    JNZ 0x1000:2dfa
-// 1000:2de0      80 7d 06 05              CMP byte ptr [DI + 0x6],0x5
-// 1000:2de4      73 0f                    JNC 0x1000:2df5
-// 1000:2de6      80 7c 06 00              CMP byte ptr [SI + 0x6],0x0
-// 1000:2dea      74 09                    JZ 0x1000:2df5
-// 1000:2dec      fe 4c 06                 DEC byte ptr [SI + 0x6]
-// 1000:2def      fe 45 06                 INC byte ptr [DI + 0x6]
-// 1000:2df2      eb 06                    JMP 0x1000:2dfa
-// 1000:2df5  LAB_1000_2df5:
-// 1000:2df5      80 0e 9c a2 04           OR byte ptr [0xa29c],0x4
-// 1000:2dfa  LAB_1000_2dfa:
-// 1000:2dfa      80 3e 9c a2 07           CMP byte ptr [0xa29c],0x7
-// 1000:2dff      75 00                    JNZ 0x1000:2e01
-// 1000:2e01  LAB_1000_2e01:
-// 1000:2e01      c3                       RET
-fun_2d70 :: proc() {
-}
+// 1000:2d70 transfer_base_stock is in ship.odin.
 
 // @proc 1000:2e02
 // listing: FUN_1000_2e02

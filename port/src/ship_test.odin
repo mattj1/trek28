@@ -3377,6 +3377,269 @@ test_beep :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.sound_beep, u16(1))
 }
 
+@(test)
+test_transfer_base_stock :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ship: Ship_Record
+	base := &ds.bases[0]
+
+	ship.flags = 0x80
+	ship.own_side = 0x11
+	base[0] = 0x7F
+	base[0x0A] = 0xBC
+	base[0x0D] = 4
+	ds.bases[1][8] = 0x11
+	ds.bases[1][9] = 0x22
+
+	// A frame whose low 3 bits are set only ORs bit 2. The high byte is ignored.
+	ds.frame_count = 1
+	ds.byte_a29c = 0x01
+	ship.energy = 0x2710
+	ship.torpedoes = 0
+	ship.mines = 0
+	base[6] = 3
+	base[7] = 5
+	set_base_energy(base, 0x65)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, ds.byte_a29c, u8(0x05))
+	testing.expect_value(t, ship.energy, u16(0x2710))
+	testing.expect_value(t, ship.torpedoes, u8(0))
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, base_energy(base), u16(0x65))
+	testing.expect_value(t, base[6], u8(3))
+	testing.expect_value(t, base[7], u8(5))
+
+	ds.frame_count = 7
+	ds.byte_a29c = 0x01
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, ds.byte_a29c, u8(0x05))
+	testing.expect_value(t, ship.energy, u16(0x2710))
+
+	ds.frame_count = 0xFF01
+	ds.byte_a29c = 0x01
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, ds.byte_a29c, u8(0x05))
+	testing.expect_value(t, base_energy(base), u16(0x65))
+	testing.expect_value(t, base[6], u8(3))
+	testing.expect_value(t, base[7], u8(5))
+
+	// Frame 0 moves 0x32 of base energy into 0x1F4 of ship energy.
+	// Ten torpedoes and five mines stay put, so bits 1 and 2 are set.
+	ds.frame_count = 0xFF00
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x2710
+	ship.torpedoes = 0x0A
+	ship.mines = 5
+	base[6] = 3
+	base[7] = 5
+	set_base_energy(base, 0x65)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x33))
+	testing.expect_value(t, ship.energy, u16(0x2904))
+	testing.expect_value(t, ship.torpedoes, u8(0x0A))
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, base[7], u8(5))
+	testing.expect_value(t, base[6], u8(3))
+	testing.expect_value(t, ds.byte_a29c, u8(6))
+
+	// Base energy of 0x64 does not feed the ship. 0x2710 is below the return path.
+	ds.frame_count = 0
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x2710
+	set_base_energy(base, 0x64)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x64))
+	testing.expect_value(t, ship.energy, u16(0x2710))
+	testing.expect_value(t, base[7], u8(5))
+	testing.expect_value(t, ds.byte_a29c, u8(7))
+
+	// 0x2711 misses the first move and is still below 0x3A98.
+	ds.byte_a29c = 0
+	ship.energy = 0x2711
+	set_base_energy(base, 0x1000)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+	testing.expect_value(t, ship.energy, u16(0x2711))
+	testing.expect_value(t, ds.byte_a29c, u8(7))
+
+	// Ship at 0x3A98 returns 0x3E8. Base 0x19 accepts it and gains 0x64.
+	// A torpedo stock of 0x64 is not incremented. Ten torpedoes do not move.
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x3A98
+	ship.torpedoes = 0x0A
+	ship.mines = 5
+	base[7] = 0x64
+	base[6] = 0
+	set_base_energy(base, 0x19)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x7D))
+	testing.expect_value(t, ship.energy, u16(0x36B0))
+	testing.expect_value(t, base[7], u8(0x64))
+	testing.expect_value(t, ds.byte_a29c, u8(7))
+
+	// Base 0x18, base 0x4E20, and ship 0x3A97 each refuse the return.
+	ship.energy = 0x3A98
+	set_base_energy(base, 0x18)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x18))
+	testing.expect_value(t, ship.energy, u16(0x3A98))
+	testing.expect_value(t, base[7], u8(0x64))
+	testing.expect_value(t, ds.byte_a29c, u8(7))
+
+	set_base_energy(base, 0x4E20)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x4E20))
+	testing.expect_value(t, ship.energy, u16(0x3A98))
+
+	ship.energy = 0x3A97
+	set_base_energy(base, 0x19)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x19))
+	testing.expect_value(t, ship.energy, u16(0x3A97))
+	testing.expect_value(t, base[7], u8(0x64))
+
+	// Base 0x4E1F accepts the return and becomes 0x4E83.
+	ship.energy = 0x3A98
+	set_base_energy(base, 0x4E1F)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x4E83))
+	testing.expect_value(t, ship.energy, u16(0x36B0))
+	testing.expect_value(t, base[7], u8(0x64))
+
+	// The return increments a stock of 0x63 to 0x64. Ten torpedoes leave it there.
+	ds.byte_a29c = 0
+	ship.energy = 0x3A98
+	ship.torpedoes = 0x0A
+	ship.mines = 5
+	base[7] = 0x63
+	base[6] = 1
+	set_base_energy(base, 0x19)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x7D))
+	testing.expect_value(t, ship.energy, u16(0x36B0))
+	testing.expect_value(t, base[7], u8(0x64))
+	testing.expect_value(t, ship.torpedoes, u8(0x0A))
+	testing.expect_value(t, base[6], u8(1))
+	testing.expect_value(t, ds.byte_a29c, u8(7))
+
+	// A stock of 0x64 is not incremented, then a ship under 10 takes one.
+	ship.energy = 0x3A98
+	ship.torpedoes = 9
+	base[7] = 0x64
+	set_base_energy(base, 0x19)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x7D))
+	testing.expect_value(t, ship.energy, u16(0x36B0))
+	testing.expect_value(t, base[7], u8(0x63))
+	testing.expect_value(t, ship.torpedoes, u8(10))
+	testing.expect_value(t, ds.byte_a29c, u8(5))
+
+	// The increment of an empty stock is the torpedo the ship then takes.
+	// Four mines take the one mine on the base. Only bit 0 remains.
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x3A98
+	ship.torpedoes = 9
+	ship.mines = 4
+	base[7] = 0
+	base[6] = 1
+	set_base_energy(base, 0x19)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x7D))
+	testing.expect_value(t, ship.energy, u16(0x36B0))
+	testing.expect_value(t, ship.torpedoes, u8(10))
+	testing.expect_value(t, base[7], u8(0))
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, base[6], u8(0))
+	testing.expect_value(t, ds.byte_a29c, u8(1))
+
+	// Nine torpedoes take one. Five mines, or an empty mine stock, set bit 2.
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x2710
+	ship.torpedoes = 9
+	ship.mines = 4
+	base[7] = 1
+	base[6] = 1
+	set_base_energy(base, 0x65)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x33))
+	testing.expect_value(t, ship.energy, u16(0x2904))
+	testing.expect_value(t, ship.torpedoes, u8(10))
+	testing.expect_value(t, base[7], u8(0))
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, base[6], u8(0))
+	testing.expect_value(t, ds.byte_a29c, u8(0))
+
+	ship.energy = 0x2710
+	ship.torpedoes = 9
+	ship.mines = 4
+	base[7] = 0
+	base[6] = 0
+	set_base_energy(base, 0x65)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, ship.torpedoes, u8(9))
+	testing.expect_value(t, ship.mines, u8(4))
+	testing.expect_value(t, base[7], u8(0))
+	testing.expect_value(t, base[6], u8(0))
+	testing.expect_value(t, ds.byte_a29c, u8(6))
+
+	ship.mines = 5
+	base[6] = 3
+	base[7] = 2
+	ship.torpedoes = 9
+	ship.energy = 0x2710
+	set_base_energy(base, 0x65)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, base[6], u8(3))
+	testing.expect_value(t, ship.torpedoes, u8(10))
+	testing.expect_value(t, base[7], u8(1))
+	testing.expect_value(t, ds.byte_a29c, u8(4))
+
+	// Frame bit 3 recharges and moves a torpedo, and leaves the mines alone.
+	ds.frame_count = 8
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x2710
+	ship.torpedoes = 9
+	ship.mines = 4
+	base[7] = 1
+	base[6] = 3
+	set_base_energy(base, 0x65)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x33))
+	testing.expect_value(t, ship.energy, u16(0x2904))
+	testing.expect_value(t, ship.torpedoes, u8(10))
+	testing.expect_value(t, base[7], u8(0))
+	testing.expect_value(t, ship.mines, u8(4))
+	testing.expect_value(t, base[6], u8(3))
+	testing.expect_value(t, ds.byte_a29c, u8(0))
+
+	// Frame 16 is a multiple of 8 with bit 3 clear, so the mine moves.
+	ds.frame_count = 16
+	ds.byte_a29c = 0xFF
+	ship.energy = 0x3000
+	ship.torpedoes = 0x0A
+	ship.mines = 4
+	base[7] = 0
+	base[6] = 1
+	set_base_energy(base, 0x1000)
+	transfer_base_stock(ds, base, &ship)
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+	testing.expect_value(t, ship.energy, u16(0x3000))
+	testing.expect_value(t, ship.torpedoes, u8(0x0A))
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, base[6], u8(0))
+	testing.expect_value(t, ds.byte_a29c, u8(3))
+
+	testing.expect_value(t, ship.flags, u8(0x80))
+	testing.expect_value(t, ship.own_side, u8(0x11))
+	testing.expect_value(t, base[0], u8(0x7F))
+	testing.expect_value(t, base[0x0A], u8(0xBC))
+	testing.expect_value(t, base[0x0D], u8(4))
+	testing.expect_value(t, ds.bases[1][8], u8(0x11))
+	testing.expect_value(t, ds.bases[1][9], u8(0x22))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
