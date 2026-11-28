@@ -3233,3 +3233,144 @@ transfer_base_stock :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record
 		}
 	}
 }
+
+// 1000:2c6d close_on_base.
+// The name is inferred. The caller has DI on a ship, SI on a base of
+// another team, and AX from a distance with shift 4. AX at or above
+// 0x7D0 returns with carry clear and changes nothing.
+//
+// A flag byte at or below 0x0C drains base energy when AX is at most
+// 0x3E8 and the flag byte is at least 2. The drain is (flags - 2)
+// shifted left 3, then right once when AX is at least 0x12C and again
+// at 0x1F4. A result with bit 15 set is stored as 0.
+//
+// A flag byte above 0x0C ORs bit 0 into ship byte 0x16 and into the
+// base flag. AX at most 0x5DC also ORs bit 1. AX at most 0x2EE also
+// ORs bit 2. AX below 0xFA then charges the ship. The charge is
+// (0x12C - AX) shifted left once, and once more when the base state
+// byte is not 4. A charge below 0x96 is stored as that amount.
+// Otherwise the weapons cooldown becomes 0x10, the ship's side scores
+// 0x3E8, base energy loses 0x64, and the charge is 0x1F4. Every path
+// except the far return sets carry.
+
+// @proc 1000:2c6d
+// status: tested
+// Odin: close_on_base
+// 1000:2c6d  FUN_1000_2c6d:
+// 1000:2c6d      3d d0 07                 CMP AX,0x7d0
+// 1000:2c70      72 02                    JC 0x1000:2c74
+// 1000:2c72      f8                       CLC
+// 1000:2c73      c3                       RET
+// 1000:2c74  LAB_1000_2c74:
+// 1000:2c74      80 3d 0c                 CMP byte ptr [DI],0xc
+// 1000:2c77      77 2f                    JA 0x1000:2ca8
+// 1000:2c79      3d e8 03                 CMP AX,0x3e8
+// 1000:2c7c      77 7a                    JA 0x1000:2cf8
+// 1000:2c7e      8a 1d                    MOV BL,byte ptr [DI]
+// 1000:2c80      32 ff                    XOR BH,BH
+// 1000:2c82      83 eb 02                 SUB BX,0x2
+// 1000:2c85      72 71                    JC 0x1000:2cf8
+// 1000:2c87      d1 e3                    SHL BX,0x1
+// 1000:2c89      d1 e3                    SHL BX,0x1
+// 1000:2c8b      d1 e3                    SHL BX,0x1
+// 1000:2c8d      3d 2c 01                 CMP AX,0x12c
+// 1000:2c90      72 09                    JC 0x1000:2c9b
+// 1000:2c92      d1 eb                    SHR BX,0x1
+// 1000:2c94      3d f4 01                 CMP AX,0x1f4
+// 1000:2c97      72 02                    JC 0x1000:2c9b
+// 1000:2c99      d1 eb                    SHR BX,0x1
+// 1000:2c9b  LAB_1000_2c9b:
+// 1000:2c9b      29 5c 08                 SUB word ptr [SI + 0x8],BX
+// 1000:2c9e      79 58                    JNS 0x1000:2cf8
+// 1000:2ca0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:2ca5      eb 51                    JMP 0x1000:2cf8
+// 1000:2ca8  LAB_1000_2ca8:
+// 1000:2ca8      80 4d 16 01              OR byte ptr [DI + 0x16],0x1
+// 1000:2cac      80 0c 01                 OR byte ptr [SI],0x1
+// 1000:2caf      3d dc 05                 CMP AX,0x5dc
+// 1000:2cb2      77 44                    JA 0x1000:2cf8
+// 1000:2cb4      80 0c 02                 OR byte ptr [SI],0x2
+// 1000:2cb7      3d ee 02                 CMP AX,0x2ee
+// 1000:2cba      77 3c                    JA 0x1000:2cf8
+// 1000:2cbc      80 0c 04                 OR byte ptr [SI],0x4
+// 1000:2cbf      3d fa 00                 CMP AX,0xfa
+// 1000:2cc2      73 34                    JNC 0x1000:2cf8
+// 1000:2cc4      bb 2c 01                 MOV BX,0x12c
+// 1000:2cc7      2b d8                    SUB BX,AX
+// 1000:2cc9      8b c3                    MOV AX,BX
+// 1000:2ccb      d1 e0                    SHL AX,0x1
+// 1000:2ccd      80 7c 0d 04              CMP byte ptr [SI + 0xd],0x4
+// 1000:2cd1      74 02                    JZ 0x1000:2cd5
+// 1000:2cd3      d1 e0                    SHL AX,0x1
+// 1000:2cd5  LAB_1000_2cd5:
+// 1000:2cd5      3d 96 00                 CMP AX,0x96
+// 1000:2cd8      72 1b                    JC 0x1000:2cf5
+// 1000:2cda      c6 45 15 10              MOV byte ptr [DI + 0x15],0x10
+// 1000:2cde      8a 5d 17                 MOV BL,byte ptr [DI + 0x17]
+// 1000:2ce1      b8 e8 03                 MOV AX,0x3e8
+// 1000:2ce4      e8 ed 01                 CALL 0x1000:2ed4
+// 1000:2ce7      b8 f4 01                 MOV AX,0x1f4
+// 1000:2cea      83 6c 08 64              SUB word ptr [SI + 0x8],0x64
+// 1000:2cee      79 05                    JNS 0x1000:2cf5
+// 1000:2cf0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:2cf5  LAB_1000_2cf5:
+// 1000:2cf5      e8 83 f6                 CALL 0x1000:237b
+// 1000:2cf8  LAB_1000_2cf8:
+// 1000:2cf8      f9                       STC
+// 1000:2cf9      c3                       RET
+
+close_on_base :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record, ax: u16) -> bool {
+	sub_energy :: proc(base: ^[0x0E]u8, amount: u16) {
+		energy := u16(base[8]) | u16(base[9]) << 8
+		next, _ := intrinsics.overflow_sub(energy, amount)
+		if next & 0x8000 != 0 {
+			next = 0
+		}
+		base[8] = u8(next)
+		base[9] = u8(next >> 8)
+	}
+
+	if ax >= 0x7D0 {
+		return false
+	}
+	if ship.flags <= 0x0C {
+		if ax > 0x3E8 || ship.flags < 2 {
+			return true
+		}
+		drain := shl_word(u16(ship.flags) - 2, 3)
+		if ax >= 0x12C {
+			drain = shr_word(drain, 1)
+			if ax >= 0x1F4 {
+				drain = shr_word(drain, 1)
+			}
+		}
+		sub_energy(base, drain)
+		return true
+	}
+
+	ship.byte_16 |= 1
+	base[0] |= 1
+	if ax > 0x5DC {
+		return true
+	}
+	base[0] |= 2
+	if ax > 0x2EE {
+		return true
+	}
+	base[0] |= 4
+	if ax >= 0xFA {
+		return true
+	}
+	amount := shl_word(sub16(0x12C, ax), 1)
+	if base[0x0D] != 4 {
+		amount = shl_word(amount, 1)
+	}
+	if amount >= 0x96 {
+		ship.weapons_cooldown = 0x10
+		add_score_div100(ds, ship.own_side, 0x3E8)
+		amount = 0x1F4
+		sub_energy(base, 0x64)
+	}
+	add_scaled_charge(ship, amount)
+	return true
+}

@@ -3640,6 +3640,151 @@ test_transfer_base_stock :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.bases[1][9], u8(0x22))
 }
 
+@(test)
+test_close_on_base :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ship: Ship_Record
+	base := &ds.bases[0]
+
+	// AX at 0x7D0 returns with carry clear and changes nothing.
+	ship.flags = 0x80
+	ship.byte_16 = 0x10
+	ship.weapons_cooldown = 3
+	ship.pending_charge = 9
+	ship.own_side = 0
+	base[0] = 0x80
+	base[7] = 0x11
+	base[0x0D] = 4
+	set_base_energy(base, 0x1000)
+	testing.expect_value(t, close_on_base(ds, base, &ship, 0x7D0), false)
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+	testing.expect_value(t, base[0], u8(0x80))
+	testing.expect_value(t, ship.byte_16, u8(0x10))
+	testing.expect_value(t, ship.pending_charge, u16(9))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// Flag byte 0x0C drains (12 - 2) << 3 = 0x50 while AX is below 0x12C.
+	ship.flags = 0x0C
+	set_base_energy(base, 0x100)
+	testing.expect_value(t, close_on_base(ds, base, &ship, 0x100), true)
+	testing.expect_value(t, base_energy(base), u16(0xB0))
+	testing.expect_value(t, base[0], u8(0x80))
+	testing.expect_value(t, ship.byte_16, u8(0x10))
+
+	// The same drain from a small word sets bit 15 and stores 0.
+	set_base_energy(base, 0x10)
+	close_on_base(ds, base, &ship, 0x12B)
+	testing.expect_value(t, base_energy(base), u16(0))
+
+	// 0x8000 - 0x50 stays positive.
+	set_base_energy(base, 0x8000)
+	close_on_base(ds, base, &ship, 0)
+	testing.expect_value(t, base_energy(base), u16(0x7FB0))
+
+	// AX at 0x12C halves the drain. AX at 0x1F4 halves it again.
+	set_base_energy(base, 0x100)
+	close_on_base(ds, base, &ship, 0x12C)
+	testing.expect_value(t, base_energy(base), u16(0x100 - 0x28))
+	set_base_energy(base, 0x100)
+	close_on_base(ds, base, &ship, 0x1F3)
+	testing.expect_value(t, base_energy(base), u16(0x100 - 0x28))
+	set_base_energy(base, 0x100)
+	close_on_base(ds, base, &ship, 0x1F4)
+	testing.expect_value(t, base_energy(base), u16(0x100 - 0x14))
+	set_base_energy(base, 0x100)
+	close_on_base(ds, base, &ship, 0x3E8)
+	testing.expect_value(t, base_energy(base), u16(0x100 - 0x14))
+
+	// AX above 0x3E8, and a flag byte below 2, leave the energy alone.
+	set_base_energy(base, 0x100)
+	testing.expect_value(t, close_on_base(ds, base, &ship, 0x3E9), true)
+	testing.expect_value(t, base_energy(base), u16(0x100))
+	ship.flags = 1
+	close_on_base(ds, base, &ship, 0)
+	ship.flags = 0
+	close_on_base(ds, base, &ship, 0)
+	ship.flags = 2
+	close_on_base(ds, base, &ship, 0)
+	testing.expect_value(t, base_energy(base), u16(0x100))
+
+	// A living ship sets color bits as it closes, and stops before the charge.
+	ship.flags = 0x80
+	ship.byte_16 = 0
+	base[0] = 0x80
+	set_base_energy(base, 0x1000)
+	testing.expect_value(t, close_on_base(ds, base, &ship, 0x5DD), true)
+	testing.expect_value(t, base[0], u8(0x81))
+	testing.expect_value(t, ship.byte_16, u8(1))
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+
+	base[0] = 0x80
+	close_on_base(ds, base, &ship, 0x5DC)
+	testing.expect_value(t, base[0], u8(0x83))
+	base[0] = 0x80
+	close_on_base(ds, base, &ship, 0x2EF)
+	testing.expect_value(t, base[0], u8(0x83))
+	base[0] = 0x80
+	ship.pending_charge = 0
+	ship.weapons_cooldown = 3
+	close_on_base(ds, base, &ship, 0xFA)
+	testing.expect_value(t, base[0], u8(0x87))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ship.weapons_cooldown, u8(3))
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+
+	// State 4 at AX 0xF9 charges 2 * (0x12C - 0xF9) = 0x66 and does not score.
+	base[0] = 0x80
+	base[0x0D] = 4
+	ship.pending_charge = 0
+	ship.weapons_cooldown = 3
+	close_on_base(ds, base, &ship, 0xF9)
+	testing.expect_value(t, ship.pending_charge, u16(0x66))
+	testing.expect_value(t, ship.weapons_cooldown, u8(3))
+	testing.expect_value(t, base_energy(base), u16(0x1000))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// AX 0xE2 is still the small charge. AX 0xE1 reaches 0x96 and scores.
+	ship.pending_charge = 0
+	base[0] = 0x80
+	close_on_base(ds, base, &ship, 0xE2)
+	testing.expect_value(t, ship.pending_charge, u16(0x94))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	ship.pending_charge = 0
+	ship.weapons_cooldown = 1
+	base[0] = 0x80
+	set_base_energy(base, 0x1000)
+	close_on_base(ds, base, &ship, 0xE1)
+	testing.expect_value(t, ship.pending_charge, u16(0x1F4))
+	testing.expect_value(t, ship.weapons_cooldown, u8(0x10))
+	testing.expect_value(t, base_energy(base), u16(0x1000 - 0x64))
+	testing.expect_value(t, ds.side_score[0], u16(10))
+	testing.expect_value(t, base[0], u8(0x87))
+	testing.expect_value(t, base[7], u8(0x11))
+
+	// A base state other than 4 shifts the charge once more, so 0xF9 scores.
+	base[0x0D] = 0
+	base[0] = 0x80
+	ship.pending_charge = 0
+	set_base_energy(base, 0x40)
+	close_on_base(ds, base, &ship, 0xF9)
+	testing.expect_value(t, ship.pending_charge, u16(0x1F4))
+	testing.expect_value(t, base_energy(base), u16(0))
+	testing.expect_value(t, ds.side_score[0], u16(20))
+
+	// 0x8000 - 0x64 stays 0x7F9C. Side 4 scores nothing.
+	set_base_energy(base, 0x8000)
+	ship.own_side = 4
+	ship.pending_charge = 0
+	score := ds.side_score[0]
+	close_on_base(ds, base, &ship, 0)
+	testing.expect_value(t, base_energy(base), u16(0x7F9C))
+	testing.expect_value(t, ship.pending_charge, u16(0x1F4))
+	testing.expect_value(t, ds.side_score[0], score)
+	testing.expect_value(t, ds.side_score[1], u16(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

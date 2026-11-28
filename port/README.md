@@ -96,6 +96,7 @@ odin run src
 | `1000:32e5` | `mark_planet_contact` | tested. The name is inferred. AX above `0x0FA0` returns. A zero `team_tag AND` planet byte ORs bit `0x10` into ship byte `0x28`. AX above `0x0BB8` returns. Otherwise the planet byte's low nibble indexes the 16 bytes at `CS:330B` and that byte is ORed in. The bytes at `331B` are not read |
 | `1000:1998` | `edit_message_line` | tested. The name is inferred. CR, BS, or a byte in `0x20`..`0x7E` edits the line at DI. Length `0x16` or CR commits. A `X:` prefix must name `local_side` and is stripped. Any other line is kept only when `current_side` differs from `local_side`. `player_count` above 2 appends a comma and the side letter. Commit clears `0x28` bytes and returns DI advanced by `0x28`. Backspace returns DI+1 |
 | `1000:2d70` | `transfer_base_stock` | tested. The name is inferred. Any frame whose low 3 bits are set only ORs bit 2 into `byte_a29c`. A multiple of 8 can move `0x32` of base energy into `0x1F4` of ship energy, or the other way when the ship is full and the base is not. Torpedoes and mines move from the base onto the ship. Bit 3 of the frame skips the mines |
+| `1000:2c6d` | `close_on_base` | tested. The name is inferred. AX at or above `0x7D0` returns with carry clear. A flag byte at or below `0x0C` drains base energy from `(flags - 2) << 3`, halved at `0x12C` and again at `0x1F4`. A negative result is stored as 0. A higher flag byte sets base color bits as AX falls, and below `0xFA` charges the ship. A charge of at least `0x96` scores `0x3E8`, takes `0x64` from the base, and charges `0x1F4` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -105,6 +106,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 `1000:1ee6` updates every side. It calls `walk_planets` and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns.
 
-The next closed procedures are `1000:2c6d`, `1000:2e3d`, `1000:30a4`, `1000:3109`, `1000:2a26`, and `1000:4312`.
+The next closed procedures are `1000:2cfa`, `1000:2e3d`, `1000:30a4`, `1000:3109`, `1000:2a26`, and `1000:4312`.
 
 How to resume on another machine is in `RESUME.md`.

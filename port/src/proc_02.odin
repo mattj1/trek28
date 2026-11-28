@@ -296,73 +296,7 @@ fun_2ba7 :: proc() {
 fun_2c1e :: proc() {
 }
 
-// @proc 1000:2c6d
-// listing: FUN_1000_2c6d
-// status: unread
-// 1000:2c6d  FUN_1000_2c6d:
-// 1000:2c6d      3d d0 07                 CMP AX,0x7d0
-// 1000:2c70      72 02                    JC 0x1000:2c74
-// 1000:2c72      f8                       CLC
-// 1000:2c73      c3                       RET
-// 1000:2c74  LAB_1000_2c74:
-// 1000:2c74      80 3d 0c                 CMP byte ptr [DI],0xc
-// 1000:2c77      77 2f                    JA 0x1000:2ca8
-// 1000:2c79      3d e8 03                 CMP AX,0x3e8
-// 1000:2c7c      77 7a                    JA 0x1000:2cf8
-// 1000:2c7e      8a 1d                    MOV BL,byte ptr [DI]
-// 1000:2c80      32 ff                    XOR BH,BH
-// 1000:2c82      83 eb 02                 SUB BX,0x2
-// 1000:2c85      72 71                    JC 0x1000:2cf8
-// 1000:2c87      d1 e3                    SHL BX,0x1
-// 1000:2c89      d1 e3                    SHL BX,0x1
-// 1000:2c8b      d1 e3                    SHL BX,0x1
-// 1000:2c8d      3d 2c 01                 CMP AX,0x12c
-// 1000:2c90      72 09                    JC 0x1000:2c9b
-// 1000:2c92      d1 eb                    SHR BX,0x1
-// 1000:2c94      3d f4 01                 CMP AX,0x1f4
-// 1000:2c97      72 02                    JC 0x1000:2c9b
-// 1000:2c99      d1 eb                    SHR BX,0x1
-// 1000:2c9b  LAB_1000_2c9b:
-// 1000:2c9b      29 5c 08                 SUB word ptr [SI + 0x8],BX
-// 1000:2c9e      79 58                    JNS 0x1000:2cf8
-// 1000:2ca0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
-// 1000:2ca5      eb 51                    JMP 0x1000:2cf8
-// 1000:2ca8  LAB_1000_2ca8:
-// 1000:2ca8      80 4d 16 01              OR byte ptr [DI + 0x16],0x1
-// 1000:2cac      80 0c 01                 OR byte ptr [SI],0x1
-// 1000:2caf      3d dc 05                 CMP AX,0x5dc
-// 1000:2cb2      77 44                    JA 0x1000:2cf8
-// 1000:2cb4      80 0c 02                 OR byte ptr [SI],0x2
-// 1000:2cb7      3d ee 02                 CMP AX,0x2ee
-// 1000:2cba      77 3c                    JA 0x1000:2cf8
-// 1000:2cbc      80 0c 04                 OR byte ptr [SI],0x4
-// 1000:2cbf      3d fa 00                 CMP AX,0xfa
-// 1000:2cc2      73 34                    JNC 0x1000:2cf8
-// 1000:2cc4      bb 2c 01                 MOV BX,0x12c
-// 1000:2cc7      2b d8                    SUB BX,AX
-// 1000:2cc9      8b c3                    MOV AX,BX
-// 1000:2ccb      d1 e0                    SHL AX,0x1
-// 1000:2ccd      80 7c 0d 04              CMP byte ptr [SI + 0xd],0x4
-// 1000:2cd1      74 02                    JZ 0x1000:2cd5
-// 1000:2cd3      d1 e0                    SHL AX,0x1
-// 1000:2cd5  LAB_1000_2cd5:
-// 1000:2cd5      3d 96 00                 CMP AX,0x96
-// 1000:2cd8      72 1b                    JC 0x1000:2cf5
-// 1000:2cda      c6 45 15 10              MOV byte ptr [DI + 0x15],0x10
-// 1000:2cde      8a 5d 17                 MOV BL,byte ptr [DI + 0x17]
-// 1000:2ce1      b8 e8 03                 MOV AX,0x3e8
-// 1000:2ce4      e8 ed 01                 CALL 0x1000:2ed4
-// 1000:2ce7      b8 f4 01                 MOV AX,0x1f4
-// 1000:2cea      83 6c 08 64              SUB word ptr [SI + 0x8],0x64
-// 1000:2cee      79 05                    JNS 0x1000:2cf5
-// 1000:2cf0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
-// 1000:2cf5  LAB_1000_2cf5:
-// 1000:2cf5      e8 83 f6                 CALL 0x1000:237b
-// 1000:2cf8  LAB_1000_2cf8:
-// 1000:2cf8      f9                       STC
-// 1000:2cf9      c3                       RET
-fun_2c6d :: proc() {
-}
+// 1000:2c6d close_on_base is in ship.odin.
 
 // @proc 1000:2cfa
 // listing: FUN_1000_2cfa
