@@ -2490,3 +2490,28 @@ planet_team_flag :: proc(ship: ^Ship_Record, planet: ^[11]u8) -> bool {
 	}
 	return ship.team == planet[0x0A]
 }
+
+// 1000:3fc1 store_desired_heading.
+// The name is inferred. CH is doubled four times as a byte, so bits
+// above the low nibble fall off. That value replaces the desired
+// heading nibble. The actual nibble stays. 1000:3fb3 falls into this
+// entry and stays unread. When that procedure is ported it should call
+// this at the end.
+
+// @proc 1000:3fc1
+// status: tested
+// Odin: store_desired_heading
+// 1000:3fc1  FUN_1000_3fc1:
+// 1000:3fc1      02 ed                    ADD CH,CH
+// 1000:3fc3      02 ed                    ADD CH,CH
+// 1000:3fc5      02 ed                    ADD CH,CH
+// 1000:3fc7      02 ed                    ADD CH,CH
+// 1000:3fc9      80 64 0a 0f              AND byte ptr [SI + 0xa],0xf
+// 1000:3fcd      08 6c 0a                 OR byte ptr [SI + 0xa],CH
+// 1000:3fd0  LAB_1000_3fd0:
+// 1000:3fd0      c3                       RET
+
+store_desired_heading :: proc(ship: ^Ship_Record, ch: u8) {
+	shifted := u8(u16(ch) << 4)
+	ship.heading = (ship.heading & 0x0F) | shifted
+}

@@ -2191,6 +2191,34 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_store_desired_heading :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	ship.heading = 0x0A
+	store_desired_heading(&ship, 0x01)
+	testing.expect_value(t, ship.heading, u8(0x1A))
+
+	ship.heading = 0x0A
+	store_desired_heading(&ship, 0x12)
+	testing.expect_value(t, ship.heading, u8(0x2A))
+
+	ship.heading = 0xAB
+	store_desired_heading(&ship, 0x10)
+	testing.expect_value(t, ship.heading, u8(0x0B))
+
+	ship.heading = 0x0F
+	store_desired_heading(&ship, 0x0F)
+	testing.expect_value(t, ship.heading, u8(0xFF))
+
+	ship.heading = 0xFF
+	store_desired_heading(&ship, 0)
+	testing.expect_value(t, ship.heading, u8(0x0F))
+
+	ship.heading = 0x34
+	store_desired_heading(&ship, 0x01)
+	testing.expect_value(t, ship.heading, u8(0x14))
+}
+
+@(test)
 test_planet_team_flag :: proc(t: ^testing.T) {
 	ship: Ship_Record
 	planet: [11]u8

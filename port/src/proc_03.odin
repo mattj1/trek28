@@ -1265,18 +1265,5 @@ fun_3f6a :: proc() {
 fun_3fb3 :: proc() {
 }
 
-// @proc 1000:3fc1
-// listing: FUN_1000_3fc1
-// status: unread
-// 1000:3fc1  FUN_1000_3fc1:
-// 1000:3fc1      02 ed                    ADD CH,CH
-// 1000:3fc3      02 ed                    ADD CH,CH
-// 1000:3fc5      02 ed                    ADD CH,CH
-// 1000:3fc7      02 ed                    ADD CH,CH
-// 1000:3fc9      80 64 0a 0f              AND byte ptr [SI + 0xa],0xf
-// 1000:3fcd      08 6c 0a                 OR byte ptr [SI + 0xa],CH
-// 1000:3fd0  LAB_1000_3fd0:
-// 1000:3fd0      c3                       RET
-fun_3fc1 :: proc() {
-}
+// 1000:3fc1 store_desired_heading is in ship.odin.
 
