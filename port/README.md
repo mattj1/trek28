@@ -57,3 +57,5 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 ## Next
 
 `1000:1ee6` updates every side. It calls `1000:22a2` and `1000:202f` before `update_side_ships`. `1000:22a2` calls the planet procedures `3228`, `43b1`, `437a`, and `2310`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported.
+
+How to resume on another machine is in `RESUME.md`.
