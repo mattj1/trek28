@@ -731,6 +731,57 @@ test_drain_invisibility :: proc(t: ^testing.T) {
 	testing.expect_value(t, ship.flags, u8(0x10))
 }
 
+@(test)
+test_spawn_debris :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ship := &ds.ships[0][0]
+	ship.x = 0x1234
+	ship.y = 0xABCD
+	ship.plane = 2
+	ship.team = 7
+	ship.flags = 0x08
+
+	spawn_debris(ds, ship)
+	testing.expect_value(t, ds.debris[0][0], u8(0xC8))
+	testing.expect_value(t, ds.debris[0][1], u8(0x34))
+	testing.expect_value(t, ds.debris[0][2], u8(0x12))
+	testing.expect_value(t, ds.debris[0][3], u8(0xCD))
+	testing.expect_value(t, ds.debris[0][4], u8(0xAB))
+	testing.expect_value(t, ds.debris[0][5], u8(2))
+	testing.expect_value(t, ds.debris[0][6], u8(7))
+	testing.expect_value(t, ds.debris[1][0], u8(0))
+	testing.expect_value(t, ship.flags, u8(0x08))
+	testing.expect_value(t, ship.x, u16(0x1234))
+
+	// The next free slot is used, and junk in that slot is overwritten.
+	ds.debris[1][1] = 0xEE
+	ds.debris[1][4] = 0xEE
+	ship.x = 1
+	ship.y = 2
+	ship.plane = 0
+	ship.team = 3
+	spawn_debris(ds, ship)
+	testing.expect_value(t, ds.debris[0][0], u8(0xC8))
+	testing.expect_value(t, ds.debris[1][0], u8(0xC8))
+	testing.expect_value(t, ds.debris[1][1], u8(1))
+	testing.expect_value(t, ds.debris[1][2], u8(0))
+	testing.expect_value(t, ds.debris[1][3], u8(2))
+	testing.expect_value(t, ds.debris[1][4], u8(0))
+	testing.expect_value(t, ds.debris[1][5], u8(0))
+	testing.expect_value(t, ds.debris[1][6], u8(3))
+	testing.expect_value(t, ds.debris[2][0], u8(0))
+
+	for &slot in ds.debris {
+		slot[0] = 1
+	}
+	spawn_debris(ds, ship)
+	for slot in ds.debris {
+		testing.expect_value(t, slot[0], u8(1))
+	}
+	testing.expect_value(t, ship.x, u16(1))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

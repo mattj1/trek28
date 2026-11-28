@@ -101,32 +101,7 @@ package trek
 fun_1f1c :: proc() {
 }
 
-// @proc 1000:2002
-// listing: FUN_1000_2002
-// notes: spawn_debris
-// status: unread
-// 1000:2002  FUN_1000_2002:
-// 1000:2002      be 8c a0                 MOV SI,0xa08c
-// 1000:2005      b9 30 00                 MOV CX,0x30
-// 1000:2008  LAB_1000_2008:
-// 1000:2008      80 3c 00                 CMP byte ptr [SI],0x0
-// 1000:200b      74 06                    JZ 0x1000:2013
-// 1000:200d      83 c6 07                 ADD SI,0x7
-// 1000:2010      e2 f6                    LOOP 0x1000:2008
-// 1000:2012      c3                       RET
-// 1000:2013  LAB_1000_2013:
-// 1000:2013      c6 04 c8                 MOV byte ptr [SI],0xc8
-// 1000:2016      8b 45 01                 MOV AX,word ptr [DI + 0x1]
-// 1000:2019      89 44 01                 MOV word ptr [SI + 0x1],AX
-// 1000:201c      8b 45 03                 MOV AX,word ptr [DI + 0x3]
-// 1000:201f      89 44 03                 MOV word ptr [SI + 0x3],AX
-// 1000:2022      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
-// 1000:2025      88 44 06                 MOV byte ptr [SI + 0x6],AL
-// 1000:2028      8a 45 05                 MOV AL,byte ptr [DI + 0x5]
-// 1000:202b      88 44 05                 MOV byte ptr [SI + 0x5],AL
-// 1000:202e      c3                       RET
-fun_2002 :: proc() {
-}
+// 1000:2002 spawn_debris is in ship.odin.
 
 // @proc 1000:202f
 // listing: FUN_1000_202f

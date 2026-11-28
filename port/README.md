@@ -34,6 +34,7 @@ odin run src
 | `1000:237b` | `add_scaled_charge` | tested. A nonzero `byte_34` shifts `AX` right twice. Flag bit `0x20` with shot bit 7 clear divides `AX` by 3. The result is added and returned |
 | `1000:23b3` | `read_handicap` | tested. Returns `ids[current_side & 3][4]` |
 | `1000:226c` | `drain_invisibility` | tested. On an even frame, with no shot and flag bit `0x10` set, the invisibility byte counts down. A handicap of 4 or more skips the frames whose low two bits are clear. Zero clears bit `0x10` |
+| `1000:2002` | `spawn_debris` | tested. The first debris slot with a zero lifetime receives `0xC8`, the ship's X and Y, its plane, and its team |
 | `1000:221e` | `slew_heading` | tested. Actual heading steps toward desired by 1 or 2 around the 16-step circle. Seek distance `<= 0xFA` copies desired into actual |
 | `1000:21af` | `step_impulse` | tested. Actual impulse steps by 1 when `impulse_wait` reaches 0, and charges `2 * gap`. A zero wait only arms the countdown |
 | `1000:218b` | `slew_impulse` | tested. Slews heading, pulls a desired impulse of 11 down to 10 while warp is 0, then stores the nibble from `step_impulse` |
@@ -46,4 +47,4 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:2002` copies a wreck into the first empty debris slot. The assembly is in `src/proc_02.odin`.
+`1000:2343` ticks mine lifetimes. A lifetime of 1 clears the mine and increments the base stock. The assembly is in `src/proc_02.odin`.
