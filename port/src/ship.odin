@@ -2006,3 +2006,20 @@ store_if_local_ship :: proc(ds: ^DS_Segment, bx, ax: u16) {
 	raw := transmute(^[DS_SIZE]u8)ds
 	write_u16(raw, bx, ax)
 }
+
+// 1000:1ec1 ship_flag_ptr.
+// BX is side_flags indexed by current_side masked with 3. Side 5
+// selects the second byte.
+
+// @proc 1000:1ec1
+// status: tested
+// Odin: ship_flag_ptr
+// 1000:1ec1  FUN_1000_1ec1:
+// 1000:1ec1      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:1ec5      81 e3 03 00              AND BX,0x3
+// 1000:1ec9      81 c3 d4 89              ADD BX,0x89d4
+// 1000:1ecd      c3                       RET
+
+ship_flag_ptr :: proc(ds: ^DS_Segment) -> ^u8 {
+	return &ds.side_flags[ds.current_side & 3]
+}

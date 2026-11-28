@@ -2191,6 +2191,26 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_ship_flag_ptr :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.current_side = 0
+	testing.expect_value(t, ship_flag_ptr(ds), &ds.side_flags[0])
+	ds.current_side = 3
+	testing.expect_value(t, ship_flag_ptr(ds), &ds.side_flags[3])
+	ds.current_side = 4
+	testing.expect_value(t, ship_flag_ptr(ds), &ds.side_flags[0])
+	ds.current_side = 5
+	p := ship_flag_ptr(ds)
+	testing.expect_value(t, p, &ds.side_flags[1])
+	p^ = 0x10
+	testing.expect_value(t, ds.side_flags[1], u8(0x10))
+	testing.expect_value(t, ds.side_flags[0], u8(0))
+	testing.expect_value(t, ds.side_flags[2], u8(0))
+	testing.expect_value(t, ds.side_flags[3], u8(0))
+}
+
+@(test)
 test_store_if_local_ship :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

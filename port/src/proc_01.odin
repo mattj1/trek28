@@ -1210,17 +1210,7 @@ fun_1e06 :: proc() {
 fun_1e92 :: proc() {
 }
 
-// @proc 1000:1ec1
-// listing: FUN_1000_1ec1
-// notes: ship_flag_ptr
-// status: unread
-// 1000:1ec1  FUN_1000_1ec1:
-// 1000:1ec1      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
-// 1000:1ec5      81 e3 03 00              AND BX,0x3
-// 1000:1ec9      81 c3 d4 89              ADD BX,0x89d4
-// 1000:1ecd      c3                       RET
-fun_1ec1 :: proc() {
-}
+// 1000:1ec1 ship_flag_ptr is in ship.odin.
 
 // @proc 1000:1ece
 // listing: pick_ptr
