@@ -647,6 +647,56 @@ test_satellite_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_place_planet_coords :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	si := planet_at(0, 0)
+	other := planet_at(0, 1)
+
+	// Frame 4, seed 2. The first planet pair is 0x03B8, 0x39E9.
+	// Nothing else is occupied, so that pair is kept. The level stays.
+	ds.frame_count = 4
+	ds.rng_seed = 2
+	ds.objects_per_level = 0
+	ds.mode_bits = 0
+	write_u8(&m.ds, si, 0x05)
+	write_u8(&m.ds, add16(si, 5), 1)
+	place_planet_coords(m, si)
+	testing.expect_value(t, read_u16(&m.ds, add16(si, 1)), u16(0x03B8))
+	testing.expect_value(t, read_u16(&m.ds, add16(si, 3)), u16(0x39E9))
+	testing.expect_value(t, ds.rng_seed, u16(0x39E9))
+	testing.expect_value(t, read_u8(&m.ds, si), u8(0x05))
+	testing.expect_value(t, read_u8(&m.ds, add16(si, 5)), u8(1))
+
+	// The same pair already occupied on this level forces the next pair.
+	ds.rng_seed = 2
+	ds.objects_per_level = 2
+	write_u8(&m.ds, add16(si, 5), 0)
+	place_object(m, other, 0x03B8, 0x39E9)
+	write_u8(&m.ds, add16(other, 5), 0)
+	place_planet_coords(m, si)
+	testing.expect_value(t, read_u16(&m.ds, add16(si, 1)), u16(0x28AA))
+	testing.expect_value(t, read_u16(&m.ds, add16(si, 3)), u16(0x2BF6))
+	testing.expect_value(t, ds.rng_seed, u16(0x6BF6))
+	testing.expect_value(t, read_u16(&m.ds, add16(other, 1)), u16(0x03B8))
+	testing.expect_value(t, read_u16(&m.ds, add16(other, 3)), u16(0x39E9))
+
+	// A live base on the first pair rejects it. No other planet is walked.
+	ds.rng_seed = 2
+	ds.objects_per_level = 0
+	base := u16(offset_of(DS_Segment, bases))
+	place_object(m, base, 0x03B8, 0x39E9)
+	write_u16(&m.ds, add16(base, 8), 1)
+	place_planet_coords(m, si)
+	testing.expect_value(t, read_u16(&m.ds, add16(si, 1)), u16(0x28AA))
+	testing.expect_value(t, read_u16(&m.ds, add16(si, 3)), u16(0x2BF6))
+	testing.expect_value(t, ds.rng_seed, u16(0x6BF6))
+	testing.expect_value(t, read_u16(&m.ds, add16(base, 8)), u16(1))
+}
+
+@(test)
 test_place_base_coords :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

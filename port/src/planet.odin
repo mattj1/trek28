@@ -683,6 +683,43 @@ place_base_coords :: proc(ds: ^DS_Segment, si: u16) {
 	write_u16(raw, add16(si, 3), random_base_coord(ds))
 }
 
+// 1000:41fa place_planet_coords.
+// The name is inferred. Universe build calls this with SI on a planet
+// whose level byte is already stored. A pair from random_planet_coord
+// is kept only when reject_near_planet and reject_near_base both accept
+// it. The base test uses BP 0x3E8 and DX 0x1770. Carry from either
+// check draws a new pair.
+
+// @proc 1000:41fa
+// status: tested
+// Odin: place_planet_coords
+// 1000:41fa  FUN_1000_41fa:
+// 1000:41fa      e8 9e 00                 CALL 0x1000:429b
+// 1000:41fd      89 44 01                 MOV word ptr [SI + 0x1],AX
+// 1000:4200      e8 98 00                 CALL 0x1000:429b
+// 1000:4203      89 44 03                 MOV word ptr [SI + 0x3],AX
+// 1000:4206      e8 52 00                 CALL 0x1000:425b
+// 1000:4209      72 ef                    JC 0x1000:41fa
+// 1000:420b      bd e8 03                 MOV BP,0x3e8
+// 1000:420e      ba 70 17                 MOV DX,0x1770
+// 1000:4211      e8 03 00                 CALL 0x1000:4217
+// 1000:4214      72 e4                    JC 0x1000:41fa
+// 1000:4216      c3                       RET
+
+place_planet_coords :: proc(m: ^Machine, si: u16) {
+	ds := transmute(^DS_Segment)&m.ds
+	for {
+		write_u16(&m.ds, add16(si, 1), random_planet_coord(ds))
+		write_u16(&m.ds, add16(si, 3), random_planet_coord(ds))
+		if reject_near_planet(m, si) {
+			continue
+		}
+		if !reject_near_base(m, si, 0x3E8, 0x1770) {
+			break
+		}
+	}
+}
+
 @(private)
 rcr8 :: proc(v: u8, carry: bool) -> (u8, bool) {
 	out_carry := v & 1 == 1

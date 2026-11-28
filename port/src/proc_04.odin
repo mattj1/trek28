@@ -243,23 +243,7 @@ fun_3fd1 :: proc() {
 
 // 1000:41f0 timed_type is in planet.odin.
 
-// @proc 1000:41fa
-// listing: FUN_1000_41fa
-// status: unread
-// 1000:41fa  FUN_1000_41fa:
-// 1000:41fa      e8 9e 00                 CALL 0x1000:429b
-// 1000:41fd      89 44 01                 MOV word ptr [SI + 0x1],AX
-// 1000:4200      e8 98 00                 CALL 0x1000:429b
-// 1000:4203      89 44 03                 MOV word ptr [SI + 0x3],AX
-// 1000:4206      e8 52 00                 CALL 0x1000:425b
-// 1000:4209      72 ef                    JC 0x1000:41fa
-// 1000:420b      bd e8 03                 MOV BP,0x3e8
-// 1000:420e      ba 70 17                 MOV DX,0x1770
-// 1000:4211      e8 03 00                 CALL 0x1000:4217
-// 1000:4214      72 e4                    JC 0x1000:41fa
-// 1000:4216      c3                       RET
-fun_41fa :: proc() {
-}
+// 1000:41fa place_planet_coords is in planet.odin.
 
 // 1000:4217 reject_near_base is in planet.odin.
 
