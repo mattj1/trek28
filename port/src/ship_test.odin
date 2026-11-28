@@ -3938,6 +3938,88 @@ test_reach_base :: proc(t: ^testing.T) {
 	testing.expect_value(t, ship.damage, u8(0))
 }
 
+@(test)
+test_scale_hit_charge :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	source, target: Ship_Record
+
+	words := []u16{0x1F40, 0x1770, 0x1194, 0x09C4, 0x05DC, 0x03E8, 0x01F4, 0x00FA, 0x007D, 0x0032, 0x0019, 0x000F, 0}
+	for i in 0 ..< 13 {
+		lo := m.cs[0x30D2 + i * 2]
+		hi := m.cs[0x30D2 + i * 2 + 1]
+		testing.expect_value(t, u16(lo) | u16(hi) << 8, words[i])
+	}
+
+	// A living flag byte and countdown 12 do not charge.
+	source.flags = 0x80
+	source.own_side = 0
+	target.pending_charge = 7
+	scale_hit_charge(m, &source, &target, 0x64)
+	testing.expect_value(t, target.pending_charge, u16(7))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	source.flags = 0x0D
+	scale_hit_charge(m, &source, &target, 0x64)
+	source.flags = 0x0C
+	scale_hit_charge(m, &source, &target, 0x64)
+	testing.expect_value(t, target.pending_charge, u16(7))
+	testing.expect_value(t, source.pending_charge, u16(0))
+
+	// Flag 1, AX 0x64: isqrt(5000) is 71, times 0x1770, divided by 0x64, is 0x10A4.
+	source.flags = 1
+	target.pending_charge = 0
+	target.damage = 0
+	scale_hit_charge(m, &source, &target, 0x64)
+	testing.expect_value(t, target.pending_charge, u16(0x10A4))
+	testing.expect_value(t, target.damage, u8(4))
+	testing.expect_value(t, ds.side_score[0], u16(43))
+	testing.expect_value(t, source.pending_charge, u16(0))
+
+	// Flag 11 charges 0x12, which rounds to no score.
+	source.flags = 11
+	target.pending_charge = 0
+	target.damage = 0
+	ds.side_score[0] = 0
+	scale_hit_charge(m, &source, &target, 0x20)
+	testing.expect_value(t, target.pending_charge, u16(0x12))
+	testing.expect_value(t, target.damage, u8(0))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// Flag 0, AX 0x100 charges 0xDCB and scores 35.
+	source.flags = 0
+	target.pending_charge = 0
+	target.damage = 0
+	scale_hit_charge(m, &source, &target, 0x100)
+	testing.expect_value(t, target.pending_charge, u16(0x0DCB))
+	testing.expect_value(t, target.damage, u8(3))
+	testing.expect_value(t, ds.side_score[0], u16(35))
+
+	// byte_34 shifts the charge before it is stored, and the score uses that shift.
+	source.flags = 1
+	target.byte_34 = 1
+	target.pending_charge = 0
+	target.damage = 0
+	ds.side_score[0] = 0
+	scale_hit_charge(m, &source, &target, 0x64)
+	testing.expect_value(t, target.pending_charge, u16(0x429))
+	testing.expect_value(t, target.damage, u8(1))
+	testing.expect_value(t, ds.side_score[0], u16(11))
+
+	// Side 4 is not a score slot. The charge still lands.
+	source.own_side = 4
+	target.byte_34 = 0
+	target.pending_charge = 0
+	target.damage = 0
+	scale_hit_charge(m, &source, &target, 0x64)
+	testing.expect_value(t, target.pending_charge, u16(0x10A4))
+	testing.expect_value(t, ds.side_score[0], u16(11))
+	testing.expect_value(t, ds.side_score[1], u16(0))
+	testing.expect_value(t, source.flags, u8(1))
+	testing.expect_value(t, target.flags, u8(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

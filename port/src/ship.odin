@@ -3489,3 +3489,60 @@ reach_base :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record, ax: u16
 	transfer_base_stock(ds, base, ship)
 	return true
 }
+
+// 1000:30a4 scale_hit_charge.
+// The name is inferred. SI is the ship whose flag byte indexes the
+// 13 words at CS:30D2 and whose side is scored. DI receives the
+// charge. The caller swaps the two ships and calls this twice.
+//
+// A flag byte above 0x0C returns. A zero table word returns. Otherwise
+// the charge is isqrt of the low 16 bits of AX * 0x32, times that
+// word, divided by AX. The high half of the first multiply is ignored.
+// add_scaled_charge may shrink the amount, and the score uses the
+// amount that was stored. AX of 0 reaches the divide, which faults on
+// an 8086.
+
+// @proc 1000:30a4
+// status: tested
+// Odin: scale_hit_charge
+// 1000:30a4  FUN_1000_30a4:
+// 1000:30a4      8a 1c                    MOV BL,byte ptr [SI]
+// 1000:30a6      80 fb 0c                 CMP BL,0xc
+// 1000:30a9      77 26                    JA 0x1000:30d1
+// 1000:30ab      32 ff                    XOR BH,BH
+// 1000:30ad      d1 e3                    SHL BX,0x1
+// 1000:30af      2e 8b 8f d2 30           MOV CX,word ptr CS:[BX + 0x30d2]
+// 1000:30b4      e3 1b                    JCXZ 0x1000:30d1
+// 1000:30b6      52                       PUSH DX
+// 1000:30b7      50                       PUSH AX
+// 1000:30b8      50                       PUSH AX
+// 1000:30b9      bb 32 00                 MOV BX,0x32
+// 1000:30bc      f7 e3                    MUL BX
+// 1000:30be      e8 af f3                 CALL 0x1000:2470
+// 1000:30c1      f7 e1                    MUL CX
+// 1000:30c3      5b                       POP BX
+// 1000:30c4      f7 f3                    DIV BX
+// 1000:30c6      e8 b2 f2                 CALL 0x1000:237b
+// 1000:30c9      8a 5c 17                 MOV BL,byte ptr [SI + 0x17]
+// 1000:30cc      e8 05 fe                 CALL 0x1000:2ed4
+// 1000:30cf      58                       POP AX
+// 1000:30d0      5a                       POP DX
+// 1000:30d1  LAB_1000_30d1:
+// 1000:30d1      c3                       RET
+
+scale_hit_charge :: proc(m: ^Machine, source, target: ^Ship_Record, ax: u16) {
+	if source.flags > 0x0C {
+		return
+	}
+	at := 0x30D2 + int(source.flags) * 2
+	cx := u16(m.cs[at]) | u16(m.cs[at + 1]) << 8
+	if cx == 0 {
+		return
+	}
+	low := u16(u32(ax) * 0x32)
+	root := isqrt_xlat(m.cs[:m.cs_len], low)
+	quot := u16((u32(root) * u32(cx)) / u32(ax))
+	scored := add_scaled_charge(target, quot)
+	ds := transmute(^DS_Segment)&m.ds
+	add_score_div100(ds, source.own_side, scored)
+}
