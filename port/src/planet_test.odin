@@ -54,3 +54,68 @@ test_mix_rng :: proc(t: ^testing.T) {
 		testing.expect_value(t, mix_rng(ds), want[i])
 	}
 }
+
+@(test)
+test_step_orbit :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	di := u16(offset_of(DS_Segment, planets))
+
+	// Kind 0 returns before the phase increment.
+	write_u8(&m.ds, di, 1)
+	write_u16(&m.ds, add16(di, 1), 100)
+	write_u16(&m.ds, add16(di, 3), 200)
+	write_u8(&m.ds, add16(di, 7), 5)
+	write_u8(&m.ds, add16(di, 8), 0)
+	step_orbit(m, di)
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(100))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(200))
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 7)), u8(5))
+
+	// Kind 1, phase 0. CS:43F9[0] is 0x27. Y index 8 is 0xFC, which is -4.
+	write_u16(&m.ds, add16(di, 1), 0)
+	write_u16(&m.ds, add16(di, 3), 0)
+	write_u8(&m.ds, add16(di, 7), 0)
+	write_u8(&m.ds, add16(di, 8), 1)
+	step_orbit(m, di)
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 7)), u8(1))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x27))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(0xFFFC))
+
+	// Phase 0xFF wraps, and the mask keeps the index inside the 32-byte table.
+	write_u16(&m.ds, add16(di, 1), 0)
+	write_u16(&m.ds, add16(di, 3), 0)
+	write_u8(&m.ds, add16(di, 7), 0xFF)
+	step_orbit(m, di)
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 7)), u8(0))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x27))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(4))
+
+	// The word add wraps and is not masked with 0x3FFF.
+	write_u16(&m.ds, add16(di, 1), 0xFFF0)
+	write_u16(&m.ds, add16(di, 3), 0x3FF0)
+	write_u8(&m.ds, add16(di, 7), 0)
+	step_orbit(m, di)
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x0017))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(0x3FEC))
+
+	// Kind 2 uses CS:4419. Phase 0 indexes X at 0 (0x27) and Y at 0x10 (0xFE).
+	write_u16(&m.ds, add16(di, 1), 0)
+	write_u16(&m.ds, add16(di, 3), 10)
+	write_u8(&m.ds, add16(di, 7), 0)
+	write_u8(&m.ds, add16(di, 8), 2)
+	step_orbit(m, di)
+	testing.expect_value(t, read_u8(&m.ds, add16(di, 7)), u8(1))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x27))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(8))
+
+	// Any kind other than 0 or 1 takes that same table.
+	write_u16(&m.ds, add16(di, 1), 0)
+	write_u16(&m.ds, add16(di, 3), 10)
+	write_u8(&m.ds, add16(di, 7), 0)
+	write_u8(&m.ds, add16(di, 8), 0xFF)
+	step_orbit(m, di)
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x27))
+	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(8))
+}

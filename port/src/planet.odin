@@ -1,5 +1,7 @@
 package trek
 
+import "base:intrinsics"
+
 // 1000:437a mix_rng.
 // The notes call this the RNG. It mixes the low byte of frame_count into
 // rng_seed and stores the word back. AX on return is that new seed.
@@ -67,6 +69,93 @@ mix_rng :: proc(ds: ^DS_Segment) -> u16 {
 	bl = dh
 	ds.rng_seed = u16(bh) << 8 | u16(bl)
 	return ds.rng_seed
+}
+
+// 1000:43b1 step_orbit.
+// The notes already use this name. DI is one 11-byte planet.
+// Kind 0 at +08 returns with the phase and the position unchanged.
+// Kind 1 reads the 32-byte table at CS:43F9 and masks the phase with 0x1F.
+// Any other kind reads the 64-byte table at CS:4419 and masks with 0x3F.
+// The phase byte increments, wrapping through 0xFF. The table byte is
+// sign-extended and added to X, then the phase plus 8 or 16 indexes Y.
+// The position add is not masked with 0x3FFF.
+
+// @proc 1000:43b1
+// status: tested
+// Odin: step_orbit
+// 1000:43b1  FUN_1000_43b1:
+// 1000:43b1      56                       PUSH SI
+// 1000:43b2      53                       PUSH BX
+// 1000:43b3      51                       PUSH CX
+// 1000:43b4      52                       PUSH DX
+// 1000:43b5      8a 45 08                 MOV AL,byte ptr [DI + 0x8]
+// 1000:43b8      22 c0                    AND AL,AL
+// 1000:43ba      74 38                    JZ 0x1000:43f4
+// 1000:43bc      bb f9 43                 MOV BX,0x43f9
+// 1000:43bf      b2 08                    MOV DL,0x8
+// 1000:43c1      b1 1f                    MOV CL,0x1f
+// 1000:43c3      fe c8                    DEC AL
+// 1000:43c5      74 07                    JZ 0x1000:43ce
+// 1000:43c7      bb 19 44                 MOV BX,0x4419
+// 1000:43ca      b2 10                    MOV DL,0x10
+// 1000:43cc      b1 3f                    MOV CL,0x3f
+// 1000:43ce  LAB_1000_43ce:
+// 1000:43ce      8a 45 07                 MOV AL,byte ptr [DI + 0x7]
+// 1000:43d1      fe 45 07                 INC byte ptr [DI + 0x7]
+// 1000:43d4      8a e8                    MOV CH,AL
+// 1000:43d6      22 c1                    AND AL,CL
+// 1000:43d8      32 e4                    XOR AH,AH
+// 1000:43da      8b f0                    MOV SI,AX
+// 1000:43dc      2e 8a 00                 MOV AL,byte ptr CS:[BX + SI]
+// 1000:43df      98                       CBW
+// 1000:43e0      01 45 01                 ADD word ptr [DI + 0x1],AX
+// 1000:43e3      8a c5                    MOV AL,CH
+// 1000:43e5      02 c2                    ADD AL,DL
+// 1000:43e7      22 c1                    AND AL,CL
+// 1000:43e9      32 e4                    XOR AH,AH
+// 1000:43eb      8b f0                    MOV SI,AX
+// 1000:43ed      2e 8a 00                 MOV AL,byte ptr CS:[BX + SI]
+// 1000:43f0      98                       CBW
+// 1000:43f1      01 45 03                 ADD word ptr [DI + 0x3],AX
+// 1000:43f4  LAB_1000_43f4:
+// 1000:43f4      5a                       POP DX
+// 1000:43f5      59                       POP CX
+// 1000:43f6      5b                       POP BX
+// 1000:43f7      5e                       POP SI
+// 1000:43f8      c3                       RET
+
+step_orbit :: proc(m: ^Machine, di: u16) {
+	kind := read_u8(&m.ds, add16(di, 8))
+	if kind == 0 {
+		return
+	}
+	table := u16(0x43F9)
+	y_bias: u8 = 8
+	mask: u8 = 0x1F
+	if kind != 1 {
+		table = 0x4419
+		y_bias = 0x10
+		mask = 0x3F
+	}
+	phase := read_u8(&m.ds, add16(di, 7))
+	next, _ := intrinsics.overflow_add(phase, 1)
+	write_u8(&m.ds, add16(di, 7), next)
+	dx := cbw(m.cs[int(table) + int(phase & mask)])
+	x := read_u16(&m.ds, add16(di, 1))
+	write_u16(&m.ds, add16(di, 1), add16(x, dx))
+	y_phase, _ := intrinsics.overflow_add(phase, y_bias)
+	dy := cbw(m.cs[int(table) + int(y_phase & mask)])
+	y := read_u16(&m.ds, add16(di, 3))
+	write_u16(&m.ds, add16(di, 3), add16(y, dy))
+}
+
+// CBW. A byte at or above 0x80 becomes a negative word.
+@(private)
+cbw :: proc(v: u8) -> u16 {
+	if v & 0x80 != 0 {
+		return 0xFF00 | u16(v)
+	}
+	return u16(v)
 }
 
 @(private)

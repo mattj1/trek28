@@ -83,7 +83,7 @@ A quiet alive ship for that walk is flags `0x80`, energy 5000, impulse 0, headin
 
 `1000:1ee6` is the next ship-update caller. In order it calls `1000:22a2`, `1000:202f`, `1000:2343` (translated), then `update_side_ships` four times. It sets `current_side` to 0..3 and DI to `8C64`, `8D50`, `8E3C`, `8F28`.
 
-`1000:22a2` is the planet walk. It calls `1000:3228` (translated), `1000:43b1`, `1000:437a` (`mix_rng`, translated), and `1000:2310`. `43b1` and `2310` are still stubs. `1000:3228` returns `planets[0]`, `[1]`, or `[2]` for levels 0, 1, and 2, and `planets[3]` for every other level byte. The count is `objects_per_level` with the high byte clear. It is not clamped to `0x50`. `1000:3225` is the fall-in that loads AL from `[SI+5]`. Leave it unread.
+`1000:22a2` is the planet walk. It calls `1000:3228` (translated), `1000:43b1` (`step_orbit`, translated), `1000:437a` (`mix_rng`, translated), and `1000:2310`. `2310` is still a stub. `1000:3228` returns `planets[0]`, `[1]`, or `[2]` for levels 0, 1, and 2, and `planets[3]` for every other level byte. The count is `objects_per_level` with the high byte clear. It is not clamped to `0x50`. `1000:3225` is the fall-in that loads AL from `[SI+5]`. Leave it unread.
 
 `1000:202f` ages debris when `(frame_count & 7) == 4`. A lifetime that hits zero calls `1000:ac37`. That procedure subtracts `0x233` words at `CS:A800` from AX. A zero result returns. A nonzero result clears interrupts and IRETs through a reset-style stack. It is an image checksum. Leave `1000:202f` unported until `1000:ac37` is an explicit decision: check the embedded COM, or a stub that returns.
 

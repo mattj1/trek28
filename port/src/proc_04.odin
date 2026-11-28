@@ -474,52 +474,7 @@ fun_4312 :: proc() {
 
 // 1000:437a mix_rng is in planet.odin.
 
-// @proc 1000:43b1
-// listing: FUN_1000_43b1
-// notes: step_orbit
-// status: unread
-// 1000:43b1  FUN_1000_43b1:
-// 1000:43b1      56                       PUSH SI
-// 1000:43b2      53                       PUSH BX
-// 1000:43b3      51                       PUSH CX
-// 1000:43b4      52                       PUSH DX
-// 1000:43b5      8a 45 08                 MOV AL,byte ptr [DI + 0x8]
-// 1000:43b8      22 c0                    AND AL,AL
-// 1000:43ba      74 38                    JZ 0x1000:43f4
-// 1000:43bc      bb f9 43                 MOV BX,0x43f9
-// 1000:43bf      b2 08                    MOV DL,0x8
-// 1000:43c1      b1 1f                    MOV CL,0x1f
-// 1000:43c3      fe c8                    DEC AL
-// 1000:43c5      74 07                    JZ 0x1000:43ce
-// 1000:43c7      bb 19 44                 MOV BX,0x4419
-// 1000:43ca      b2 10                    MOV DL,0x10
-// 1000:43cc      b1 3f                    MOV CL,0x3f
-// 1000:43ce  LAB_1000_43ce:
-// 1000:43ce      8a 45 07                 MOV AL,byte ptr [DI + 0x7]
-// 1000:43d1      fe 45 07                 INC byte ptr [DI + 0x7]
-// 1000:43d4      8a e8                    MOV CH,AL
-// 1000:43d6      22 c1                    AND AL,CL
-// 1000:43d8      32 e4                    XOR AH,AH
-// 1000:43da      8b f0                    MOV SI,AX
-// 1000:43dc      2e 8a 00                 MOV AL,byte ptr CS:[BX + SI]
-// 1000:43df      98                       CBW
-// 1000:43e0      01 45 01                 ADD word ptr [DI + 0x1],AX
-// 1000:43e3      8a c5                    MOV AL,CH
-// 1000:43e5      02 c2                    ADD AL,DL
-// 1000:43e7      22 c1                    AND AL,CL
-// 1000:43e9      32 e4                    XOR AH,AH
-// 1000:43eb      8b f0                    MOV SI,AX
-// 1000:43ed      2e 8a 00                 MOV AL,byte ptr CS:[BX + SI]
-// 1000:43f0      98                       CBW
-// 1000:43f1      01 45 03                 ADD word ptr [DI + 0x3],AX
-// 1000:43f4  LAB_1000_43f4:
-// 1000:43f4      5a                       POP DX
-// 1000:43f5      59                       POP CX
-// 1000:43f6      5b                       POP BX
-// 1000:43f7      5e                       POP SI
-// 1000:43f8      c3                       RET
-fun_43b1 :: proc() {
-}
+// 1000:43b1 step_orbit is in planet.odin.
 
 // 1000:4459 spawn_ship is in ship.odin.
 
