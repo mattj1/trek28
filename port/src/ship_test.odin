@@ -2014,6 +2014,16 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_key_is_up :: proc(t: ^testing.T) {
+	testing.expect_value(t, key_is_up('-'), true)
+	testing.expect_value(t, key_is_up(0xC8), true)
+	testing.expect_value(t, key_is_up('+'), false)
+	testing.expect_value(t, key_is_up(0xD0), false)
+	testing.expect_value(t, key_is_up(0), false)
+	testing.expect_value(t, key_is_up('A'), false)
+}
+
+@(test)
 test_key_is_down :: proc(t: ^testing.T) {
 	testing.expect_value(t, key_is_down('+'), true)
 	testing.expect_value(t, key_is_down(0xD0), true)

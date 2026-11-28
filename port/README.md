@@ -63,6 +63,7 @@ odin run src
 | `1000:43b1` | `step_orbit` | tested. Kind 0 leaves the planet alone. Kind 1 steps through the 32-byte table at `CS:43F9`. Any other kind uses the 64-byte table at `CS:4419`. The phase byte wraps, and the sign-extended step is added to X and Y |
 | `1000:1970` | `to_upper` | tested. `'a'..'z'` loses bit 5. Every other byte is unchanged |
 | `1000:0b07` | `key_is_down` | tested. ZF is set for `'+'` and for `0xD0` |
+| `1000:0b0e` | `key_is_up` | tested. ZF is set for `'-'` and for `0xC8` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
