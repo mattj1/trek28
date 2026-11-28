@@ -285,6 +285,70 @@ test_slew_impulse :: proc(t: ^testing.T) {
 	testing.expect_value(t, ship.impulse_wait, u8(3))
 }
 
+@(test)
+test_apply_damage_thresholds :: proc(t: ^testing.T) {
+	Case :: struct {
+		damage:        u8,
+		flags:         u8,
+		want_flags:    u8,
+		seek:          u8,
+		want_seek:     u8,
+		cooldown:      u8,
+		want_cooldown: u8,
+		byte_2a:       u8,
+		want_2a:       u8,
+		get_mine:      u8,
+		want_mine:     u8,
+	}
+	cases := []Case{
+		{0x00, 0xFF, 0xFF, 0x1A, 0x1A, 0x05, 0x05, 0x08, 0x08, 0x01, 0x01},
+		{0x07, 0xB4, 0xB4, 0x1A, 0x1A, 0x05, 0x05, 0x08, 0x08, 0x01, 0x01},
+		{0x08, 0xFF, 0xCF, 0x1A, 0x1A, 0x05, 0x05, 0x08, 0x08, 0x01, 0x01},
+		{0x0B, 0xB0, 0x80, 0x1F, 0x1F, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x03},
+		{0x0C, 0xFF, 0xCF, 0x1A, 0x00, 0x05, 0x05, 0x08, 0x08, 0x01, 0x01},
+		{0x0F, 0xF5, 0xC5, 0xFF, 0x00, 0x01, 0x01, 0x08, 0x08, 0x01, 0x01},
+		{0x10, 0xFF, 0xCF, 0x1A, 0x00, 0x01, 0x18, 0x08, 0x08, 0x01, 0x01},
+		{0x13, 0x80, 0x80, 0x02, 0x00, 0xFF, 0x18, 0x08, 0x08, 0x01, 0x01},
+		{0x14, 0xFF, 0xCF, 0x1A, 0x00, 0x00, 0x18, 0xFF, 0x00, 0xFF, 0x00},
+		{0xFF, 0xB5, 0x85, 0x11, 0x00, 0x18, 0x18, 0x04, 0x00, 0x01, 0x00},
+	}
+	for c in cases {
+		ship: Ship_Record
+		ship.damage = c.damage
+		ship.flags = c.flags
+		ship.seek = c.seek
+		ship.seek_distance = 0x00FA
+		ship.weapons_cooldown = c.cooldown
+		ship.byte_2a = c.byte_2a
+		ship.get_mine = c.get_mine
+		ship.invisibility = 0x63
+		ship.energy = 0x1234
+		ship.heading = 0x21
+		apply_damage_thresholds(&ship)
+		testing.expect_value(t, ship.damage, c.damage)
+		testing.expect_value(t, ship.flags, c.want_flags)
+		testing.expect_value(t, ship.seek, c.want_seek)
+		testing.expect_value(t, ship.seek_distance, u16(0x00FA))
+		testing.expect_value(t, ship.weapons_cooldown, c.want_cooldown)
+		testing.expect_value(t, ship.byte_2a, c.want_2a)
+		testing.expect_value(t, ship.get_mine, c.want_mine)
+		testing.expect_value(t, ship.invisibility, u8(0x63))
+		testing.expect_value(t, ship.energy, u16(0x1234))
+		testing.expect_value(t, ship.heading, u8(0x21))
+	}
+
+	// Damage that stays at 0x10 stores 0x18 again on the next call.
+	ship: Ship_Record
+	ship.damage = 0x10
+	ship.flags = 0x80
+	ship.weapons_cooldown = 0x18
+	apply_damage_thresholds(&ship)
+	ship.weapons_cooldown = 0x99
+	apply_damage_thresholds(&ship)
+	testing.expect_value(t, ship.weapons_cooldown, u8(0x18))
+	testing.expect_value(t, ship.flags, u8(0x80))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

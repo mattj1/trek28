@@ -282,3 +282,52 @@ step_impulse :: proc(ship: ^Ship_Record, impulse: u8) -> (actual: u8) {
 	add_pending_charge(ship, u16(gap) * 2)
 	return
 }
+
+// 1000:20e3 apply_damage_thresholds.
+// The name is inferred from the four comparisons. DI is one ship record.
+// Damage below 8 leaves the record alone. From 8, flag bits 4 and 5 are
+// cleared. From 0x0C, seek is stored as 0. From 0x10, weapons_cooldown is
+// stored as 0x18 on every call. From 0x14, byte_2a and get_mine are stored
+// as 0. Each threshold includes the effects of the ones below it.
+
+// @proc 1000:20e3
+// status: tested
+// Odin: apply_damage_thresholds
+// 1000:20e3  FUN_1000_20e3:
+// 1000:20e3      8a 45 0e                 MOV AL,byte ptr [DI + 0xe]
+// 1000:20e6      3c 08                    CMP AL,0x8
+// 1000:20e8      72 1f                    JC 0x1000:2109
+// 1000:20ea      80 25 cf                 AND byte ptr [DI],0xcf
+// 1000:20ed      3c 0c                    CMP AL,0xc
+// 1000:20ef      72 18                    JC 0x1000:2109
+// 1000:20f1      c6 45 11 00              MOV byte ptr [DI + 0x11],0x0
+// 1000:20f5      3c 10                    CMP AL,0x10
+// 1000:20f7      72 10                    JC 0x1000:2109
+// 1000:20f9      c6 45 15 18              MOV byte ptr [DI + 0x15],0x18
+// 1000:20fd      3c 14                    CMP AL,0x14
+// 1000:20ff      72 08                    JC 0x1000:2109
+// 1000:2101      c6 45 2a 00              MOV byte ptr [DI + 0x2a],0x0
+// 1000:2105      c6 45 22 00              MOV byte ptr [DI + 0x22],0x0
+// 1000:2109  LAB_1000_2109:
+// 1000:2109      c3                       RET
+
+apply_damage_thresholds :: proc(ship: ^Ship_Record) {
+	damage := ship.damage
+	if damage < 8 {
+		return
+	}
+	ship.flags &= 0xCF
+	if damage < 0x0C {
+		return
+	}
+	ship.seek = 0
+	if damage < 0x10 {
+		return
+	}
+	ship.weapons_cooldown = 0x18
+	if damage < 0x14 {
+		return
+	}
+	ship.byte_2a = 0
+	ship.get_mine = 0
+}

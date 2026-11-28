@@ -228,28 +228,7 @@ fun_202f :: proc() {
 fun_2055 :: proc() {
 }
 
-// @proc 1000:20e3
-// listing: FUN_1000_20e3
-// status: unread
-// 1000:20e3  FUN_1000_20e3:
-// 1000:20e3      8a 45 0e                 MOV AL,byte ptr [DI + 0xe]
-// 1000:20e6      3c 08                    CMP AL,0x8
-// 1000:20e8      72 1f                    JC 0x1000:2109
-// 1000:20ea      80 25 cf                 AND byte ptr [DI],0xcf
-// 1000:20ed      3c 0c                    CMP AL,0xc
-// 1000:20ef      72 18                    JC 0x1000:2109
-// 1000:20f1      c6 45 11 00              MOV byte ptr [DI + 0x11],0x0
-// 1000:20f5      3c 10                    CMP AL,0x10
-// 1000:20f7      72 10                    JC 0x1000:2109
-// 1000:20f9      c6 45 15 18              MOV byte ptr [DI + 0x15],0x18
-// 1000:20fd      3c 14                    CMP AL,0x14
-// 1000:20ff      72 08                    JC 0x1000:2109
-// 1000:2101      c6 45 2a 00              MOV byte ptr [DI + 0x2a],0x0
-// 1000:2105      c6 45 22 00              MOV byte ptr [DI + 0x22],0x0
-// 1000:2109  LAB_1000_2109:
-// 1000:2109      c3                       RET
-fun_20e3 :: proc() {
-}
+// 1000:20e3 apply_damage_thresholds is in ship.odin.
 
 // @proc 1000:210a
 // listing: FUN_1000_210a
