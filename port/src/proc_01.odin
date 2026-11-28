@@ -1208,31 +1208,8 @@ fun_1cdb :: proc() {
 fun_1d0f :: proc() {
 }
 
-// @proc 1000:1d64
-// listing: FUN_1000_1d64
-// status: unread
-// 1000:1d64  FUN_1000_1d64:
-// 1000:1d64      b9 14 00                 MOV CX,0x14
-// 1000:1d67  LAB_1000_1d67:
-// 1000:1d67      80 3c 00                 CMP byte ptr [SI],0x0
-// 1000:1d6a      74 06                    JZ 0x1000:1d72
-// 1000:1d6c      83 c6 08                 ADD SI,0x8
-// 1000:1d6f      e2 f6                    LOOP 0x1000:1d67
-// 1000:1d71      c3                       RET
-// 1000:1d72  LAB_1000_1d72:
-// 1000:1d72      fe 4d 06                 DEC byte ptr [DI + 0x6]
-// 1000:1d75      c6 04 fa                 MOV byte ptr [SI],0xfa
-// 1000:1d78      8b 45 01                 MOV AX,word ptr [DI + 0x1]
-// 1000:1d7b      89 44 01                 MOV word ptr [SI + 0x1],AX
-// 1000:1d7e      8b 45 03                 MOV AX,word ptr [DI + 0x3]
-// 1000:1d81      89 44 03                 MOV word ptr [SI + 0x3],AX
-// 1000:1d84      8a 45 05                 MOV AL,byte ptr [DI + 0x5]
-// 1000:1d87      88 44 05                 MOV byte ptr [SI + 0x5],AL
-// 1000:1d8a      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
-// 1000:1d8d      88 44 07                 MOV byte ptr [SI + 0x7],AL
-// 1000:1d90      8a 45 17                 MOV AL,byte ptr [DI + 0x17]
-// 1000:1d93      88 44 06                 MOV byte ptr [SI + 0x6],AL
-// 1000:1d96      c3                       RET
+// 1000:1d64 fill_mine_slot is in ship.odin.
+
 // 1000:1d97  LAB_1000_1d97:
 // 1000:1d97      e8 f8 00                 CALL 0x1000:1e92
 // 1000:1d9a      e8 08 00                 CALL 0x1000:1da5
@@ -1240,8 +1217,6 @@ fun_1d0f :: proc() {
 // 1000:1da0      23 f6                    AND SI,SI
 // 1000:1da2      75 f3                    JNZ 0x1000:1d97
 // 1000:1da4      c3                       RET
-fun_1d64 :: proc() {
-}
 
 // @proc 1000:1da5
 // listing: FUN_1000_1da5

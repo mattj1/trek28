@@ -1106,6 +1106,59 @@ test_step_position :: proc(t: ^testing.T) {
 	testing.expect_value(t, ship.y, u16(5))
 }
 
+@(test)
+test_fill_mine_slot :: proc(t: ^testing.T) {
+	slots: [20][8]u8
+	ship: Ship_Record
+	ship.x = 0x1234
+	ship.y = 0xABCD
+	ship.plane = 2
+	ship.own_side = 1
+	ship.team = 7
+	ship.mines = 3
+	fill_mine_slot(&slots, &ship)
+	testing.expect_value(t, slots[0][0], u8(0xFA))
+	testing.expect_value(t, slots[0][1], u8(0x34))
+	testing.expect_value(t, slots[0][2], u8(0x12))
+	testing.expect_value(t, slots[0][3], u8(0xCD))
+	testing.expect_value(t, slots[0][4], u8(0xAB))
+	testing.expect_value(t, slots[0][5], u8(2))
+	testing.expect_value(t, slots[0][6], u8(1))
+	testing.expect_value(t, slots[0][7], u8(7))
+	testing.expect_value(t, ship.mines, u8(2))
+	testing.expect_value(t, slots[1][0], u8(0))
+
+	slots[0][0] = 1
+	slots[1][1] = 0xEE
+	fill_mine_slot(&slots, &ship)
+	testing.expect_value(t, slots[0][0], u8(1))
+	testing.expect_value(t, slots[0][1], u8(0x34))
+	testing.expect_value(t, slots[1][0], u8(0xFA))
+	testing.expect_value(t, slots[1][1], u8(0x34))
+	testing.expect_value(t, ship.mines, u8(1))
+	testing.expect_value(t, slots[2][0], u8(0))
+
+	ship.mines = 0
+	fill_mine_slot(&slots, &ship)
+	testing.expect_value(t, ship.mines, u8(0xFF))
+	testing.expect_value(t, slots[2][0], u8(0xFA))
+	testing.expect_value(t, slots[2][6], u8(1))
+
+	full: [20][8]u8
+	for &slot in full {
+		slot[0] = 1
+		slot[7] = 0x5A
+	}
+	ship.mines = 4
+	ship.x = 0x1111
+	fill_mine_slot(&full, &ship)
+	testing.expect_value(t, ship.mines, u8(4))
+	testing.expect_value(t, ship.x, u16(0x1111))
+	testing.expect_value(t, full[0][1], u8(0))
+	testing.expect_value(t, full[19][0], u8(1))
+	testing.expect_value(t, full[19][7], u8(0x5A))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
