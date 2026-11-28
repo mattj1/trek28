@@ -727,6 +727,100 @@ test_place_base_coords :: proc(t: ^testing.T) {
 	testing.expect_value(t, raw[0x0000], u8(0x38))
 }
 
+@(test)
+test_fill_extra_record :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	si := u16(offset_of(DS_Segment, extra_records))
+	rec := &ds.extra_records[0]
+
+	arm := proc(ds: ^DS_Segment, rec: ^Ship_Record, frame: u16, seed: u16) {
+		ds.frame_count = frame
+		ds.rng_seed = seed
+		ds.mode_bits = 0
+		ds.galaxy_levels = 1
+		rec^ = {}
+		rec.plane = 0xAB
+		rec.seek = 0x5A
+		rec.mines = 9
+		rec.team = 7
+	}
+
+	// Low 3 bits are not 0, so a second draw stores 0x81. The plane stays.
+	arm(ds, rec, 0, 0)
+	fill_extra_record(m, si)
+	testing.expect_value(t, rec.flags, u8(0x81))
+	testing.expect_value(t, rec.x, u16(0x2B08))
+	testing.expect_value(t, rec.y, u16(0x09C4))
+	testing.expect_value(t, rec.heading, u8(0xDD))
+	testing.expect_value(t, rec.impulse, u8(5))
+	testing.expect_value(t, rec.energy, u16(0x86))
+	testing.expect_value(t, rec.plane, u8(0xAB))
+	testing.expect_value(t, rec.seek, u8(0x5A))
+	testing.expect_value(t, rec.mines, u8(9))
+	testing.expect_value(t, rec.team, u8(7))
+	testing.expect_value(t, ds.rng_seed, u16(0x2822))
+	testing.expect_value(t, ds.frame_count, u16(0))
+
+	// The second draw's low bit is clear, so the flag is 0x80.
+	arm(ds, rec, 0, 2)
+	fill_extra_record(m, si)
+	testing.expect_value(t, rec.flags, u8(0x80))
+	testing.expect_value(t, rec.x, u16(0x2A68))
+	testing.expect_value(t, rec.y, u16(0x2804))
+	testing.expect_value(t, rec.heading, u8(0x65))
+	testing.expect_value(t, rec.impulse, u8(5))
+	testing.expect_value(t, rec.energy, u16(0x124))
+	testing.expect_value(t, rec.plane, u8(0xAB))
+	testing.expect_value(t, ds.rng_seed, u16(0x29C0))
+
+	// Low 3 bits of 0 skip the second draw and store 0x82. Impulse gains 10.
+	arm(ds, rec, 4, 0)
+	fill_extra_record(m, si)
+	testing.expect_value(t, rec.flags, u8(0x82))
+	testing.expect_value(t, rec.x, u16(0x3828))
+	testing.expect_value(t, rec.y, u16(0x29CA))
+	testing.expect_value(t, rec.heading, u8(0x36))
+	testing.expect_value(t, rec.impulse, u8(17))
+	testing.expect_value(t, rec.energy, u16(0x102))
+	testing.expect_value(t, rec.plane, u8(0xAB))
+	testing.expect_value(t, ds.rng_seed, u16(0x6E9E))
+
+	// A live base on the first pair draws another. The flag byte stays 0x81.
+	arm(ds, rec, 0, 0)
+	base := u16(offset_of(DS_Segment, bases))
+	place_object(m, base, 0x2B08, 0x09C4)
+	write_u16(&m.ds, add16(base, 8), 1)
+	fill_extra_record(m, si)
+	testing.expect_value(t, rec.flags, u8(0x81))
+	testing.expect_value(t, rec.x, u16(0x05DD))
+	testing.expect_value(t, rec.y, u16(0x1D28))
+	testing.expect_value(t, rec.heading, u8(0x22))
+	testing.expect_value(t, rec.impulse, u8(10))
+	testing.expect_value(t, rec.energy, u16(0x96))
+	testing.expect_value(t, rec.plane, u8(0xAB))
+	testing.expect_value(t, ds.rng_seed, u16(0x2532))
+	write_u16(&m.ds, add16(base, 8), 0)
+
+	// Multi-plane retries a level until it is below galaxy_levels.
+	arm(ds, rec, 0, 0)
+	ds.mode_bits = 2
+	ds.galaxy_levels = 1
+	place_object(m, 0x0100, 0x2B08, 0x09C4)
+	fill_extra_record(m, si)
+	testing.expect_value(t, rec.flags, u8(0x81))
+	testing.expect_value(t, rec.x, u16(0x2B08))
+	testing.expect_value(t, rec.y, u16(0x09C4))
+	testing.expect_value(t, rec.heading, u8(0xDD))
+	testing.expect_value(t, rec.impulse, u8(5))
+	testing.expect_value(t, rec.energy, u16(0x86))
+	testing.expect_value(t, rec.plane, u8(0))
+	testing.expect_value(t, rec.seek, u8(0x5A))
+	testing.expect_value(t, ds.rng_seed, u16(0x33A0))
+}
+
 @(private)
 place_object :: proc(m: ^Machine, at, x, y: u16) {
 	write_u16(&m.ds, add16(at, 1), x)

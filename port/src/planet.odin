@@ -720,6 +720,102 @@ place_planet_coords :: proc(m: ^Machine, si: u16) {
 	}
 }
 
+// 1000:4312 fill_extra_record.
+// The name is inferred. Universe build calls this once per extra record,
+// with SI on that 0x3B record.
+//
+// AND AL,7 then MOV AL,2 leaves the zero flag from the AND. Low 3 bits
+// of 0 store 0x82. Any other value draws again and stores 0x80 or 0x81.
+// X and Y are redrawn while reject_near_base, with BP 0x32 and DX 0x1388,
+// sets carry. Byte 0x0A is the next low byte. Byte 0x0B is the next low
+// 3 bits plus 5, and another 5 when the flag byte is 0x82. The energy
+// word is the next low byte plus 0x64.
+// Multi-plane (mode_bits bit 1) stores a low 2 bits at byte 0x05 once it
+// is below galaxy_levels. galaxy_levels 0 with that bit set does not return.
+
+// @proc 1000:4312
+// status: tested
+// Odin: fill_extra_record
+// 1000:4312  FUN_1000_4312:
+// 1000:4312      e8 65 00                 CALL 0x1000:437a
+// 1000:4315      24 07                    AND AL,0x7
+// 1000:4317      b0 02                    MOV AL,0x2
+// 1000:4319      74 05                    JZ 0x1000:4320
+// 1000:431b      e8 5c 00                 CALL 0x1000:437a
+// 1000:431e      24 01                    AND AL,0x1
+// 1000:4320  LAB_1000_4320:
+// 1000:4320      0c 80                    OR AL,0x80
+// 1000:4322      88 04                    MOV byte ptr [SI],AL
+// 1000:4324  LAB_1000_4324:
+// 1000:4324      e8 53 00                 CALL 0x1000:437a
+// 1000:4327      25 ff 3f                 AND AX,0x3fff
+// 1000:432a      89 44 01                 MOV word ptr [SI + 0x1],AX
+// 1000:432d      e8 4a 00                 CALL 0x1000:437a
+// 1000:4330      25 ff 3f                 AND AX,0x3fff
+// 1000:4333      89 44 03                 MOV word ptr [SI + 0x3],AX
+// 1000:4336      bd 32 00                 MOV BP,0x32
+// 1000:4339      ba 88 13                 MOV DX,0x1388
+// 1000:433c      e8 d8 fe                 CALL 0x1000:4217
+// 1000:433f      72 e3                    JC 0x1000:4324
+// 1000:4341      e8 36 00                 CALL 0x1000:437a
+// 1000:4344      88 44 0a                 MOV byte ptr [SI + 0xa],AL
+// 1000:4347      e8 30 00                 CALL 0x1000:437a
+// 1000:434a      24 07                    AND AL,0x7
+// 1000:434c      04 05                    ADD AL,0x5
+// 1000:434e      80 3c 82                 CMP byte ptr [SI],0x82
+// 1000:4351      75 02                    JNZ 0x1000:4355
+// 1000:4353      04 05                    ADD AL,0x5
+// 1000:4355  LAB_1000_4355:
+// 1000:4355      88 44 0b                 MOV byte ptr [SI + 0xb],AL
+// 1000:4358      e8 1f 00                 CALL 0x1000:437a
+// 1000:435b      25 ff 00                 AND AX,0xff
+// 1000:435e      05 64 00                 ADD AX,0x64
+// 1000:4361      89 44 08                 MOV word ptr [SI + 0x8],AX
+// 1000:4364      f6 06 12 00 02           TEST byte ptr [0x12],0x2
+// 1000:4369      74 0e                    JZ 0x1000:4379
+// 1000:436b  LAB_1000_436b:
+// 1000:436b      e8 0c 00                 CALL 0x1000:437a
+// 1000:436e      24 03                    AND AL,0x3
+// 1000:4370      3a 06 02 00              CMP AL,byte ptr [0x2]
+// 1000:4374      73 f5                    JNC 0x1000:436b
+// 1000:4376      88 44 05                 MOV byte ptr [SI + 0x5],AL
+// 1000:4379  LAB_1000_4379:
+// 1000:4379      c3                       RET
+
+fill_extra_record :: proc(m: ^Machine, si: u16) {
+	ds := transmute(^DS_Segment)&m.ds
+	rec := transmute(^Ship_Record)&m.ds[si]
+	roll := mix_rng(ds)
+	if u8(roll) & 7 == 0 {
+		rec.flags = 0x82
+	} else {
+		rec.flags = 0x80 | (u8(mix_rng(ds)) & 1)
+	}
+	for {
+		rec.x = mix_rng(ds) & 0x3FFF
+		rec.y = mix_rng(ds) & 0x3FFF
+		if !reject_near_base(m, si, 0x32, 0x1388) {
+			break
+		}
+	}
+	rec.heading = u8(mix_rng(ds))
+	impulse := (u8(mix_rng(ds)) & 7) + 5
+	if rec.flags == 0x82 {
+		impulse += 5
+	}
+	rec.impulse = impulse
+	rec.energy = (mix_rng(ds) & 0xFF) + 0x64
+	if ds.mode_bits & 2 != 0 {
+		for {
+			level := u8(mix_rng(ds)) & 3
+			if level < ds.galaxy_levels {
+				rec.plane = level
+				break
+			}
+		}
+	}
+}
+
 @(private)
 rcr8 :: proc(v: u8, carry: bool) -> (u8, bool) {
 	out_carry := v & 1 == 1
