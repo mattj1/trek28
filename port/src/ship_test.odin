@@ -2191,6 +2191,32 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_planet_team_flag :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	planet: [11]u8
+	ship.team = 5
+	planet[6] = 1
+	planet[0x0A] = 0xFF
+	testing.expect_value(t, planet_team_flag(&ship, &planet), false)
+
+	planet[6] = 0
+	testing.expect_value(t, planet_team_flag(&ship, &planet), true)
+
+	planet[0x0A] = 5
+	testing.expect_value(t, planet_team_flag(&ship, &planet), true)
+
+	planet[0x0A] = 6
+	testing.expect_value(t, planet_team_flag(&ship, &planet), false)
+
+	planet[0x0A] = 0
+	ship.team = 0
+	testing.expect_value(t, planet_team_flag(&ship, &planet), true)
+
+	planet[6] = 0xFF
+	testing.expect_value(t, planet_team_flag(&ship, &planet), false)
+}
+
+@(test)
 test_cancel_close_shots :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)

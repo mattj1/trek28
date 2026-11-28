@@ -1206,20 +1206,7 @@ fun_3e2a :: proc() {
 fun_3e85 :: proc() {
 }
 
-// @proc 1000:3f57
-// listing: FUN_1000_3f57
-// status: unread
-// 1000:3f57  FUN_1000_3f57:
-// 1000:3f57      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
-// 1000:3f5b      75 0c                    JNZ 0x1000:3f69
-// 1000:3f5d      80 7d 0a ff              CMP byte ptr [DI + 0xa],0xff
-// 1000:3f61      74 06                    JZ 0x1000:3f69
-// 1000:3f63      8a 44 18                 MOV AL,byte ptr [SI + 0x18]
-// 1000:3f66      3a 45 0a                 CMP AL,byte ptr [DI + 0xa]
-// 1000:3f69  LAB_1000_3f69:
-// 1000:3f69      c3                       RET
-fun_3f57 :: proc() {
-}
+// 1000:3f57 planet_team_flag is in ship.odin.
 
 // @proc 1000:3f6a
 // listing: FUN_1000_3f6a
