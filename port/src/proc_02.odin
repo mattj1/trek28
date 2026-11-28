@@ -383,28 +383,7 @@ fun_2310 :: proc() {
 fun_2343 :: proc() {
 }
 
-// @proc 1000:237b
-// listing: FUN_1000_237b
-// status: unread
-// 1000:237b  FUN_1000_237b:
-// 1000:237b      80 7d 34 00              CMP byte ptr [DI + 0x34],0x0
-// 1000:237f      74 04                    JZ 0x1000:2385
-// 1000:2381      d1 e8                    SHR AX,0x1
-// 1000:2383      d1 e8                    SHR AX,0x1
-// 1000:2385  LAB_1000_2385:
-// 1000:2385      f6 05 20                 TEST byte ptr [DI],0x20
-// 1000:2388      74 11                    JZ 0x1000:239b
-// 1000:238a      f6 45 19 80              TEST byte ptr [DI + 0x19],0x80
-// 1000:238e      75 0b                    JNZ 0x1000:239b
-// 1000:2390      52                       PUSH DX
-// 1000:2391      33 d2                    XOR DX,DX
-// 1000:2393      51                       PUSH CX
-// 1000:2394      b9 03 00                 MOV CX,0x3
-// 1000:2397      f7 f1                    DIV CX
-// 1000:2399      59                       POP CX
-// 1000:239a      5a                       POP DX
-fun_237b :: proc() {
-}
+// 1000:237b add_scaled_charge is in ship.odin.
 
 // 1000:239b add_pending_charge is in ship.odin.
 

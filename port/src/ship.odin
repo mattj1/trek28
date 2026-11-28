@@ -9,7 +9,7 @@ import "base:intrinsics"
 // The original AX is kept. SHR AX, 1 twice, and if AH is nonzero that
 // byte is added to damage at [DI+0E]. The byte add wraps.
 // AX of 0x400 is the smallest value that bumps damage, by 1.
-// 1000:237b falls into this entry after it may shrink AX.
+// 1000:237b add_scaled_charge falls into this entry after it may shrink AX.
 
 // @proc 1000:239b
 // status: tested
@@ -43,6 +43,47 @@ add_pending_charge :: proc(ship: ^Ship_Record, ax: u16) {
 		damage, _ := intrinsics.overflow_add(ship.damage, ah)
 		ship.damage = damage
 	}
+}
+
+// 1000:237b add_scaled_charge.
+// The name is inferred. DI is one ship and AX is the incoming amount.
+// A nonzero byte_34 shifts AX right twice. Flag bit 0x20 set and shot bit 7
+// clear divides that AX by 3. The division is unsigned, DX and CX are saved,
+// and the remainder is discarded. Execution then falls into add_pending_charge.
+// 1000:239b returns the AX it was given, and 1000:2ed4 scores that value.
+
+// @proc 1000:237b
+// status: tested
+// Odin: add_scaled_charge
+// 1000:237b  FUN_1000_237b:
+// 1000:237b      80 7d 34 00              CMP byte ptr [DI + 0x34],0x0
+// 1000:237f      74 04                    JZ 0x1000:2385
+// 1000:2381      d1 e8                    SHR AX,0x1
+// 1000:2383      d1 e8                    SHR AX,0x1
+// 1000:2385  LAB_1000_2385:
+// 1000:2385      f6 05 20                 TEST byte ptr [DI],0x20
+// 1000:2388      74 11                    JZ 0x1000:239b
+// 1000:238a      f6 45 19 80              TEST byte ptr [DI + 0x19],0x80
+// 1000:238e      75 0b                    JNZ 0x1000:239b
+// 1000:2390      52                       PUSH DX
+// 1000:2391      33 d2                    XOR DX,DX
+// 1000:2393      51                       PUSH CX
+// 1000:2394      b9 03 00                 MOV CX,0x3
+// 1000:2397      f7 f1                    DIV CX
+// 1000:2399      59                       POP CX
+// 1000:239a      5a                       POP DX
+// Falls into 1000:239b.
+
+add_scaled_charge :: proc(ship: ^Ship_Record, ax: u16) -> u16 {
+	amount := ax
+	if ship.byte_34 != 0 {
+		amount >>= 2
+	}
+	if ship.flags & 0x20 != 0 && ship.shot & 0x80 == 0 {
+		amount /= 3
+	}
+	add_pending_charge(ship, amount)
+	return amount
 }
 
 // 1000:221e slew_heading.
