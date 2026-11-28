@@ -2191,6 +2191,39 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_scroll_message_queue :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.byte_a29c = 0xEE
+	ds.setup_cursor = 0x42
+	for line in 0 ..< 4 {
+		for i in 0 ..< 0x28 {
+			ds.message_queue[line][i] = u8(line + 1)
+		}
+		ds.message_queue[line][0x27] = 0xA0 + u8(line)
+	}
+	scroll_message_queue(ds)
+	for i in 0 ..< 0x27 {
+		testing.expect_value(t, ds.message_queue[0][i], u8(2))
+		testing.expect_value(t, ds.message_queue[1][i], u8(3))
+		testing.expect_value(t, ds.message_queue[2][i], u8(4))
+		testing.expect_value(t, ds.message_queue[3][i], u8(0))
+	}
+	testing.expect_value(t, ds.message_queue[0][0x27], u8(0xA1))
+	testing.expect_value(t, ds.message_queue[1][0x27], u8(0xA2))
+	testing.expect_value(t, ds.message_queue[2][0x27], u8(0xA3))
+	testing.expect_value(t, ds.message_queue[3][0x27], u8(0))
+	testing.expect_value(t, ds.byte_a29c, u8(0xEE))
+	testing.expect_value(t, ds.setup_cursor, u8(0x42))
+
+	scroll_message_queue(ds)
+	testing.expect_value(t, ds.message_queue[0][0], u8(3))
+	testing.expect_value(t, ds.message_queue[1][0x27], u8(0xA3))
+	testing.expect_value(t, ds.message_queue[2][0], u8(0))
+	testing.expect_value(t, ds.message_queue[3][5], u8(0))
+}
+
+@(test)
 test_end_two_player_sides :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

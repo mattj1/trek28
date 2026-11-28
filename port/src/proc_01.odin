@@ -725,27 +725,7 @@ fun_197b :: proc() {
 fun_1998 :: proc() {
 }
 
-// @proc 1000:1a4d
-// listing: FUN_1000_1a4d
-// status: unread
-// 1000:1a4d  FUN_1000_1a4d:
-// 1000:1a4d      57                       PUSH DI
-// 1000:1a4e      56                       PUSH SI
-// 1000:1a4f      51                       PUSH CX
-// 1000:1a50      bf 9e a2                 MOV DI,0xa29e
-// 1000:1a53      8b f7                    MOV SI,DI
-// 1000:1a55      83 c6 28                 ADD SI,0x28
-// 1000:1a58      b9 78 00                 MOV CX,0x78
-// 1000:1a5b      f3 a4                    MOVSB.REP ES:DI,SI
-// 1000:1a5d      b9 28 00                 MOV CX,0x28
-// 1000:1a60      b0 00                    MOV AL,0x0
-// 1000:1a62      f3 aa                    STOSB.REP ES:DI
-// 1000:1a64      59                       POP CX
-// 1000:1a65      5e                       POP SI
-// 1000:1a66      5f                       POP DI
-// 1000:1a67      c3                       RET
-fun_1a4d :: proc() {
-}
+// 1000:1a4d scroll_message_queue is in ship.odin.
 
 // @proc 1000:1a68
 // listing: FUN_1000_1a68
