@@ -645,6 +645,92 @@ test_read_handicap :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.ids[1][4], u8(7))
 }
 
+@(test)
+test_drain_invisibility :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.current_side = 0
+	ds.ids[0][4] = 0
+
+	// Odd frames return before any of the ship tests.
+	ds.frame_count = 1
+	ship := &ds.ships[0][0]
+	ship.flags = 0x90
+	ship.invisibility = 5
+	ship.shot = 0
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(5))
+	testing.expect_value(t, ship.flags, u8(0x90))
+
+	// A shot in flight, a clear invisible bit, or flag bits 0x44 return.
+	ds.frame_count = 0
+	ship.shot = 0x26
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(5))
+	ship.shot = 0
+	ship.flags = 0x80
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(5))
+	testing.expect_value(t, ship.flags, u8(0x80))
+	ship.flags = 0x14
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.flags, u8(0x14))
+	ship.flags = 0x50
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.flags, u8(0x50))
+
+	// An invisibility byte of 0 clears bit 0x10 and does not read the handicap.
+	ds.ids[0][4] = 9
+	ship.flags = 0xB1
+	ship.invisibility = 0
+	ship.energy = 0x1234
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.flags, u8(0xA1))
+	testing.expect_value(t, ship.invisibility, u8(0))
+	testing.expect_value(t, ds.ids[0][4], u8(9))
+	testing.expect_value(t, ship.energy, u16(0x1234))
+
+	// Handicap below 4 decrements on every even frame, including frame 0.
+	ds.ids[0][4] = 3
+	ship.flags = 0x90
+	ship.invisibility = 3
+	ds.frame_count = 0
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(2))
+	testing.expect_value(t, ship.flags, u8(0x90))
+
+	// The decrement that reaches zero clears the invisible bit.
+	ship.invisibility = 1
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(0))
+	testing.expect_value(t, ship.flags, u8(0x80))
+
+	// Handicap 4 skips a frame whose low two bits are clear, and decrements
+	// when they are 2. The high byte of the frame word is not read.
+	ds.ids[0][4] = 4
+	ship.flags = 0x90
+	ship.invisibility = 5
+	ds.frame_count = 0x0100
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(5))
+	testing.expect_value(t, ship.flags, u8(0x90))
+	ds.frame_count = 0x0102
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(4))
+	testing.expect_value(t, ship.flags, u8(0x90))
+
+	// current_side selects the handicap byte. Side 1 is below 4.
+	ds.current_side = 1
+	ds.ids[1][4] = 1
+	ds.frame_count = 4
+	ship = &ds.ships[1][0]
+	ship.flags = 0x10
+	ship.invisibility = 2
+	drain_invisibility(ds, ship)
+	testing.expect_value(t, ship.invisibility, u8(1))
+	testing.expect_value(t, ship.flags, u8(0x10))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

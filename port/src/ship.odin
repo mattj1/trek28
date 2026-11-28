@@ -534,3 +534,68 @@ charge_impulse_and_heal :: proc(ds: ^DS_Segment, ship: ^Ship_Record) {
 read_handicap :: proc(ds: ^DS_Segment) -> u8 {
 	return ds.ids[ds.current_side & 3][4]
 }
+
+// 1000:226c drain_invisibility.
+// The notes already use this name. DI is one ship. The frame tests read the
+// low byte of frame_count. An odd frame returns. A shot in flight, flag bit
+// 0x10 clear, or flag bits 0x44 set also return. An invisibility byte of 0
+// clears flag bit 0x10. Otherwise the byte decrements. A handicap of 4 or
+// more skips that decrement when the frame byte's low two bits are clear.
+// Reaching zero clears flag bit 0x10.
+
+// @proc 1000:226c
+// status: tested
+// Odin: drain_invisibility
+// 1000:226c  FUN_1000_226c:
+// 1000:226c      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:226f      24 01                    AND AL,0x1
+// 1000:2271      75 2e                    JNZ 0x1000:22a1
+// 1000:2273      f6 45 19 ff              TEST byte ptr [DI + 0x19],0xff
+// 1000:2277      75 28                    JNZ 0x1000:22a1
+// 1000:2279      f6 05 10                 TEST byte ptr [DI],0x10
+// 1000:227c      74 23                    JZ 0x1000:22a1
+// 1000:227e      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2281      75 1e                    JNZ 0x1000:22a1
+// 1000:2283      8a 45 0f                 MOV AL,byte ptr [DI + 0xf]
+// 1000:2286      22 c0                    AND AL,AL
+// 1000:2288      74 13                    JZ 0x1000:229d
+// 1000:228a      e8 26 01                 CALL 0x1000:23b3
+// 1000:228d      3c 04                    CMP AL,0x4
+// 1000:228f      72 07                    JC 0x1000:2298
+// 1000:2291      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:2296      74 09                    JZ 0x1000:22a1
+// 1000:2298  LAB_1000_2298:
+// 1000:2298      fe 4d 0f                 DEC byte ptr [DI + 0xf]
+// 1000:229b      75 04                    JNZ 0x1000:22a1
+// 1000:229d  LAB_1000_229d:
+// 1000:229d      80 25 ef                 AND byte ptr [DI],0xef
+// 1000:22a0      c3                       RET
+// 1000:22a1  LAB_1000_22a1:
+// 1000:22a1      c3                       RET
+
+drain_invisibility :: proc(ds: ^DS_Segment, ship: ^Ship_Record) {
+	frame := u8(ds.frame_count)
+	if frame & 1 != 0 {
+		return
+	}
+	if ship.shot != 0 {
+		return
+	}
+	if ship.flags & 0x10 == 0 {
+		return
+	}
+	if ship.flags & 0x44 != 0 {
+		return
+	}
+	if ship.invisibility != 0 {
+		handicap := read_handicap(ds)
+		if handicap >= 4 && frame & 3 == 0 {
+			return
+		}
+		ship.invisibility -= 1
+		if ship.invisibility != 0 {
+			return
+		}
+	}
+	ship.flags &= 0xEF
+}
