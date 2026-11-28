@@ -2191,6 +2191,72 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_ship_ptr_from_al :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	raw := transmute(^[DS_SIZE]u8)ds
+
+	ds.current_side = 0
+	ds.ships[0][0].flags = 0x80
+	ship, alive := ship_ptr_from_al(ds, 0)
+	testing.expect_value(t, ship, &ds.ships[0][0])
+	testing.expect_value(t, alive, true)
+
+	ds.ships[0][3].flags = 0
+	ship, alive = ship_ptr_from_al(ds, 7)
+	testing.expect_value(t, ship, &ds.ships[0][3])
+	testing.expect_value(t, alive, false)
+
+	ds.current_side = 1
+	ds.ships[1][2].flags = 0x8F
+	ship, alive = ship_ptr_from_al(ds, 2)
+	testing.expect_value(t, ship, &ds.ships[1][2])
+	testing.expect_value(t, alive, true)
+
+	ds.current_side = 3
+	ds.ships[3][1].flags = 0x01
+	ship, alive = ship_ptr_from_al(ds, 0xFD)
+	testing.expect_value(t, ship, &ds.ships[3][1])
+	testing.expect_value(t, alive, false)
+
+	// Side 0x40 shifts to 0. The low 6 bits fall off.
+	ds.current_side = 0x40
+	ds.ships[0][1].flags = 0x80
+	ship, alive = ship_ptr_from_al(ds, 1)
+	testing.expect_value(t, ship, &ds.ships[0][1])
+	testing.expect_value(t, alive, true)
+
+	// Side 4 is index 16, the first base byte. The ship pointer is nil.
+	ds.current_side = 4
+	ds.bases[0][0] = 0x80
+	ship, alive = ship_ptr_from_al(ds, 0)
+	testing.expect_value(t, ship, nil)
+	testing.expect_value(t, alive, true)
+	ds.bases[0][0] = 0x7F
+	ship, alive = ship_ptr_from_al(ds, 0)
+	testing.expect_value(t, ship, nil)
+	testing.expect_value(t, alive, false)
+
+	// Side 5 is index 20, not ships[1].
+	ds.current_side = 5
+	ds.ships[1][0].flags = 0
+	raw[0x9100] = 0x80
+	ship, alive = ship_ptr_from_al(ds, 0)
+	testing.expect_value(t, ship, nil)
+	testing.expect_value(t, alive, true)
+
+	// Index 255 stays inside the segment.
+	ds.current_side = 0xFF
+	raw[0xC729] = 0x80
+	ship, alive = ship_ptr_from_al(ds, 3)
+	testing.expect_value(t, ship, nil)
+	testing.expect_value(t, alive, true)
+	raw[0xC729] = 0
+	_, alive = ship_ptr_from_al(ds, 3)
+	testing.expect_value(t, alive, false)
+}
+
+@(test)
 test_ship_flag_ptr :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

@@ -301,7 +301,7 @@ DS_Segment :: struct #packed {
 	message_line: [4][0x28]u8,
 	// 8A8C. Eight records, same 0x3B size as a ship. 1000:37ac walks these 8 and then the 16 ships, and that walk ends at bases. extra_record_count says how many 1000:4312 fills.
 	extra_records: [8]Ship_Record,
-	// 8C64. Side, then ship. 1000:2a0c uses 8C64 + (((side & 3) << 2) | (ship & 3)) * 0x3B.
+	// 8C64. Side, then ship. 1000:2a0c uses 8C64 + ((side shifted left 2 as a byte) | (ship & 3)) * 0x3B. A side of 4 or more can address past these 16 records.
 	ships: [4][4]Ship_Record,
 	// 9014. One 14-byte base per side. +01 and +03 position, +05 plane, +06 mine stock, +07 torpedo stock, +08 energy, +0A ships remaining, +0D alive.
 	bases: [4][0x0E]u8,

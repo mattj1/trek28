@@ -2023,3 +2023,39 @@ store_if_local_ship :: proc(ds: ^DS_Segment, bx, ax: u16) {
 ship_flag_ptr :: proc(ds: ^DS_Segment) -> ^u8 {
 	return &ds.side_flags[ds.current_side & 3]
 }
+
+// 1000:2a0c ship_ptr_from_al.
+// AL keeps its low 2 bits. current_side is shifted left twice as a byte,
+// so bits above the low 6 fall off, and that byte is ORed in. The record
+// is 0x8C64 plus the index times 0x3B. Bit 7 of the first byte is the
+// alive flag. An index of 16 or more is past the 16 ship records: side 4
+// addresses the first base, and the pointer is nil. The alive bit is
+// still read from that byte.
+
+// @proc 1000:2a0c
+// status: tested
+// Odin: ship_ptr_from_al
+// 1000:2a0c  FUN_1000_2a0c:
+// 1000:2a0c      24 03                    AND AL,0x3
+// 1000:2a0e      8a 26 74 a2              MOV AH,byte ptr [0xa274]
+// 1000:2a12      d0 e4                    SHL AH,0x1
+// 1000:2a14      d0 e4                    SHL AH,0x1
+// 1000:2a16      0a c4                    OR AL,AH
+// 1000:2a18      b4 3b                    MOV AH,0x3b
+// 1000:2a1a      f6 e4                    MUL AH
+// 1000:2a1c      be 64 8c                 MOV SI,0x8c64
+// 1000:2a1f      03 f0                    ADD SI,AX
+// 1000:2a21      8a 04                    MOV AL,byte ptr [SI]
+// 1000:2a23      24 80                    AND AL,0x80
+// 1000:2a25      c3                       RET
+
+ship_ptr_from_al :: proc(ds: ^DS_Segment, al: u8) -> (ship: ^Ship_Record, alive: bool) {
+	index := (al & 3) | u8(u16(ds.current_side) << 2)
+	off := add16(u16(offset_of(DS_Segment, ships)), u16(index) * 0x3B)
+	raw := transmute(^[DS_SIZE]u8)ds
+	alive = raw[off] & 0x80 != 0
+	if index < 16 {
+		ship = &ds.ships[index >> 2][index & 3]
+	}
+	return
+}

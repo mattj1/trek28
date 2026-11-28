@@ -62,25 +62,7 @@ fun_202f :: proc() {
 
 // 1000:23b3 read_handicap is in ship.odin.
 
-// @proc 1000:2a0c
-// listing: FUN_1000_2a0c
-// notes: ship_ptr_from_al
-// status: unread
-// 1000:2a0c  FUN_1000_2a0c:
-// 1000:2a0c      24 03                    AND AL,0x3
-// 1000:2a0e      8a 26 74 a2              MOV AH,byte ptr [0xa274]
-// 1000:2a12      d0 e4                    SHL AH,0x1
-// 1000:2a14      d0 e4                    SHL AH,0x1
-// 1000:2a16      0a c4                    OR AL,AH
-// 1000:2a18      b4 3b                    MOV AH,0x3b
-// 1000:2a1a      f6 e4                    MUL AH
-// 1000:2a1c      be 64 8c                 MOV SI,0x8c64
-// 1000:2a1f      03 f0                    ADD SI,AX
-// 1000:2a21      8a 04                    MOV AL,byte ptr [SI]
-// 1000:2a23      24 80                    AND AL,0x80
-// 1000:2a25      c3                       RET
-fun_2a0c :: proc() {
-}
+// 1000:2a0c ship_ptr_from_al is in ship.odin.
 
 // @proc 1000:2a26
 // listing: FUN_1000_2a26

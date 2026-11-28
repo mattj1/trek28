@@ -73,6 +73,7 @@ odin run src
 | `1000:2b52` | `abs_word` | tested. The name is inferred. Bit 15 selects `NEG`. `0x8000` stays `0x8000` |
 | `1000:1a97` | `store_if_local_ship` | tested. AX is stored at DS:BX when `(current_side XOR local_side) & 3` is 0. A word at `FFFF` wraps onto `0000` |
 | `1000:1ec1` | `ship_flag_ptr` | tested. Returns `side_flags` indexed by `current_side & 3` |
+| `1000:2a0c` | `ship_ptr_from_al` | tested. AL keeps its low 2 bits. `current_side` is shifted left twice as a byte and ORed in. The record is `0x8C64` plus that index times `0x3B`. Bit 7 is the alive flag. An index of 16 or more is past the 16 ships |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
