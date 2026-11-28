@@ -2191,6 +2191,40 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_add_score_div100 :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	add_score_div100(ds, 0, 49)
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	add_score_div100(ds, 0, 50)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+	add_score_div100(ds, 1, 99)
+	testing.expect_value(t, ds.side_score[1], u16(1))
+	add_score_div100(ds, 1, 100)
+	testing.expect_value(t, ds.side_score[1], u16(2))
+	add_score_div100(ds, 2, 149)
+	testing.expect_value(t, ds.side_score[2], u16(1))
+	add_score_div100(ds, 2, 150)
+	testing.expect_value(t, ds.side_score[2], u16(3))
+	add_score_div100(ds, 3, 0)
+	testing.expect_value(t, ds.side_score[3], u16(0))
+
+	ds.side_score[0] = 10
+	add_score_div100(ds, 0, 150)
+	testing.expect_value(t, ds.side_score[0], u16(12))
+
+	ds.side_score[3] = 0xFFFF
+	add_score_div100(ds, 3, 50)
+	testing.expect_value(t, ds.side_score[3], u16(0))
+
+	before := ds.side_score
+	add_score_div100(ds, 4, 150)
+	add_score_div100(ds, 0xFF, 500)
+	testing.expect_value(t, ds.side_score, before)
+}
+
+@(test)
 test_ship_ptr_from_al :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

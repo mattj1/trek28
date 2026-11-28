@@ -2059,3 +2059,43 @@ ship_ptr_from_al :: proc(ds: ^DS_Segment, al: u8) -> (ship: ^Ship_Record, alive:
 	}
 	return
 }
+
+// 1000:2ed4 add_score_div100.
+// BH is cleared, so only BL selects the side. BL of 4 or more returns.
+// AX is divided by 100. A remainder of 0x32 or more increments the
+// quotient, and that word is added to side_score[BL]. The add wraps.
+
+// @proc 1000:2ed4
+// status: tested
+// Odin: add_score_div100
+// 1000:2ed4  FUN_1000_2ed4:
+// 1000:2ed4      32 ff                    XOR BH,BH
+// 1000:2ed6      83 fb 04                 CMP BX,0x4
+// 1000:2ed9      73 17                    JNC 0x1000:2ef2
+// 1000:2edb      d1 e3                    SHL BX,0x1
+// 1000:2edd      52                       PUSH DX
+// 1000:2ede      53                       PUSH BX
+// 1000:2edf      33 d2                    XOR DX,DX
+// 1000:2ee1      bb 64 00                 MOV BX,0x64
+// 1000:2ee4      f7 f3                    DIV BX
+// 1000:2ee6      83 fa 32                 CMP DX,0x32
+// 1000:2ee9      72 01                    JC 0x1000:2eec
+// 1000:2eeb      40                       INC AX
+// 1000:2eec  LAB_1000_2eec:
+// 1000:2eec      5b                       POP BX
+// 1000:2eed      5a                       POP DX
+// 1000:2eee      01 87 e4 89              ADD word ptr [BX + 0x89e4],AX
+// 1000:2ef2  LAB_1000_2ef2:
+// 1000:2ef2      c3                       RET
+
+add_score_div100 :: proc(ds: ^DS_Segment, bl: u8, ax: u16) {
+	if bl >= 4 {
+		return
+	}
+	quot := ax / 100
+	if ax % 100 >= 0x32 {
+		quot += 1
+	}
+	sum, _ := intrinsics.overflow_add(ds.side_score[bl], quot)
+	ds.side_score[bl] = sum
+}
