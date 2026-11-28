@@ -856,3 +856,82 @@ drain_key_ring :: proc(ds: ^DS_Segment) {
 		}
 	}
 }
+
+// 1000:382a step_position.
+// The notes already use this name. Speed is AH before the decrement and
+// heading is AL. The word table at CS:387C holds eight bytes per speed and
+// two bytes per heading low nibble. The low byte is the X step and the high
+// byte is the Y step. Heading bits 2–3 rotate that vector, and both axes
+// are masked with 0x3FFF. A ship caller aims DI at the record. A shot caller
+// adds 0x19 to DI first, so the adds land on the shot position. DEC of a
+// zero speed wraps the row index into the bytes after the 31-row table.
+// The ship caller skips that zero.
+
+// @proc 1000:382a
+// status: tested
+// Odin: step_position
+// 1000:382a  FUN_1000_382a:
+// 1000:382a      52                       PUSH DX
+// 1000:382b      51                       PUSH CX
+// 1000:382c      fe cc                    DEC AH
+// 1000:382e      8a dc                    MOV BL,AH
+// 1000:3830      32 ff                    XOR BH,BH
+// 1000:3832      03 db                    ADD BX,BX
+// 1000:3834      03 db                    ADD BX,BX
+// 1000:3836      03 db                    ADD BX,BX
+// 1000:3838      81 c3 7c 38              ADD BX,0x387c
+// 1000:383c      8a d0                    MOV DL,AL
+// 1000:383e      81 e2 03 00              AND DX,0x3
+// 1000:3842      03 d2                    ADD DX,DX
+// 1000:3844      03 da                    ADD BX,DX
+// 1000:3846      8a d0                    MOV DL,AL
+// 1000:3848      2e 8b 07                 MOV AX,word ptr CS:[BX]
+// 1000:384b      8a cc                    MOV CL,AH
+// 1000:384d      32 e4                    XOR AH,AH
+// 1000:384f      32 ed                    XOR CH,CH
+// 1000:3851      80 e2 0c                 AND DL,0xc
+// 1000:3854      74 13                    JZ 0x1000:3869
+// 1000:3856      91                       XCHG AX,CX
+// 1000:3857      f7 d9                    NEG CX
+// 1000:3859      80 fa 04                 CMP DL,0x4
+// 1000:385c      74 0b                    JZ 0x1000:3869
+// 1000:385e      91                       XCHG AX,CX
+// 1000:385f      f7 d9                    NEG CX
+// 1000:3861      80 fa 08                 CMP DL,0x8
+// 1000:3864      74 03                    JZ 0x1000:3869
+// 1000:3866      91                       XCHG AX,CX
+// 1000:3867      f7 d9                    NEG CX
+// 1000:3869  LAB_1000_3869:
+// 1000:3869      01 45 01                 ADD word ptr [DI + 0x1],AX
+// 1000:386c      81 65 01 ff 3f           AND word ptr [DI + 0x1],0x3fff
+// 1000:3871      01 4d 03                 ADD word ptr [DI + 0x3],CX
+// 1000:3874      81 65 03 ff 3f           AND word ptr [DI + 0x3],0x3fff
+// 1000:3879      59                       POP CX
+// 1000:387a      5a                       POP DX
+// 1000:387b      c3                       RET
+
+@(private)
+STEP_COM :: #load("../../TREK28.COM")
+
+step_position :: proc(x, y: ^u16, speed, heading: u8) {
+	image := string(STEP_COM)
+	row, _ := intrinsics.overflow_sub(speed, 1)
+	off := 0x387C + int(row) * 8 + int(heading & 3) * 2
+	dx := u16(image[off])
+	dy := u16(image[off + 1])
+	quad := heading & 0x0C
+	if quad != 0 {
+		dx, dy = dy, dx
+		dy = neg16(dy)
+		if quad != 4 {
+			dx, dy = dy, dx
+			dy = neg16(dy)
+			if quad != 8 {
+				dx, dy = dy, dx
+				dy = neg16(dy)
+			}
+		}
+	}
+	x^ = add16(x^, dx) & 0x3FFF
+	y^ = add16(y^, dy) & 0x3FFF
+}

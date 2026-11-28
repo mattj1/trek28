@@ -993,6 +993,119 @@ test_drain_key_ring :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.key_ring[1], u8(5))
 }
 
+@(test)
+test_step_position :: proc(t: ^testing.T) {
+	x, y: u16
+	step_position(&x, &y, 1, 0)
+	testing.expect_value(t, x, u16(0))
+	testing.expect_value(t, y, u16(5))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 1)
+	testing.expect_value(t, x, u16(2))
+	testing.expect_value(t, y, u16(4))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 2)
+	testing.expect_value(t, x, u16(3))
+	testing.expect_value(t, y, u16(3))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 3)
+	testing.expect_value(t, x, u16(4))
+	testing.expect_value(t, y, u16(2))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 4)
+	testing.expect_value(t, x, u16(5))
+	testing.expect_value(t, y, u16(0))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 8)
+	testing.expect_value(t, x, u16(0))
+	testing.expect_value(t, y, u16(0x3FFB))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 0x0C)
+	testing.expect_value(t, x, u16(0x3FFB))
+	testing.expect_value(t, y, u16(0))
+
+	// Bit 4 is outside the quadrant field, so this matches heading 0.
+	x, y = 0, 0
+	step_position(&x, &y, 1, 0x10)
+	testing.expect_value(t, x, u16(0))
+	testing.expect_value(t, y, u16(5))
+
+	// Heading 5 takes the second vector of speed 1 and rotates it once.
+	x, y = 0, 0
+	step_position(&x, &y, 1, 5)
+	testing.expect_value(t, x, u16(4))
+	testing.expect_value(t, y, u16(0x3FFE))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 9)
+	testing.expect_value(t, x, u16(0x3FFE))
+	testing.expect_value(t, y, u16(0x3FFC))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 0x0D)
+	testing.expect_value(t, x, u16(0x3FFC))
+	testing.expect_value(t, y, u16(2))
+
+	x, y = 0, 0
+	step_position(&x, &y, 1, 0xF5)
+	testing.expect_value(t, x, u16(4))
+	testing.expect_value(t, y, u16(0x3FFE))
+
+	x, y = 0, 0
+	step_position(&x, &y, 2, 0)
+	testing.expect_value(t, x, u16(0))
+	testing.expect_value(t, y, u16(9))
+
+	x, y = 0, 0
+	step_position(&x, &y, 31, 0)
+	testing.expect_value(t, x, u16(0))
+	testing.expect_value(t, y, u16(0x8C))
+
+	x, y = 0, 0
+	step_position(&x, &y, 31, 1)
+	testing.expect_value(t, x, u16(0x36))
+	testing.expect_value(t, y, u16(0x82))
+
+	x, y = 0, 0
+	step_position(&x, &y, 31, 0x0C)
+	testing.expect_value(t, x, u16(0x3F74))
+	testing.expect_value(t, y, u16(0))
+
+	x, y = 0x3FFE, 0x3FFC
+	step_position(&x, &y, 1, 4)
+	testing.expect_value(t, x, u16(3))
+	testing.expect_value(t, y, u16(0x3FFC))
+
+	x, y = 10, 2
+	step_position(&x, &y, 1, 8)
+	testing.expect_value(t, x, u16(10))
+	testing.expect_value(t, y, u16(0x3FFD))
+
+	// DEC of speed 0 indexes CS:4074, whose first word is bytes A2 C6.
+	x, y = 0, 0
+	step_position(&x, &y, 0, 0)
+	testing.expect_value(t, x, u16(0xA2))
+	testing.expect_value(t, y, u16(0xC6))
+
+	ship: Ship_Record
+	step_position(&ship.x, &ship.y, 1, 0)
+	testing.expect_value(t, ship.x, u16(0))
+	testing.expect_value(t, ship.y, u16(5))
+	ship.shot_x = 100
+	ship.shot_y = 100
+	step_position(&ship.shot_x, &ship.shot_y, 1, 4)
+	testing.expect_value(t, ship.shot_x, u16(105))
+	testing.expect_value(t, ship.shot_y, u16(100))
+	testing.expect_value(t, ship.x, u16(0))
+	testing.expect_value(t, ship.y, u16(5))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
