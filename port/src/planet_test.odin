@@ -56,6 +56,34 @@ test_mix_rng :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_random_base_coord :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	// Frame 4, seed 6. The first draw is already inside the range.
+	ds.frame_count = 4
+	ds.rng_seed = 6
+	testing.expect_value(t, random_base_coord(ds), u16(0x07B8))
+	testing.expect_value(t, ds.rng_seed, u16(0xC7B8))
+
+	// Seed 2 draws 0x03B8 first, which is below 0x5DC, then 0x39E9.
+	ds.rng_seed = 2
+	testing.expect_value(t, random_base_coord(ds), u16(0x39E9))
+	testing.expect_value(t, ds.rng_seed, u16(0x39E9))
+
+	// Both ends of the range are kept. The high byte of the frame is ignored.
+	ds.frame_count = 0x0101
+	ds.rng_seed = 35588
+	testing.expect_value(t, random_base_coord(ds), u16(0x05DC))
+	testing.expect_value(t, ds.rng_seed, u16(0x45DC))
+
+	ds.frame_count = 1
+	ds.rng_seed = 54586
+	testing.expect_value(t, random_base_coord(ds), u16(0x3A24))
+	testing.expect_value(t, ds.rng_seed, u16(0xFA24))
+}
+
+@(test)
 test_step_orbit :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)

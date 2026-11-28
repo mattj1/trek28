@@ -71,6 +71,31 @@ mix_rng :: proc(ds: ^DS_Segment) -> u16 {
 	return ds.rng_seed
 }
 
+// 1000:428a random_base_coord.
+// The name is inferred. mix_rng runs until the low 14 bits sit in
+// [0x5DC, 0x3A24]. Both ends are accepted.
+
+// @proc 1000:428a
+// status: tested
+// Odin: random_base_coord
+// 1000:428a  FUN_1000_428a:
+// 1000:428a      e8 ed 00                 CALL 0x1000:437a
+// 1000:428d      25 ff 3f                 AND AX,0x3fff
+// 1000:4290      3d dc 05                 CMP AX,0x5dc
+// 1000:4293      72 f5                    JC 0x1000:428a
+// 1000:4295      3d 24 3a                 CMP AX,0x3a24
+// 1000:4298      77 f0                    JA 0x1000:428a
+// 1000:429a      c3                       RET
+
+random_base_coord :: proc(ds: ^DS_Segment) -> u16 {
+	for {
+		ax := mix_rng(ds) & 0x3FFF
+		if ax >= 0x5DC && ax <= 0x3A24 {
+			return ax
+		}
+	}
+}
+
 // 1000:43b1 step_orbit.
 // The notes already use this name. DI is one 11-byte planet.
 // Kind 0 at +08 returns with the phase and the position unchanged.

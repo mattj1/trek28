@@ -302,19 +302,7 @@ fun_425b :: proc() {
 fun_427d :: proc() {
 }
 
-// @proc 1000:428a
-// listing: FUN_1000_428a
-// status: unread
-// 1000:428a  FUN_1000_428a:
-// 1000:428a      e8 ed 00                 CALL 0x1000:437a
-// 1000:428d      25 ff 3f                 AND AX,0x3fff
-// 1000:4290      3d dc 05                 CMP AX,0x5dc
-// 1000:4293      72 f5                    JC 0x1000:428a
-// 1000:4295      3d 24 3a                 CMP AX,0x3a24
-// 1000:4298      77 f0                    JA 0x1000:428a
-// 1000:429a      c3                       RET
-fun_428a :: proc() {
-}
+// 1000:428a random_base_coord is in planet.odin.
 
 // @proc 1000:429b
 // listing: FUN_1000_429b
