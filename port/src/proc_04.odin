@@ -241,17 +241,7 @@ package trek
 fun_3fd1 :: proc() {
 }
 
-// @proc 1000:41f0
-// listing: FUN_1000_41f0
-// status: unread
-// 1000:41f0  FUN_1000_41f0:
-// 1000:41f0      f6 06 12 00 01           TEST byte ptr [0x12],0x1
-// 1000:41f5      74 02                    JZ 0x1000:41f9
-// 1000:41f7      0c f0                    OR AL,0xf0
-// 1000:41f9  LAB_1000_41f9:
-// 1000:41f9      c3                       RET
-fun_41f0 :: proc() {
-}
+// 1000:41f0 timed_type is in planet.odin.
 
 // @proc 1000:41fa
 // listing: FUN_1000_41fa

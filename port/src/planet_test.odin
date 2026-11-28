@@ -119,3 +119,24 @@ test_step_orbit :: proc(t: ^testing.T) {
 	testing.expect_value(t, read_u16(&m.ds, add16(di, 1)), u16(0x27))
 	testing.expect_value(t, read_u16(&m.ds, add16(di, 3)), u16(8))
 }
+
+@(test)
+test_timed_type :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.mode_bits = 0
+	testing.expect_value(t, timed_type(ds, 0x0E), u8(0x0E))
+
+	ds.mode_bits = 0x02
+	testing.expect_value(t, timed_type(ds, 0x01), u8(0x01))
+
+	ds.mode_bits = 0x01
+	testing.expect_value(t, timed_type(ds, 0x0E), u8(0xFE))
+	testing.expect_value(t, timed_type(ds, 0xF0), u8(0xF0))
+	testing.expect_value(t, timed_type(ds, 0), u8(0xF0))
+
+	ds.mode_bits = 0xF3
+	testing.expect_value(t, timed_type(ds, 0x0E), u8(0xFE))
+	testing.expect_value(t, ds.mode_bits, u8(0xF3))
+}

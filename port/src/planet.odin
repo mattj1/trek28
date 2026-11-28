@@ -149,6 +149,27 @@ step_orbit :: proc(m: ^Machine, di: u16) {
 	write_u16(&m.ds, add16(di, 3), add16(y, dy))
 }
 
+// 1000:41f0 timed_type.
+// The name is inferred. When mode bit 0 is set, the type byte in AL
+// is ORed with 0xF0. Otherwise AL is unchanged.
+
+// @proc 1000:41f0
+// status: tested
+// Odin: timed_type
+// 1000:41f0  FUN_1000_41f0:
+// 1000:41f0      f6 06 12 00 01           TEST byte ptr [0x12],0x1
+// 1000:41f5      74 02                    JZ 0x1000:41f9
+// 1000:41f7      0c f0                    OR AL,0xf0
+// 1000:41f9  LAB_1000_41f9:
+// 1000:41f9      c3                       RET
+
+timed_type :: proc(ds: ^DS_Segment, al: u8) -> u8 {
+	if ds.mode_bits & 1 != 0 {
+		return al | 0xF0
+	}
+	return al
+}
+
 // CBW. A byte at or above 0x80 becomes a negative word.
 @(private)
 cbw :: proc(v: u8) -> u16 {

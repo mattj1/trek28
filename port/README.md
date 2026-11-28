@@ -51,6 +51,7 @@ odin run src
 | `1000:210a` | `apply_energy_charge` | tested. A handicap of 3 or more halves the pending charge. Flag bits `0x44` floor energy at `0x2710`. Otherwise the charge is subtracted, a quiet frame may add 10 first, and a zero or a borrow dumps the mines and stores flag 8, or 12 when the charge was at least `0xC350`. The charge word is cleared on every path |
 | `1000:3228` | `planet_array_for_level` | tested. Levels 0, 1, and 2 select the arrays at `92CC`, `963C`, and `99AC`. Any other level byte selects `9D1C`. The count is `objects_per_level`, zero-extended |
 | `1000:437a` | `mix_rng` | tested. The low byte of `frame_count` is mixed into `rng_seed`. Even parity leaves carry clear. Odd parity rotates in a set carry. The stored seed is the return value |
+| `1000:41f0` | `timed_type` | tested. The name is inferred. Mode bit 0 ORs the type in AL with `0xF0` |
 | `1000:43b1` | `step_orbit` | tested. Kind 0 leaves the planet alone. Kind 1 steps through the 32-byte table at `CS:43F9`. Any other kind uses the 64-byte table at `CS:4419`. The phase byte wraps, and the sign-extended step is added to X and Y |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
@@ -59,6 +60,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:1ee6` updates every side. It calls `1000:22a2` and `1000:202f` before `update_side_ships`. `1000:22a2` calls `planet_array_for_level`, `mix_rng`, `step_orbit`, and `1000:2310`. `2310` stays unread. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported. `1000:3225` loads a planet's level and falls into `3228`. It stays unread.
+`1000:1ee6` updates every side. It calls `1000:22a2` and `1000:202f` before `update_side_ships`. `1000:22a2` calls `planet_array_for_level`, `mix_rng`, `step_orbit`, and `1000:2310`. `2310` stays unread. `1000:41f0` (`timed_type`) ORs a type with `0xF0` when mode bit 0 is set. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported. `1000:3225` loads a planet's level and falls into `3228`. It stays unread.
 
 How to resume on another machine is in `RESUME.md`.
