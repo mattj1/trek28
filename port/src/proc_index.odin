@@ -55,7 +55,6 @@ listing_procs := [?]Proc_Ref{
 	{"1000:15d2", true, fun_15d2},
 	{"1000:1696", true, fun_1696},
 	{"1000:16e9", true, fun_16e9},
-	{"1000:16fe", true, fun_16fe},
 	{"1000:1759", true, fun_1759},
 	{"1000:178f", true, fun_178f},
 	{"1000:17c1", true, fun_17c1},
@@ -256,6 +255,7 @@ listing_procs := [?]Proc_Ref{
 
 // Procedures whose working body lives in another file.
 translated_procs := [?]string{
+	"1000:16fe",
 	"1000:2002",
 	"1000:2055",
 	"1000:20e3",

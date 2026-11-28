@@ -828,6 +828,69 @@ test_tick_mine_lifetimes :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.bases[0][6], u8(21))
 }
 
+@(test)
+test_update_pause :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.pause_delay = 5
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0))
+	testing.expect_value(t, ds.pause_delay, u8(0))
+
+	ds.pause_mask = 0x01
+	ds.pause_delay = 0
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0x8F))
+
+	ds.pause_mask = 0x10
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0x9F))
+
+	ds.pause_mask = 0x05
+	ds.pause_delay = 3
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0x05))
+	testing.expect_value(t, ds.pause_delay, u8(2))
+
+	for side in 0 ..< 4 {
+		ds.ids[side][0] = 'm'
+		ds.side_end[side] = 0
+	}
+	ds.pause_mask = 0x8F
+	ds.pause_delay = 9
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0x8F))
+	testing.expect_value(t, ds.pause_delay, u8(9))
+
+	ds.side_end[1] = 1
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0x8D))
+	testing.expect_value(t, ds.side_end[1], u8(1))
+
+	ds.side_end[1] = 0
+	ds.ids[2][0] = 'x'
+	ds.pause_mask = 0xFF
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0xFB))
+	testing.expect_value(t, ds.ids[2][0], u8('x'))
+
+	for side in 0 ..< 4 {
+		ds.side_end[side] = 1
+	}
+	ds.pause_mask = 0x8F
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0))
+
+	ds.pause_mask = 0x80
+	for side in 0 ..< 4 {
+		ds.side_end[side] = 0
+		ds.ids[side][0] = 'm'
+	}
+	update_pause(ds)
+	testing.expect_value(t, ds.pause_mask, u8(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

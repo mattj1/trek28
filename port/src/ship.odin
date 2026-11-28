@@ -706,3 +706,78 @@ tick_mine_lifetimes :: proc(ds: ^DS_Segment) {
 		}
 	}
 }
+
+// 1000:16fe update_pause.
+// The notes already use this name. A zero mask clears the delay. While bit 7
+// is clear, a zero delay ORs 0x8F into the mask and a nonzero delay
+// decrements. While bit 7 is set, a side whose end byte is nonzero, or whose
+// id does not start with 'm', loses its low bit. A zero low nibble then
+// clears the whole mask.
+
+// @proc 1000:16fe
+// status: tested
+// Odin: update_pause
+// 1000:16fe  FUN_1000_16fe:
+// 1000:16fe      f6 06 6c a2 ff           TEST byte ptr [0xa26c],0xff
+// 1000:1703      75 06                    JNZ 0x1000:170b
+// 1000:1705      c6 06 6d a2 00           MOV byte ptr [0xa26d],0x0
+// 1000:170a      c3                       RET
+// 1000:170b  LAB_1000_170b:
+// 1000:170b      f6 06 6c a2 80           TEST byte ptr [0xa26c],0x80
+// 1000:1710      75 12                    JNZ 0x1000:1724
+// 1000:1712      80 3e 6d a2 00           CMP byte ptr [0xa26d],0x0
+// 1000:1717      75 06                    JNZ 0x1000:171f
+// 1000:1719      80 0e 6c a2 8f           OR byte ptr [0xa26c],0x8f
+// 1000:171e      c3                       RET
+// 1000:171f  LAB_1000_171f:
+// 1000:171f      fe 0e 6d a2              DEC byte ptr [0xa26d]
+// 1000:1723      c3                       RET
+// 1000:1724  LAB_1000_1724:
+// 1000:1724      bb e0 89                 MOV BX,0x89e0
+// 1000:1727      bf 26 a2                 MOV DI,0xa226
+// 1000:172a      b9 00 00                 MOV CX,0x0
+// 1000:172d  LAB_1000_172d:
+// 1000:172d      80 3f 00                 CMP byte ptr [BX],0x0
+// 1000:1730      75 05                    JNZ 0x1000:1737
+// 1000:1732      80 3d 6d                 CMP byte ptr [DI],0x6d
+// 1000:1735      75 0a                    JNZ 0x1000:1741
+// 1000:1737  LAB_1000_1737:
+// 1000:1737      b0 01                    MOV AL,0x1
+// 1000:1739      d2 e0                    SHL AL,CL
+// 1000:173b      f6 d0                    NOT AL
+// 1000:173d      20 06 6c a2              AND byte ptr [0xa26c],AL
+// 1000:1741  LAB_1000_1741:
+// 1000:1741      fe c1                    INC CL
+// 1000:1743      43                       INC BX
+// 1000:1744      83 c7 0b                 ADD DI,0xb
+// 1000:1747      80 f9 04                 CMP CL,0x4
+// 1000:174a      72 e1                    JC 0x1000:172d
+// 1000:174c      f6 06 6c a2 0f           TEST byte ptr [0xa26c],0xf
+// 1000:1751      75 05                    JNZ 0x1000:1758
+// 1000:1753      c6 06 6c a2 00           MOV byte ptr [0xa26c],0x0
+// 1000:1758  LAB_1000_1758:
+// 1000:1758      c3                       RET
+
+update_pause :: proc(ds: ^DS_Segment) {
+	if ds.pause_mask == 0 {
+		ds.pause_delay = 0
+		return
+	}
+	if ds.pause_mask & 0x80 == 0 {
+		if ds.pause_delay == 0 {
+			ds.pause_mask |= 0x8F
+		} else {
+			ds.pause_delay -= 1
+		}
+		return
+	}
+	for side in 0 ..< 4 {
+		if ds.side_end[side] != 0 || ds.ids[side][0] != 'm' {
+			bit := u8(1) << uint(side)
+			ds.pause_mask &= ~bit
+		}
+	}
+	if ds.pause_mask & 0x0F == 0 {
+		ds.pause_mask = 0
+	}
+}
