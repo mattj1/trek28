@@ -2858,3 +2858,48 @@ cancel_shots_between_sides :: proc(m: ^Machine) {
 		cx -= 4
 	}
 }
+
+// 1000:32e5 mark_planet_contact.
+// The name is inferred. The caller reaches here when planet_team_flag
+// sets ZF. AX above 0x0FA0 returns. Otherwise team_tag AND the planet's
+// first byte, when zero, ORs bit 0x10 into ship byte 0x28 and returns.
+// AX above 0x0BB8 returns. Otherwise the planet byte's low nibble
+// indexes the 16 bytes at CS:330B, and that byte is ORed into byte 0x28.
+// The bytes at 331B are a jump table for 1000:3247 and are not read.
+
+// @proc 1000:32e5
+// status: tested
+// Odin: mark_planet_contact
+// 1000:32e5  FUN_1000_32e5:
+// 1000:32e5      3d a0 0f                 CMP AX,0xfa0
+// 1000:32e8      77 20                    JA 0x1000:330a
+// 1000:32ea      8a 1e 82 a2              MOV BL,byte ptr [0xa282]
+// 1000:32ee      22 1c                    AND BL,byte ptr [SI]
+// 1000:32f0      75 05                    JNZ 0x1000:32f7
+// 1000:32f2      80 4d 28 10              OR byte ptr [DI + 0x28],0x10
+// 1000:32f6      c3                       RET
+// 1000:32f7  LAB_1000_32f7:
+// 1000:32f7      3d b8 0b                 CMP AX,0xbb8
+// 1000:32fa      77 0e                    JA 0x1000:330a
+// 1000:32fc      8a 1c                    MOV BL,byte ptr [SI]
+// 1000:32fe      81 e3 0f 00              AND BX,0xf
+// 1000:3302      2e 8a 87 0b 33           MOV AL,byte ptr CS:[BX + 0x330b]
+// 1000:3307      08 45 28                 OR byte ptr [DI + 0x28],AL
+// 1000:330a  LAB_1000_330a:
+// 1000:330a      c3                       RET
+
+mark_planet_contact :: proc(m: ^Machine, ship: ^Ship_Record, planet: ^[11]u8, ax: u16) {
+	if ax > 0x0FA0 {
+		return
+	}
+	ds := transmute(^DS_Segment)&m.ds
+	if ds.team_tag & planet[0] == 0 {
+		ship.byte_28 |= 0x10
+		return
+	}
+	if ax > 0x0BB8 {
+		return
+	}
+	al := m.cs[0x330B + int(planet[0] & 0x0F)]
+	ship.byte_28 |= al
+}

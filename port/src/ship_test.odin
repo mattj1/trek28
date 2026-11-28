@@ -2826,6 +2826,67 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_mark_planet_contact :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	ship := Ship_Record{}
+	planet: [11]u8
+
+	table := [16]u8{0x00, 0x04, 0x01, 0x08, 0x80, 0x02, 0x40, 0x20, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i in 0 ..< 16 {
+		testing.expect_value(t, m.cs[0x330B + i], table[i])
+	}
+
+	ship.byte_28 = 0x01
+	ship.energy = 40
+	planet[0] = 0x16
+	ds.team_tag = 0x01
+	mark_planet_contact(m, &ship, &planet, 0x0FA1)
+	testing.expect_value(t, ship.byte_28, u8(0x01))
+	testing.expect_value(t, ship.energy, u16(40))
+	testing.expect_value(t, planet[0], u8(0x16))
+
+	// No overlapping bits sets 0x10 and does not read the table.
+	mark_planet_contact(m, &ship, &planet, 0x0FA0)
+	testing.expect_value(t, ship.byte_28, u8(0x11))
+
+	// Overlap, but AX above 0x0BB8, leaves the byte alone.
+	ds.team_tag = 0x06
+	mark_planet_contact(m, &ship, &planet, 0x0BB9)
+	testing.expect_value(t, ship.byte_28, u8(0x11))
+
+	// 0x0BB8 indexes nibble 6, whose table byte is 0x40.
+	mark_planet_contact(m, &ship, &planet, 0x0BB8)
+	testing.expect_value(t, ship.byte_28, u8(0x51))
+
+	planet[0] = 0x04
+	ship.byte_28 = 0
+	mark_planet_contact(m, &ship, &planet, 0)
+	testing.expect_value(t, ship.byte_28, u8(0x80))
+
+	// Nibble 0 and nibbles 8..15 contribute nothing. The tag must overlap
+	// or the procedure takes the bit 0x10 path instead of the table.
+	ds.team_tag = 0x18
+	planet[0] = 0x18
+	ship.byte_28 = 0x02
+	mark_planet_contact(m, &ship, &planet, 0)
+	testing.expect_value(t, ship.byte_28, u8(0x02))
+	planet[0] = 0x0F
+	ds.team_tag = 0x01
+	mark_planet_contact(m, &ship, &planet, 0x0FA0)
+	testing.expect_value(t, ship.byte_28, u8(0x02))
+
+	// A type of 0 shares no bits with any tag, so the near path is not taken.
+	planet[0] = 0
+	ds.team_tag = 0xFF
+	ship.byte_28 = 0
+	mark_planet_contact(m, &ship, &planet, 0)
+	testing.expect_value(t, ship.byte_28, u8(0x10))
+}
+
+@(test)
 test_cancel_shots_between_sides :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)
