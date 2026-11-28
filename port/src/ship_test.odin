@@ -2014,6 +2014,23 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_cap_weapons_cooldown :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	ship.weapons_cooldown = 0
+	cap_weapons_cooldown(&ship)
+	testing.expect_value(t, ship.weapons_cooldown, u8(0))
+	ship.weapons_cooldown = 0x0C
+	cap_weapons_cooldown(&ship)
+	testing.expect_value(t, ship.weapons_cooldown, u8(0x0C))
+	ship.weapons_cooldown = 0x0D
+	cap_weapons_cooldown(&ship)
+	testing.expect_value(t, ship.weapons_cooldown, u8(0x0C))
+	ship.weapons_cooldown = 0xFF
+	cap_weapons_cooldown(&ship)
+	testing.expect_value(t, ship.weapons_cooldown, u8(0x0C))
+}
+
+@(test)
 test_short_delta :: proc(t: ^testing.T) {
 	testing.expect_value(t, short_delta(0), u16(0))
 	testing.expect_value(t, short_delta(0x1FFF), u16(0x1FFF))

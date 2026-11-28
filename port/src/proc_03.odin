@@ -451,17 +451,7 @@ fun_32e5 :: proc() {
 fun_36b5 :: proc() {
 }
 
-// @proc 1000:37a1
-// listing: FUN_1000_37a1
-// status: unread
-// 1000:37a1  FUN_1000_37a1:
-// 1000:37a1      80 7d 15 0c              CMP byte ptr [DI + 0x15],0xc
-// 1000:37a5      76 04                    JBE 0x1000:37ab
-// 1000:37a7      c6 45 15 0c              MOV byte ptr [DI + 0x15],0xc
-// 1000:37ab  LAB_1000_37ab:
-// 1000:37ab      c3                       RET
-fun_37a1 :: proc() {
-}
+// 1000:37a1 cap_weapons_cooldown is in ship.odin.
 
 // 1000:37ac move_ships_and_shots is in ship.odin.
 

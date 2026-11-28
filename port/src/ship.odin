@@ -1789,3 +1789,23 @@ short_delta :: proc(bx: u16) -> u16 {
 	}
 	return neg16(abs)
 }
+
+// 1000:37a1 cap_weapons_cooldown.
+// The name is inferred. A weapons cooldown above 0x0C is stored as 0x0C.
+// 0x0C itself stays.
+
+// @proc 1000:37a1
+// status: tested
+// Odin: cap_weapons_cooldown
+// 1000:37a1  FUN_1000_37a1:
+// 1000:37a1      80 7d 15 0c              CMP byte ptr [DI + 0x15],0xc
+// 1000:37a5      76 04                    JBE 0x1000:37ab
+// 1000:37a7      c6 45 15 0c              MOV byte ptr [DI + 0x15],0xc
+// 1000:37ab  LAB_1000_37ab:
+// 1000:37ab      c3                       RET
+
+cap_weapons_cooldown :: proc(ship: ^Ship_Record) {
+	if ship.weapons_cooldown > 0x0C {
+		ship.weapons_cooldown = 0x0C
+	}
+}

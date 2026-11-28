@@ -67,6 +67,7 @@ odin run src
 | `1000:0b15` | `toggle_player_count` | tested. A count of 1 becomes 2. Every other value becomes 1 |
 | `1000:0b28` | `cycle_computer_count` | tested. Mode bits 2–3 cycle `00`, `04`, `0C`, then `00`. The other bits stay |
 | `1000:2b36` | `short_delta` | tested. The name is inferred. A positive value at or above `0x2000` loses `0x4000` and stays negative. A negative value whose magnitude reaches `0x2000` comes back positive. `0x8000` returns `0xC000` |
+| `1000:37a1` | `cap_weapons_cooldown` | tested. The name is inferred. A cooldown above `0x0C` is stored as `0x0C` |
 | `1000:2b52` | `abs_word` | tested. The name is inferred. Bit 15 selects `NEG`. `0x8000` stays `0x8000` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
