@@ -23,7 +23,7 @@ One translated procedure per commit. Do not amend. The message shape is `Transla
 
 Trust `disassembly/TREK28.asm` over `disassembly/decompiled.c`. Do not compile `decompiled.c`. Leave `TREK28.asm`, `decompiled.c`, `disassembly/ANNOTATIONS.md`, and the repo-root `README.md` unchanged unless asked. Names go in the port, and only when the notes or the operands already support them. `fill_mine_slot` is inferred; the comment says so. `byte_a295` stays that name. Mark a guessed name in the comment.
 
-This is a game port. An 8086 emulator was rejected. Translate a procedure only when the body is accounted for, and keep the listing as comments. DOS, CGA, and interrupts stay behind `Host` in `src/host.odin`. Stores into CGA segment `B800` and writes to port `0x3D9` stay empty. Writers of the offscreen frame at `DS:39C1` stay empty until that drawing is translated. Drawing procedures live in `src/draw.odin`.
+This is a game port. Translate a procedure only when the body is accounted for, and keep the listing as comments. An instruction emulator was not ruled out. It can check one procedure by running the bytes in `TREK28.COM` and comparing memory with the Odin result. It is not a reason to discard the port. DOS, CGA, and interrupts stay behind `Host` in `src/host.odin`. Stores into CGA segment `B800` and writes to port `0x3D9` stay empty. Writers of the offscreen frame at `DS:39C1` stay empty until that drawing is translated. Drawing procedures live in `src/draw.odin`.
 
 `Machine.ds` stays a raw `[0x10000]u8`. Distance uses runtime offsets, and a word at `DS:FFFF` wraps onto `DS:0000`. Ship code uses `Ship_Record`. Distance still uses `read_*` and `write_*` on the raw segment.
 
