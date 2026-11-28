@@ -1610,3 +1610,26 @@ planet_array_for_level :: proc(ds: ^DS_Segment, level: u8) -> (array: ^[0x50][11
 	}
 	return &ds.planets[index], u16(ds.objects_per_level)
 }
+
+// 1000:1970 to_upper.
+// The notes already use this name. A byte from 'a' through 'z' loses
+// bit 5. Anything outside that range is unchanged.
+
+// @proc 1000:1970
+// status: tested
+// Odin: to_upper
+// 1000:1970  FUN_1000_1970:
+// 1000:1970      3c 61                    CMP AL,0x61
+// 1000:1972      72 06                    JC 0x1000:197a
+// 1000:1974      3c 7a                    CMP AL,0x7a
+// 1000:1976      77 02                    JA 0x1000:197a
+// 1000:1978      24 5f                    AND AL,0x5f
+// 1000:197a  LAB_1000_197a:
+// 1000:197a      c3                       RET
+
+to_upper :: proc(al: u8) -> u8 {
+	if al >= 'a' && al <= 'z' {
+		return al & 0x5F
+	}
+	return al
+}

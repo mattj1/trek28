@@ -670,20 +670,7 @@ fun_1837 :: proc() {
 fun_1884 :: proc() {
 }
 
-// @proc 1000:1970
-// listing: FUN_1000_1970
-// notes: to_upper
-// status: unread
-// 1000:1970  FUN_1000_1970:
-// 1000:1970      3c 61                    CMP AL,0x61
-// 1000:1972      72 06                    JC 0x1000:197a
-// 1000:1974      3c 7a                    CMP AL,0x7a
-// 1000:1976      77 02                    JA 0x1000:197a
-// 1000:1978      24 5f                    AND AL,0x5f
-// 1000:197a  LAB_1000_197a:
-// 1000:197a      c3                       RET
-fun_1970 :: proc() {
-}
+// 1000:1970 to_upper is in ship.odin.
 
 // @proc 1000:197b
 // listing: FUN_1000_197b

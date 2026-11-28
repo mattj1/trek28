@@ -61,6 +61,7 @@ odin run src
 | `1000:429b` | `random_planet_coord` | tested. The name is inferred. Same draw, accepted window `[0x1F4, 0x3E0C]` |
 | `1000:42ac` | `random_planet_type` | tested. The name is inferred. The low 5 bits of the seed index the 32-byte table at `CS:42BD` |
 | `1000:43b1` | `step_orbit` | tested. Kind 0 leaves the planet alone. Kind 1 steps through the 32-byte table at `CS:43F9`. Any other kind uses the 64-byte table at `CS:4419`. The phase byte wraps, and the sign-extended step is added to X and Y |
+| `1000:1970` | `to_upper` | tested. `'a'..'z'` loses bit 5. Every other byte is unchanged |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -68,6 +69,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:1ee6` updates every side. It calls `walk_planets` (`1000:22a2`, translated) and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns.
+`1000:1ee6` updates every side. It calls `walk_planets` and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns. The closed key, score, and ship helpers are the procedures being translated.
 
 How to resume on another machine is in `RESUME.md`.

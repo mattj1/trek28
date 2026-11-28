@@ -59,7 +59,6 @@ listing_procs := [?]Proc_Ref{
 	{"1000:17c1", true, fun_17c1},
 	{"1000:1837", true, fun_1837},
 	{"1000:1884", true, fun_1884},
-	{"1000:1970", true, fun_1970},
 	{"1000:197b", true, fun_197b},
 	{"1000:1998", true, fun_1998},
 	{"1000:1a4d", true, fun_1a4d},
@@ -238,6 +237,7 @@ listing_procs := [?]Proc_Ref{
 translated_procs := [?]string{
 	"1000:16fe",
 	"1000:1759",
+	"1000:1970",
 	"1000:1d64",
 	"1000:1f1c",
 	"1000:2002",

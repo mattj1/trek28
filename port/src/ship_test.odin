@@ -2013,6 +2013,18 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 	testing.expect_value(t, count, u16(0xFF))
 }
 
+@(test)
+test_to_upper :: proc(t: ^testing.T) {
+	testing.expect_value(t, to_upper('a'), u8('A'))
+	testing.expect_value(t, to_upper('z'), u8('Z'))
+	testing.expect_value(t, to_upper('m'), u8('M'))
+	testing.expect_value(t, to_upper('A'), u8('A'))
+	testing.expect_value(t, to_upper('`'), u8('`'))
+	testing.expect_value(t, to_upper('{'), u8('{'))
+	testing.expect_value(t, to_upper(0), u8(0))
+	testing.expect_value(t, to_upper(0xFF), u8(0xFF))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
