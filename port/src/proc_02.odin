@@ -1,0 +1,1377 @@
+package trek
+
+// Procedures 1000:1f1c through 1000:2f9d.
+// The assembly is the listing. The body is empty until the procedure is translated.
+// A notes line is a name already supported by the annotation notes.
+
+// @proc 1000:1f1c
+// listing: FUN_1000_1f1c
+// notes: update_side_ships
+// status: unread
+// 1000:1f1c  FUN_1000_1f1c:
+// 1000:1f1c      b1 00                    MOV CL,0x0
+// 1000:1f1e      c6 06 95 a2 00           MOV byte ptr [0xa295],0x0
+// 1000:1f23  LAB_1000_1f23:
+// 1000:1f23      fe 06 95 a2              INC byte ptr [0xa295]
+// 1000:1f27      51                       PUSH CX
+// 1000:1f28      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:1f2b      74 14                    JZ 0x1000:1f41
+// 1000:1f2d      e8 25 01                 CALL 0x1000:2055
+// 1000:1f30      e8 58 02                 CALL 0x1000:218b
+// 1000:1f33      e8 36 03                 CALL 0x1000:226c
+// 1000:1f36      e8 aa 01                 CALL 0x1000:20e3
+// 1000:1f39      e8 ce 01                 CALL 0x1000:210a
+// 1000:1f3c      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:1f3f      75 1d                    JNZ 0x1000:1f5e
+// 1000:1f41  LAB_1000_1f41:
+// 1000:1f41      fe 0e 95 a2              DEC byte ptr [0xa295]
+// 1000:1f45      f6 05 ff                 TEST byte ptr [DI],0xff
+// 1000:1f48      75 0d                    JNZ 0x1000:1f57
+// 1000:1f4a      59                       POP CX
+// 1000:1f4b      51                       PUSH CX
+// 1000:1f4c      e8 0a 25                 CALL 0x1000:4459
+// 1000:1f4f      72 0d                    JC 0x1000:1f5e
+// 1000:1f51      fe 06 95 a2              INC byte ptr [0xa295]
+// 1000:1f55      eb 07                    JMP 0x1000:1f5e
+// 1000:1f57  LAB_1000_1f57:
+// 1000:1f57      fe 0d                    DEC byte ptr [DI]
+// 1000:1f59      75 03                    JNZ 0x1000:1f5e
+// 1000:1f5b      e8 a4 00                 CALL 0x1000:2002
+// 1000:1f5e  LAB_1000_1f5e:
+// 1000:1f5e      83 c7 3b                 ADD DI,0x3b
+// 1000:1f61      59                       POP CX
+// 1000:1f62      fe c1                    INC CL
+// 1000:1f64      80 f9 04                 CMP CL,0x4
+// 1000:1f67      72 ba                    JC 0x1000:1f23
+// 1000:1f69      e8 62 ff                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:1f74  [ptr] 1000:9014 1000:9022 1000:9030 1000:903e
+// 1000:1f74  LAB_1000_1f74:
+// 1000:1f74      8b f3                    MOV SI,BX
+// 1000:1f76      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:1f7a      b7 00                    MOV BH,0x0
+// 1000:1f7c      80 bf e0 89 00           CMP byte ptr [BX + 0x89e0],0x0
+// 1000:1f81      75 7e                    JNZ 0x1000:2001
+// 1000:1f83      80 bf d8 89 01           CMP byte ptr [BX + 0x89d8],0x1
+// 1000:1f88      75 05                    JNZ 0x1000:1f8f
+// 1000:1f8a      b0 03                    MOV AL,0x3
+// 1000:1f8c      eb 26                    JMP 0x1000:1fb4
+// 1000:1f8f  LAB_1000_1f8f:
+// 1000:1f8f      83 7c 08 00              CMP word ptr [SI + 0x8],0x0
+// 1000:1f93      75 0d                    JNZ 0x1000:1fa2
+// 1000:1f95      c6 44 0a 00              MOV byte ptr [SI + 0xa],0x0
+// 1000:1f99      80 7c 0d 00              CMP byte ptr [SI + 0xd],0x0
+// 1000:1f9d      74 03                    JZ 0x1000:1fa2
+// 1000:1f9f      fe 4c 0d                 DEC byte ptr [SI + 0xd]
+// 1000:1fa2  LAB_1000_1fa2:
+// 1000:1fa2      a0 95 a2                 MOV AL,[0xa295]
+// 1000:1fa5      02 44 0a                 ADD AL,byte ptr [SI + 0xa]
+// 1000:1fa8      88 87 dc 89              MOV byte ptr [BX + 0x89dc],AL
+// 1000:1fac      3c 00                    CMP AL,0x0
+// 1000:1fae      b0 01                    MOV AL,0x1
+// 1000:1fb0      74 02                    JZ 0x1000:1fb4
+// 1000:1fb2      b0 00                    MOV AL,0x0
+// 1000:1fb4  LAB_1000_1fb4:
+// 1000:1fb4      88 87 e0 89              MOV byte ptr [BX + 0x89e0],AL
+// 1000:1fb8      3c 00                    CMP AL,0x0
+// 1000:1fba      74 45                    JZ 0x1000:2001
+// 1000:1fbc      c6 44 0a 00              MOV byte ptr [SI + 0xa],0x0
+// 1000:1fc0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:1fc5      c6 44 0d 00              MOV byte ptr [SI + 0xd],0x0
+// 1000:1fc9      e8 02 ff                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:1fd4  [ptr] 1000:8c64 1000:8d50 1000:8e3c 1000:8f28
+// 1000:1fd4  LAB_1000_1fd4:
+// 1000:1fd4      b9 04 00                 MOV CX,0x4
+// 1000:1fd7  LAB_1000_1fd7:
+// 1000:1fd7      f6 07 80                 TEST byte ptr [BX],0x80
+// 1000:1fda      74 03                    JZ 0x1000:1fdf
+// 1000:1fdc      c6 07 00                 MOV byte ptr [BX],0x0
+// 1000:1fdf  LAB_1000_1fdf:
+// 1000:1fdf      83 c3 3b                 ADD BX,0x3b
+// 1000:1fe2      e2 f3                    LOOP 0x1000:1fd7
+// 1000:1fe4      e8 e7 fe                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:1fef  [ptr] 1000:a226 1000:a231 1000:a23c 1000:a247
+// 1000:1fef  LAB_1000_1fef:
+// 1000:1fef      c6 47 05 00              MOV byte ptr [BX + 0x5],0x0
+// 1000:1ff3      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:1ff7      32 ff                    XOR BH,BH
+// 1000:1ff9      d1 e3                    SHL BX,0x1
+// 1000:1ffb      c7 87 e4 89 00 00        MOV word ptr [BX + 0x89e4],0x0
+// 1000:2001  LAB_1000_2001:
+// 1000:2001      c3                       RET
+fun_1f1c :: proc() {
+}
+
+// @proc 1000:2002
+// listing: FUN_1000_2002
+// notes: spawn_debris
+// status: unread
+// 1000:2002  FUN_1000_2002:
+// 1000:2002      be 8c a0                 MOV SI,0xa08c
+// 1000:2005      b9 30 00                 MOV CX,0x30
+// 1000:2008  LAB_1000_2008:
+// 1000:2008      80 3c 00                 CMP byte ptr [SI],0x0
+// 1000:200b      74 06                    JZ 0x1000:2013
+// 1000:200d      83 c6 07                 ADD SI,0x7
+// 1000:2010      e2 f6                    LOOP 0x1000:2008
+// 1000:2012      c3                       RET
+// 1000:2013  LAB_1000_2013:
+// 1000:2013      c6 04 c8                 MOV byte ptr [SI],0xc8
+// 1000:2016      8b 45 01                 MOV AX,word ptr [DI + 0x1]
+// 1000:2019      89 44 01                 MOV word ptr [SI + 0x1],AX
+// 1000:201c      8b 45 03                 MOV AX,word ptr [DI + 0x3]
+// 1000:201f      89 44 03                 MOV word ptr [SI + 0x3],AX
+// 1000:2022      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
+// 1000:2025      88 44 06                 MOV byte ptr [SI + 0x6],AL
+// 1000:2028      8a 45 05                 MOV AL,byte ptr [DI + 0x5]
+// 1000:202b      88 44 05                 MOV byte ptr [SI + 0x5],AL
+// 1000:202e      c3                       RET
+fun_2002 :: proc() {
+}
+
+// @proc 1000:202f
+// listing: FUN_1000_202f
+// notes: age_debris
+// status: unread
+// 1000:202f  FUN_1000_202f:
+// 1000:202f      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:2032      24 07                    AND AL,0x7
+// 1000:2034      3c 04                    CMP AL,0x4
+// 1000:2036      74 01                    JZ 0x1000:2039
+// 1000:2038      c3                       RET
+// 1000:2039  LAB_1000_2039:
+// 1000:2039      be 8c a0                 MOV SI,0xa08c
+// 1000:203c      b9 30 00                 MOV CX,0x30
+// 1000:203f  LAB_1000_203f:
+// 1000:203f      80 3c 00                 CMP byte ptr [SI],0x0
+// 1000:2042      74 0b                    JZ 0x1000:204f
+// 1000:2044      fe 0c                    DEC byte ptr [SI]
+// 1000:2046      75 07                    JNZ 0x1000:204f
+// 1000:2048      56                       PUSH SI
+// 1000:2049      51                       PUSH CX
+// 1000:204a      e8 ea 8b                 CALL 0x1000:ac37
+// 1000:204d      59                       POP CX
+// 1000:204e      5e                       POP SI
+// 1000:204f  LAB_1000_204f:
+// 1000:204f      83 c6 07                 ADD SI,0x7
+// 1000:2052      e2 eb                    LOOP 0x1000:203f
+// 1000:2054      c3                       RET
+fun_202f :: proc() {
+}
+
+// @proc 1000:2055
+// listing: FUN_1000_2055
+// notes: charge_impulse_and_heal
+// status: unread
+// 1000:2055  FUN_1000_2055:
+// 1000:2055      8a 1e 74 a2              MOV BL,byte ptr [0xa274]
+// 1000:2059      b7 00                    MOV BH,0x0
+// 1000:205b      80 bf d8 89 01           CMP byte ptr [BX + 0x89d8],0x1
+// 1000:2060      75 06                    JNZ 0x1000:2068
+// 1000:2062      c7 45 08 00 00           MOV word ptr [DI + 0x8],0x0
+// 1000:2067      c3                       RET
+// 1000:2068  LAB_1000_2068:
+// 1000:2068      f6 45 15 ff              TEST byte ptr [DI + 0x15],0xff
+// 1000:206c      74 03                    JZ 0x1000:2071
+// 1000:206e      fe 4d 15                 DEC byte ptr [DI + 0x15]
+// 1000:2071  LAB_1000_2071:
+// 1000:2071      81 7d 08 d0 07           CMP word ptr [DI + 0x8],0x7d0
+// 1000:2076      77 04                    JA 0x1000:207c
+// 1000:2078      c6 45 14 00              MOV byte ptr [DI + 0x14],0x0
+// 1000:207c  LAB_1000_207c:
+// 1000:207c      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:2081      75 5f                    JNZ 0x1000:20e2
+// 1000:2083      ba 00 00                 MOV DX,0x0
+// 1000:2086      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:2089      24 0f                    AND AL,0xf
+// 1000:208b      74 14                    JZ 0x1000:20a1
+// 1000:208d      b2 05                    MOV DL,0x5
+// 1000:208f      3c 04                    CMP AL,0x4
+// 1000:2091      72 0e                    JC 0x1000:20a1
+// 1000:2093      b2 0a                    MOV DL,0xa
+// 1000:2095      3c 08                    CMP AL,0x8
+// 1000:2097      72 08                    JC 0x1000:20a1
+// 1000:2099      b2 0f                    MOV DL,0xf
+// 1000:209b      3c 0b                    CMP AL,0xb
+// 1000:209d      72 02                    JC 0x1000:20a1
+// 1000:209f      b2 0a                    MOV DL,0xa
+// 1000:20a1  LAB_1000_20a1:
+// 1000:20a1      81 7d 08 e8 03           CMP word ptr [DI + 0x8],0x3e8
+// 1000:20a6      77 02                    JA 0x1000:20aa
+// 1000:20a8      d1 ea                    SHR DX,0x1
+// 1000:20aa  LAB_1000_20aa:
+// 1000:20aa      8b c2                    MOV AX,DX
+// 1000:20ac      f6 05 20                 TEST byte ptr [DI],0x20
+// 1000:20af      74 0e                    JZ 0x1000:20bf
+// 1000:20b1      52                       PUSH DX
+// 1000:20b2      b9 4b 00                 MOV CX,0x4b
+// 1000:20b5      8b 45 08                 MOV AX,word ptr [DI + 0x8]
+// 1000:20b8      33 d2                    XOR DX,DX
+// 1000:20ba      f7 f1                    DIV CX
+// 1000:20bc      5a                       POP DX
+// 1000:20bd      03 c2                    ADD AX,DX
+// 1000:20bf  LAB_1000_20bf:
+// 1000:20bf      e8 d9 02                 CALL 0x1000:239b
+// 1000:20c2      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:20c7      75 19                    JNZ 0x1000:20e2
+// 1000:20c9      f6 06 d2 89 04           TEST byte ptr [0x89d2],0x4
+// 1000:20ce      75 09                    JNZ 0x1000:20d9
+// 1000:20d0      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:20d3      24 0f                    AND AL,0xf
+// 1000:20d5      3c 02                    CMP AL,0x2
+// 1000:20d7      77 09                    JA 0x1000:20e2
+// 1000:20d9  LAB_1000_20d9:
+// 1000:20d9      f6 45 0e ff              TEST byte ptr [DI + 0xe],0xff
+// 1000:20dd      74 03                    JZ 0x1000:20e2
+// 1000:20df      fe 4d 0e                 DEC byte ptr [DI + 0xe]
+// 1000:20e2  LAB_1000_20e2:
+// 1000:20e2      c3                       RET
+fun_2055 :: proc() {
+}
+
+// @proc 1000:20e3
+// listing: FUN_1000_20e3
+// status: unread
+// 1000:20e3  FUN_1000_20e3:
+// 1000:20e3      8a 45 0e                 MOV AL,byte ptr [DI + 0xe]
+// 1000:20e6      3c 08                    CMP AL,0x8
+// 1000:20e8      72 1f                    JC 0x1000:2109
+// 1000:20ea      80 25 cf                 AND byte ptr [DI],0xcf
+// 1000:20ed      3c 0c                    CMP AL,0xc
+// 1000:20ef      72 18                    JC 0x1000:2109
+// 1000:20f1      c6 45 11 00              MOV byte ptr [DI + 0x11],0x0
+// 1000:20f5      3c 10                    CMP AL,0x10
+// 1000:20f7      72 10                    JC 0x1000:2109
+// 1000:20f9      c6 45 15 18              MOV byte ptr [DI + 0x15],0x18
+// 1000:20fd      3c 14                    CMP AL,0x14
+// 1000:20ff      72 08                    JC 0x1000:2109
+// 1000:2101      c6 45 2a 00              MOV byte ptr [DI + 0x2a],0x0
+// 1000:2105      c6 45 22 00              MOV byte ptr [DI + 0x22],0x0
+// 1000:2109  LAB_1000_2109:
+// 1000:2109      c3                       RET
+fun_20e3 :: proc() {
+}
+
+// @proc 1000:210a
+// listing: FUN_1000_210a
+// notes: apply_energy_charge
+// status: unread
+// 1000:210a  FUN_1000_210a:
+// 1000:210a      e8 a6 02                 CALL 0x1000:23b3
+// 1000:210d      3c 03                    CMP AL,0x3
+// 1000:210f      8b 45 0c                 MOV AX,word ptr [DI + 0xc]
+// 1000:2112      72 02                    JC 0x1000:2116
+// 1000:2114      d1 e8                    SHR AX,0x1
+// 1000:2116  LAB_1000_2116:
+// 1000:2116      8b 5d 08                 MOV BX,word ptr [DI + 0x8]
+// 1000:2119      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:211c      74 20                    JZ 0x1000:213e
+// 1000:211e      d1 e8                    SHR AX,0x1
+// 1000:2120      d1 e8                    SHR AX,0x1
+// 1000:2122      3d 40 1f                 CMP AX,0x1f40
+// 1000:2125      72 04                    JC 0x1000:212b
+// 1000:2127      d1 e8                    SHR AX,0x1
+// 1000:2129      d1 e8                    SHR AX,0x1
+// 1000:212b  LAB_1000_212b:
+// 1000:212b      81 fb 10 27              CMP BX,0x2710
+// 1000:212f      72 54                    JC 0x1000:2185
+// 1000:2131      2b d8                    SUB BX,AX
+// 1000:2133      81 fb 10 27              CMP BX,0x2710
+// 1000:2137      77 19                    JA 0x1000:2152
+// 1000:2139      bb 10 27                 MOV BX,0x2710
+// 1000:213c      eb 14                    JMP 0x1000:2152
+// 1000:213e  LAB_1000_213e:
+// 1000:213e      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:2143      75 09                    JNZ 0x1000:214e
+// 1000:2145      81 fb b8 88              CMP BX,0x88b8
+// 1000:2149      77 03                    JA 0x1000:214e
+// 1000:214b      83 c3 0a                 ADD BX,0xa
+// 1000:214e  LAB_1000_214e:
+// 1000:214e      2b d8                    SUB BX,AX
+// 1000:2150      76 0e                    JBE 0x1000:2160
+// 1000:2152  LAB_1000_2152:
+// 1000:2152      89 5d 08                 MOV word ptr [DI + 0x8],BX
+// 1000:2155      81 fb c8 00              CMP BX,0xc8
+// 1000:2159      77 2a                    JA 0x1000:2185
+// 1000:215b      80 25 ef                 AND byte ptr [DI],0xef
+// 1000:215e      eb 25                    JMP 0x1000:2185
+// 1000:2160  LAB_1000_2160:
+// 1000:2160      e8 6b fd                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:216b  [ptr] 1000:904c 1000:90ec 1000:918c 1000:922c
+// 1000:216b  LAB_1000_216b:
+// 1000:216b      8b f3                    MOV SI,BX
+// 1000:216d      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
+// 1000:2171      74 05                    JZ 0x1000:2178
+// 1000:2173      e8 ee fb                 CALL 0x1000:1d64
+// 1000:2176      eb e8                    JMP 0x1000:2160
+// 1000:2178  LAB_1000_2178:
+// 1000:2178      81 7d 0c 50 c3           CMP word ptr [DI + 0xc],0xc350
+// 1000:217d      b0 08                    MOV AL,0x8
+// 1000:217f      72 02                    JC 0x1000:2183
+// 1000:2181      b0 0c                    MOV AL,0xc
+// 1000:2183  LAB_1000_2183:
+// 1000:2183      88 05                    MOV byte ptr [DI],AL
+// 1000:2185  LAB_1000_2185:
+// 1000:2185      c7 45 0c 00 00           MOV word ptr [DI + 0xc],0x0
+// 1000:218a      c3                       RET
+fun_210a :: proc() {
+}
+
+// 1000:218b slew_impulse and 1000:21af step_impulse are in ship.odin.
+
+// 1000:221e slew_heading is in ship.odin.
+
+// @proc 1000:226c
+// listing: FUN_1000_226c
+// notes: drain_invisibility
+// status: unread
+// 1000:226c  FUN_1000_226c:
+// 1000:226c      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:226f      24 01                    AND AL,0x1
+// 1000:2271      75 2e                    JNZ 0x1000:22a1
+// 1000:2273      f6 45 19 ff              TEST byte ptr [DI + 0x19],0xff
+// 1000:2277      75 28                    JNZ 0x1000:22a1
+// 1000:2279      f6 05 10                 TEST byte ptr [DI],0x10
+// 1000:227c      74 23                    JZ 0x1000:22a1
+// 1000:227e      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2281      75 1e                    JNZ 0x1000:22a1
+// 1000:2283      8a 45 0f                 MOV AL,byte ptr [DI + 0xf]
+// 1000:2286      22 c0                    AND AL,AL
+// 1000:2288      74 13                    JZ 0x1000:229d
+// 1000:228a      e8 26 01                 CALL 0x1000:23b3
+// 1000:228d      3c 04                    CMP AL,0x4
+// 1000:228f      72 07                    JC 0x1000:2298
+// 1000:2291      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
+// 1000:2296      74 09                    JZ 0x1000:22a1
+// 1000:2298  LAB_1000_2298:
+// 1000:2298      fe 4d 0f                 DEC byte ptr [DI + 0xf]
+// 1000:229b      75 04                    JNZ 0x1000:22a1
+// 1000:229d  LAB_1000_229d:
+// 1000:229d      80 25 ef                 AND byte ptr [DI],0xef
+// 1000:22a0      c3                       RET
+// 1000:22a1  LAB_1000_22a1:
+// 1000:22a1      c3                       RET
+fun_226c :: proc() {
+}
+
+// @proc 1000:22a2
+// listing: FUN_1000_22a2
+// status: unread
+// 1000:22a2  FUN_1000_22a2:
+// 1000:22a2      b0 00                    MOV AL,0x0
+// 1000:22a4  LAB_1000_22a4:
+// 1000:22a4      50                       PUSH AX
+// 1000:22a5      e8 80 0f                 CALL 0x1000:3228
+// 1000:22a8      c6 06 80 a2 00           MOV byte ptr [0xa280],0x0
+// 1000:22ad  LAB_1000_22ad:
+// 1000:22ad      8a 05                    MOV AL,byte ptr [DI]
+// 1000:22af      24 0f                    AND AL,0xf
+// 1000:22b1      74 23                    JZ 0x1000:22d6
+// 1000:22b3      3c 0a                    CMP AL,0xa
+// 1000:22b5      77 07                    JA 0x1000:22be
+// 1000:22b7      80 3e 80 a2 01           CMP byte ptr [0xa280],0x1
+// 1000:22bc      74 34                    JZ 0x1000:22f2
+// 1000:22be  LAB_1000_22be:
+// 1000:22be      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:22c1      02 c1                    ADD AL,CL
+// 1000:22c3      24 07                    AND AL,0x7
+// 1000:22c5      75 3a                    JNZ 0x1000:2301
+// 1000:22c7      e8 e7 20                 CALL 0x1000:43b1
+// 1000:22ca      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
+// 1000:22ce      74 31                    JZ 0x1000:2301
+// 1000:22d0      fe 4d 06                 DEC byte ptr [DI + 0x6]
+// 1000:22d3      eb 2c                    JMP 0x1000:2301
+// 1000:22d6  LAB_1000_22d6:
+// 1000:22d6      c6 06 80 a2 00           MOV byte ptr [0xa280],0x0
+// 1000:22db      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:22de      24 7f                    AND AL,0x7f
+// 1000:22e0      75 1f                    JNZ 0x1000:2301
+// 1000:22e2      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
+// 1000:22e6      74 19                    JZ 0x1000:2301
+// 1000:22e8      fe 4d 06                 DEC byte ptr [DI + 0x6]
+// 1000:22eb      75 14                    JNZ 0x1000:2301
+// 1000:22ed      c6 06 80 a2 01           MOV byte ptr [0xa280],0x1
+// 1000:22f2  LAB_1000_22f2:
+// 1000:22f2      e8 85 20                 CALL 0x1000:437a
+// 1000:22f5      24 0f                    AND AL,0xf
+// 1000:22f7      75 05                    JNZ 0x1000:22fe
+// 1000:22f9      e8 14 00                 CALL 0x1000:2310
+// 1000:22fc      eb 03                    JMP 0x1000:2301
+// 1000:22fe  LAB_1000_22fe:
+// 1000:22fe      80 0d 0f                 OR byte ptr [DI],0xf
+// 1000:2301  LAB_1000_2301:
+// 1000:2301      83 c7 0b                 ADD DI,0xb
+// 1000:2304      e2 a7                    LOOP 0x1000:22ad
+// 1000:2306      58                       POP AX
+// 1000:2307      fe c0                    INC AL
+// 1000:2309      3a 06 02 00              CMP AL,byte ptr [0x2]
+// 1000:230d      72 95                    JC 0x1000:22a4
+// 1000:230f      c3                       RET
+fun_22a2 :: proc() {
+}
+
+// @proc 1000:2310
+// listing: FUN_1000_2310
+// status: unread
+// 1000:2310  FUN_1000_2310:
+// 1000:2310      57                       PUSH DI
+// 1000:2311      87 fe                    XCHG SI,DI
+// 1000:2313  LAB_1000_2313:
+// 1000:2313      e8 85 1f                 CALL 0x1000:429b
+// 1000:2316      89 44 01                 MOV word ptr [SI + 0x1],AX
+// 1000:2319      e8 7f 1f                 CALL 0x1000:429b
+// 1000:231c      89 44 03                 MOV word ptr [SI + 0x3],AX
+// 1000:231f      bd e8 03                 MOV BP,0x3e8
+// 1000:2322      ba 58 1b                 MOV DX,0x1b58
+// 1000:2325      e8 ef 1e                 CALL 0x1000:4217
+// 1000:2328      72 e9                    JC 0x1000:2313
+// 1000:232a      b0 0e                    MOV AL,0xe
+// 1000:232c      e8 c1 1e                 CALL 0x1000:41f0
+// 1000:232f      88 04                    MOV byte ptr [SI],AL
+// 1000:2331      c6 44 07 00              MOV byte ptr [SI + 0x7],0x0
+// 1000:2335      c6 44 08 00              MOV byte ptr [SI + 0x8],0x0
+// 1000:2339      c6 44 06 00              MOV byte ptr [SI + 0x6],0x0
+// 1000:233d      c6 44 0a ff              MOV byte ptr [SI + 0xa],0xff
+// 1000:2341      5f                       POP DI
+// 1000:2342      c3                       RET
+fun_2310 :: proc() {
+}
+
+// @proc 1000:2343
+// listing: FUN_1000_2343
+// status: unread
+// 1000:2343  FUN_1000_2343:
+// 1000:2343      be 14 90                 MOV SI,0x9014
+// 1000:2346      bf 4c 90                 MOV DI,0x904c
+// 1000:2349      b9 04 00                 MOV CX,0x4
+// 1000:234c  LAB_1000_234c:
+// 1000:234c      51                       PUSH CX
+// 1000:234d      b9 14 00                 MOV CX,0x14
+// 1000:2350  LAB_1000_2350:
+// 1000:2350      8a 05                    MOV AL,byte ptr [DI]
+// 1000:2352      22 c0                    AND AL,AL
+// 1000:2354      74 19                    JZ 0x1000:236f
+// 1000:2356      fe c8                    DEC AL
+// 1000:2358      74 0f                    JZ 0x1000:2369
+// 1000:235a      fe c8                    DEC AL
+// 1000:235c      74 07                    JZ 0x1000:2365
+// 1000:235e      f6 06 d2 89 07           TEST byte ptr [0x89d2],0x7
+// 1000:2363      75 0a                    JNZ 0x1000:236f
+// 1000:2365  LAB_1000_2365:
+// 1000:2365      fe 0d                    DEC byte ptr [DI]
+// 1000:2367      eb 06                    JMP 0x1000:236f
+// 1000:2369  LAB_1000_2369:
+// 1000:2369      c6 05 00                 MOV byte ptr [DI],0x0
+// 1000:236c      fe 44 06                 INC byte ptr [SI + 0x6]
+// 1000:236f  LAB_1000_236f:
+// 1000:236f      83 c7 08                 ADD DI,0x8
+// 1000:2372      e2 dc                    LOOP 0x1000:2350
+// 1000:2374      59                       POP CX
+// 1000:2375      83 c6 0e                 ADD SI,0xe
+// 1000:2378      e2 d2                    LOOP 0x1000:234c
+// 1000:237a      c3                       RET
+fun_2343 :: proc() {
+}
+
+// @proc 1000:237b
+// listing: FUN_1000_237b
+// status: unread
+// 1000:237b  FUN_1000_237b:
+// 1000:237b      80 7d 34 00              CMP byte ptr [DI + 0x34],0x0
+// 1000:237f      74 04                    JZ 0x1000:2385
+// 1000:2381      d1 e8                    SHR AX,0x1
+// 1000:2383      d1 e8                    SHR AX,0x1
+// 1000:2385  LAB_1000_2385:
+// 1000:2385      f6 05 20                 TEST byte ptr [DI],0x20
+// 1000:2388      74 11                    JZ 0x1000:239b
+// 1000:238a      f6 45 19 80              TEST byte ptr [DI + 0x19],0x80
+// 1000:238e      75 0b                    JNZ 0x1000:239b
+// 1000:2390      52                       PUSH DX
+// 1000:2391      33 d2                    XOR DX,DX
+// 1000:2393      51                       PUSH CX
+// 1000:2394      b9 03 00                 MOV CX,0x3
+// 1000:2397      f7 f1                    DIV CX
+// 1000:2399      59                       POP CX
+// 1000:239a      5a                       POP DX
+fun_237b :: proc() {
+}
+
+// 1000:239b add_pending_charge is in ship.odin.
+
+// @proc 1000:23b3
+// listing: FUN_1000_23b3
+// notes: read_handicap
+// status: unread
+// 1000:23b3  FUN_1000_23b3:
+// 1000:23b3      53                       PUSH BX
+// 1000:23b4      e8 17 fb                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:23bf  [ptr] 1000:a226 1000:a231 1000:a23c 1000:a247
+// 1000:23bf  LAB_1000_23bf:
+// 1000:23bf      8a 47 04                 MOV AL,byte ptr [BX + 0x4]
+// 1000:23c2      5b                       POP BX
+// 1000:23c3      c3                       RET
+fun_23b3 :: proc() {
+}
+
+// @proc 1000:2a0c
+// listing: FUN_1000_2a0c
+// notes: ship_ptr_from_al
+// status: unread
+// 1000:2a0c  FUN_1000_2a0c:
+// 1000:2a0c      24 03                    AND AL,0x3
+// 1000:2a0e      8a 26 74 a2              MOV AH,byte ptr [0xa274]
+// 1000:2a12      d0 e4                    SHL AH,0x1
+// 1000:2a14      d0 e4                    SHL AH,0x1
+// 1000:2a16      0a c4                    OR AL,AH
+// 1000:2a18      b4 3b                    MOV AH,0x3b
+// 1000:2a1a      f6 e4                    MUL AH
+// 1000:2a1c      be 64 8c                 MOV SI,0x8c64
+// 1000:2a1f      03 f0                    ADD SI,AX
+// 1000:2a21      8a 04                    MOV AL,byte ptr [SI]
+// 1000:2a23      24 80                    AND AL,0x80
+// 1000:2a25      c3                       RET
+fun_2a0c :: proc() {
+}
+
+// @proc 1000:2a26
+// listing: FUN_1000_2a26
+// status: unread
+// 1000:2a26  FUN_1000_2a26:
+// 1000:2a26      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
+// 1000:2a29      3a 45 05                 CMP AL,byte ptr [DI + 0x5]
+// 1000:2a2c      74 04                    JZ 0x1000:2a32
+// 1000:2a2e      b8 ff ff                 MOV AX,0xffff
+// 1000:2a31      c3                       RET
+// 1000:2a32  LAB_1000_2a32:
+// 1000:2a32      8b 5c 01                 MOV BX,word ptr [SI + 0x1]
+// 1000:2a35      2b 5d 01                 SUB BX,word ptr [DI + 0x1]
+// 1000:2a38      e8 fb 00                 CALL 0x1000:2b36
+// 1000:2a3b      89 1e 83 a2              MOV word ptr [0xa283],BX
+// 1000:2a3f      8b 5c 03                 MOV BX,word ptr [SI + 0x3]
+// 1000:2a42      2b 5d 03                 SUB BX,word ptr [DI + 0x3]
+// 1000:2a45      e8 ee 00                 CALL 0x1000:2b36
+// 1000:2a48      89 1e 85 a2              MOV word ptr [0xa285],BX
+// 1000:2a4c      e8 03 01                 CALL 0x1000:2b52
+// 1000:2a4f      89 1e 89 a2              MOV word ptr [0xa289],BX
+// 1000:2a53      b8 0a 00                 MOV AX,0xa
+// 1000:2a56      f7 e3                    MUL BX
+// 1000:2a58      8b 1e 83 a2              MOV BX,word ptr [0xa283]
+// 1000:2a5c      e8 f3 00                 CALL 0x1000:2b52
+// 1000:2a5f      89 1e 87 a2              MOV word ptr [0xa287],BX
+// 1000:2a63      85 db                    TEST BX,BX
+// 1000:2a65      75 0f                    JNZ 0x1000:2a76
+// 1000:2a67  LAB_1000_2a67:
+// 1000:2a67      b5 00                    MOV CH,0x0
+// 1000:2a69      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2a6f      75 02                    JNZ 0x1000:2a73
+// 1000:2a71      b5 08                    MOV CH,0x8
+// 1000:2a73  LAB_1000_2a73:
+// 1000:2a73      e9 9b 00                 JMP 0x1000:2b11
+// 1000:2a76  LAB_1000_2a76:
+// 1000:2a76      83 fa 00                 CMP DX,0x0
+// 1000:2a79      74 05                    JZ 0x1000:2a80
+// 1000:2a7b      83 fb 0a                 CMP BX,0xa
+// 1000:2a7e      72 e7                    JC 0x1000:2a67
+// 1000:2a80  LAB_1000_2a80:
+// 1000:2a80      f7 f3                    DIV BX
+// 1000:2a82      3d 02 00                 CMP AX,0x2
+// 1000:2a85      77 0e                    JA 0x1000:2a95
+// 1000:2a87      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2a8d      b5 04                    MOV CH,0x4
+// 1000:2a8f      75 02                    JNZ 0x1000:2a93
+// 1000:2a91      b5 0c                    MOV CH,0xc
+// 1000:2a93  LAB_1000_2a93:
+// 1000:2a93      eb 7c                    JMP 0x1000:2b11
+// 1000:2a95  LAB_1000_2a95:
+// 1000:2a95      3d 07 00                 CMP AX,0x7
+// 1000:2a98      77 24                    JA 0x1000:2abe
+// 1000:2a9a      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2aa0      75 0e                    JNZ 0x1000:2ab0
+// 1000:2aa2      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2aa8      b5 0d                    MOV CH,0xd
+// 1000:2aaa      75 10                    JNZ 0x1000:2abc
+// 1000:2aac      b5 0b                    MOV CH,0xb
+// 1000:2aae      eb 0c                    JMP 0x1000:2abc
+// 1000:2ab0  LAB_1000_2ab0:
+// 1000:2ab0      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2ab6      b5 03                    MOV CH,0x3
+// 1000:2ab8      75 02                    JNZ 0x1000:2abc
+// 1000:2aba      b5 05                    MOV CH,0x5
+// 1000:2abc  LAB_1000_2abc:
+// 1000:2abc      eb 53                    JMP 0x1000:2b11
+// 1000:2abe  LAB_1000_2abe:
+// 1000:2abe      3d 0f 00                 CMP AX,0xf
+// 1000:2ac1      77 24                    JA 0x1000:2ae7
+// 1000:2ac3      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2ac9      75 0e                    JNZ 0x1000:2ad9
+// 1000:2acb      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2ad1      b5 0e                    MOV CH,0xe
+// 1000:2ad3      75 10                    JNZ 0x1000:2ae5
+// 1000:2ad5      b5 0a                    MOV CH,0xa
+// 1000:2ad7      eb 0c                    JMP 0x1000:2ae5
+// 1000:2ad9  LAB_1000_2ad9:
+// 1000:2ad9      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2adf      b5 02                    MOV CH,0x2
+// 1000:2ae1      75 02                    JNZ 0x1000:2ae5
+// 1000:2ae3      b5 06                    MOV CH,0x6
+// 1000:2ae5  LAB_1000_2ae5:
+// 1000:2ae5      eb 2a                    JMP 0x1000:2b11
+// 1000:2ae7  LAB_1000_2ae7:
+// 1000:2ae7      3d 32 00                 CMP AX,0x32
+// 1000:2aea      72 03                    JC 0x1000:2aef
+// 1000:2aec      e9 78 ff                 JMP 0x1000:2a67
+// 1000:2aef  LAB_1000_2aef:
+// 1000:2aef      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2af5      75 0e                    JNZ 0x1000:2b05
+// 1000:2af7      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2afd      b5 0f                    MOV CH,0xf
+// 1000:2aff      75 10                    JNZ 0x1000:2b11
+// 1000:2b01      b5 09                    MOV CH,0x9
+// 1000:2b03      eb 0c                    JMP 0x1000:2b11
+// 1000:2b05  LAB_1000_2b05:
+// 1000:2b05      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2b0b      b5 01                    MOV CH,0x1
+// 1000:2b0d      75 02                    JNZ 0x1000:2b11
+// 1000:2b0f      b5 07                    MOV CH,0x7
+// 1000:2b11  LAB_1000_2b11:
+// 1000:2b11      b1 00                    MOV CL,0x0
+// 1000:2b13      a1 87 a2                 MOV AX,[0xa287]
+// 1000:2b16      3b 06 89 a2              CMP AX,word ptr [0xa289]
+// 1000:2b1a      77 03                    JA 0x1000:2b1f
+// 1000:2b1c      a1 89 a2                 MOV AX,[0xa289]
+// 1000:2b1f  LAB_1000_2b1f:
+// 1000:2b1f      84 e4                    TEST AH,AH
+// 1000:2b21      74 06                    JZ 0x1000:2b29
+// 1000:2b23      fe c1                    INC CL
+// 1000:2b25      d1 e8                    SHR AX,0x1
+// 1000:2b27      eb f6                    JMP 0x1000:2b1f
+// 1000:2b29  LAB_1000_2b29:
+// 1000:2b29      e8 ee f8                 CALL 0x1000:241a
+// 1000:2b2c      3d ff ff                 CMP AX,0xffff
+// 1000:2b2f      75 04                    JNZ 0x1000:2b35
+// 1000:2b31      fe c1                    INC CL
+// 1000:2b33      eb f4                    JMP 0x1000:2b29
+// 1000:2b35  LAB_1000_2b35:
+// 1000:2b35      c3                       RET
+fun_2a26 :: proc() {
+}
+
+// @proc 1000:2b36
+// listing: FUN_1000_2b36
+// status: unread
+// 1000:2b36  FUN_1000_2b36:
+// 1000:2b36      78 0b                    JS 0x1000:2b43
+// 1000:2b38      81 fb 00 20              CMP BX,0x2000
+// 1000:2b3c      72 13                    JC 0x1000:2b51
+// 1000:2b3e      81 eb 00 40              SUB BX,0x4000
+// 1000:2b42      c3                       RET
+// 1000:2b43  LAB_1000_2b43:
+// 1000:2b43      f7 db                    NEG BX
+// 1000:2b45      81 fb 00 20              CMP BX,0x2000
+// 1000:2b49      72 04                    JC 0x1000:2b4f
+// 1000:2b4b      81 eb 00 40              SUB BX,0x4000
+// 1000:2b4f  LAB_1000_2b4f:
+// 1000:2b4f      f7 db                    NEG BX
+// 1000:2b51  LAB_1000_2b51:
+// 1000:2b51      c3                       RET
+fun_2b36 :: proc() {
+}
+
+// @proc 1000:2b52
+// listing: FUN_1000_2b52
+// status: unread
+// 1000:2b52  FUN_1000_2b52:
+// 1000:2b52      f7 c3 00 80              TEST BX,0x8000
+// 1000:2b56      74 02                    JZ 0x1000:2b5a
+// 1000:2b58      f7 db                    NEG BX
+// 1000:2b5a  LAB_1000_2b5a:
+// 1000:2b5a      c3                       RET
+fun_2b52 :: proc() {
+}
+
+// @proc 1000:2b5b
+// listing: FUN_1000_2b5b
+// status: unread
+// 1000:2b5b  FUN_1000_2b5b:
+// 1000:2b5b      e8 c0 00                 CALL 0x1000:2c1e
+// 1000:2b5e      e8 92 03                 CALL 0x1000:2ef3
+// 1000:2b61      e8 9e 02                 CALL 0x1000:2e02
+// 1000:2b64      e8 fe 03                 CALL 0x1000:2f65
+// 1000:2b67      e8 86 06                 CALL 0x1000:31f0
+// 1000:2b6a      e8 7f 05                 CALL 0x1000:30ec
+// 1000:2b6d      e8 37 00                 CALL 0x1000:2ba7
+// 1000:2b70      e8 42 0b                 CALL 0x1000:36b5
+// 1000:2b73      c3                       RET
+fun_2b5b :: proc() {
+}
+
+// @proc 1000:2b74
+// listing: FUN_1000_2b74
+// status: unread
+// 1000:2b74  FUN_1000_2b74:
+// 1000:2b74      b9 10 00                 MOV CX,0x10
+// 1000:2b77      be 64 8c                 MOV SI,0x8c64
+// 1000:2b7a  LAB_1000_2b7a:
+// 1000:2b7a      c6 44 16 00              MOV byte ptr [SI + 0x16],0x0
+// 1000:2b7e      c6 44 28 00              MOV byte ptr [SI + 0x28],0x0
+// 1000:2b82      c7 44 32 00 00           MOV word ptr [SI + 0x32],0x0
+// 1000:2b87      c6 44 34 00              MOV byte ptr [SI + 0x34],0x0
+// 1000:2b8b      f6 04 80                 TEST byte ptr [SI],0x80
+// 1000:2b8e      74 03                    JZ 0x1000:2b93
+// 1000:2b90      80 24 fc                 AND byte ptr [SI],0xfc
+// 1000:2b93  LAB_1000_2b93:
+// 1000:2b93      83 c6 3b                 ADD SI,0x3b
+// 1000:2b96      e2 e2                    LOOP 0x1000:2b7a
+// 1000:2b98      b9 04 00                 MOV CX,0x4
+// 1000:2b9b      be 14 90                 MOV SI,0x9014
+// 1000:2b9e  LAB_1000_2b9e:
+// 1000:2b9e      80 24 f8                 AND byte ptr [SI],0xf8
+// 1000:2ba1      83 c6 0e                 ADD SI,0xe
+// 1000:2ba4      e2 f8                    LOOP 0x1000:2b9e
+// 1000:2ba6      c3                       RET
+fun_2b74 :: proc() {
+}
+
+// @proc 1000:2ba7
+// listing: FUN_1000_2ba7
+// status: unread
+// 1000:2ba7  FUN_1000_2ba7:
+// 1000:2ba7      be 14 90                 MOV SI,0x9014
+// 1000:2baa      b9 04 00                 MOV CX,0x4
+// 1000:2bad  LAB_1000_2bad:
+// 1000:2bad      51                       PUSH CX
+// 1000:2bae      bf 64 8c                 MOV DI,0x8c64
+// 1000:2bb1      b9 10 00                 MOV CX,0x10
+// 1000:2bb4  LAB_1000_2bb4:
+// 1000:2bb4      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:2bb7      74 23                    JZ 0x1000:2bdc
+// 1000:2bb9      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
+// 1000:2bbc      3a 44 0c                 CMP AL,byte ptr [SI + 0xc]
+// 1000:2bbf      74 1b                    JZ 0x1000:2bdc
+// 1000:2bc1      f6 45 19 ff              TEST byte ptr [DI + 0x19],0xff
+// 1000:2bc5      74 15                    JZ 0x1000:2bdc
+// 1000:2bc7      80 7c 0d 00              CMP byte ptr [SI + 0xd],0x0
+// 1000:2bcb      74 0f                    JZ 0x1000:2bdc
+// 1000:2bcd      57                       PUSH DI
+// 1000:2bce      51                       PUSH CX
+// 1000:2bcf      83 c7 19                 ADD DI,0x19
+// 1000:2bd2      b1 01                    MOV CL,0x1
+// 1000:2bd4      e8 ed f7                 CALL 0x1000:23c4
+// 1000:2bd7      59                       POP CX
+// 1000:2bd8      5f                       POP DI
+// 1000:2bd9      e8 0c 00                 CALL 0x1000:2be8
+// 1000:2bdc  LAB_1000_2bdc:
+// 1000:2bdc      83 c7 3b                 ADD DI,0x3b
+// 1000:2bdf      e2 d3                    LOOP 0x1000:2bb4
+// 1000:2be1      59                       POP CX
+// 1000:2be2      83 c6 0e                 ADD SI,0xe
+// 1000:2be5      e2 c6                    LOOP 0x1000:2bad
+// 1000:2be7      c3                       RET
+fun_2ba7 :: proc() {
+}
+
+// @proc 1000:2be8
+// listing: FUN_1000_2be8
+// status: unread
+// 1000:2be8  FUN_1000_2be8:
+// 1000:2be8      3d a0 00                 CMP AX,0xa0
+// 1000:2beb      77 30                    JA 0x1000:2c1d
+// 1000:2bed      80 0c 80                 OR byte ptr [SI],0x80
+// 1000:2bf0      80 7d 19 04              CMP byte ptr [DI + 0x19],0x4
+// 1000:2bf4      72 27                    JC 0x1000:2c1d
+// 1000:2bf6      a0 6f a2                 MOV AL,[0xa26f]
+// 1000:2bf9      3a 44 0b                 CMP AL,byte ptr [SI + 0xb]
+// 1000:2bfc      75 06                    JNZ 0x1000:2c04
+// 1000:2bfe      c7 06 62 a2 ee 00        MOV word ptr [0xa262],0xee
+// 1000:2c04  LAB_1000_2c04:
+// 1000:2c04      8a 5d 17                 MOV BL,byte ptr [DI + 0x17]
+// 1000:2c07      b8 88 13                 MOV AX,0x1388
+// 1000:2c0a      e8 c7 02                 CALL 0x1000:2ed4
+// 1000:2c0d      c6 45 19 03              MOV byte ptr [DI + 0x19],0x3
+// 1000:2c11      81 6c 08 f4 01           SUB word ptr [SI + 0x8],0x1f4
+// 1000:2c16      79 05                    JNS 0x1000:2c1d
+// 1000:2c18      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:2c1d  LAB_1000_2c1d:
+// 1000:2c1d      c3                       RET
+fun_2be8 :: proc() {
+}
+
+// @proc 1000:2c1e
+// listing: FUN_1000_2c1e
+// status: unread
+// 1000:2c1e  FUN_1000_2c1e:
+// 1000:2c1e      bf 64 8c                 MOV DI,0x8c64
+// 1000:2c21      b9 10 00                 MOV CX,0x10
+// 1000:2c24  LAB_1000_2c24:
+// 1000:2c24      f6 05 ff                 TEST byte ptr [DI],0xff
+// 1000:2c27      74 3e                    JZ 0x1000:2c67
+// 1000:2c29      80 25 fb                 AND byte ptr [DI],0xfb
+// 1000:2c2c      51                       PUSH CX
+// 1000:2c2d      be 14 90                 MOV SI,0x9014
+// 1000:2c30      b9 04 00                 MOV CX,0x4
+// 1000:2c33  LAB_1000_2c33:
+// 1000:2c33      80 7c 0d 00              CMP byte ptr [SI + 0xd],0x0
+// 1000:2c37      74 1d                    JZ 0x1000:2c56
+// 1000:2c39      51                       PUSH CX
+// 1000:2c3a      8a 4d 18                 MOV CL,byte ptr [DI + 0x18]
+// 1000:2c3d      3a 4c 0c                 CMP CL,byte ptr [SI + 0xc]
+// 1000:2c40      74 0b                    JZ 0x1000:2c4d
+// 1000:2c42      b1 04                    MOV CL,0x4
+// 1000:2c44      e8 7d f7                 CALL 0x1000:23c4
+// 1000:2c47      e8 23 00                 CALL 0x1000:2c6d
+// 1000:2c4a      eb 09                    JMP 0x1000:2c55
+// 1000:2c4d  LAB_1000_2c4d:
+// 1000:2c4d      b1 00                    MOV CL,0x0
+// 1000:2c4f      e8 72 f7                 CALL 0x1000:23c4
+// 1000:2c52      e8 a5 00                 CALL 0x1000:2cfa
+// 1000:2c55  LAB_1000_2c55:
+// 1000:2c55      59                       POP CX
+// 1000:2c56  LAB_1000_2c56:
+// 1000:2c56      83 c6 0e                 ADD SI,0xe
+// 1000:2c59      e2 d8                    LOOP 0x1000:2c33
+// 1000:2c5b      8a 05                    MOV AL,byte ptr [DI]
+// 1000:2c5d      24 84                    AND AL,0x84
+// 1000:2c5f      3c 84                    CMP AL,0x84
+// 1000:2c61      74 03                    JZ 0x1000:2c66
+// 1000:2c63      80 25 bf                 AND byte ptr [DI],0xbf
+// 1000:2c66  LAB_1000_2c66:
+// 1000:2c66      59                       POP CX
+// 1000:2c67  LAB_1000_2c67:
+// 1000:2c67      83 c7 3b                 ADD DI,0x3b
+// 1000:2c6a      e2 b8                    LOOP 0x1000:2c24
+// 1000:2c6c      c3                       RET
+fun_2c1e :: proc() {
+}
+
+// @proc 1000:2c6d
+// listing: FUN_1000_2c6d
+// status: unread
+// 1000:2c6d  FUN_1000_2c6d:
+// 1000:2c6d      3d d0 07                 CMP AX,0x7d0
+// 1000:2c70      72 02                    JC 0x1000:2c74
+// 1000:2c72      f8                       CLC
+// 1000:2c73      c3                       RET
+// 1000:2c74  LAB_1000_2c74:
+// 1000:2c74      80 3d 0c                 CMP byte ptr [DI],0xc
+// 1000:2c77      77 2f                    JA 0x1000:2ca8
+// 1000:2c79      3d e8 03                 CMP AX,0x3e8
+// 1000:2c7c      77 7a                    JA 0x1000:2cf8
+// 1000:2c7e      8a 1d                    MOV BL,byte ptr [DI]
+// 1000:2c80      32 ff                    XOR BH,BH
+// 1000:2c82      83 eb 02                 SUB BX,0x2
+// 1000:2c85      72 71                    JC 0x1000:2cf8
+// 1000:2c87      d1 e3                    SHL BX,0x1
+// 1000:2c89      d1 e3                    SHL BX,0x1
+// 1000:2c8b      d1 e3                    SHL BX,0x1
+// 1000:2c8d      3d 2c 01                 CMP AX,0x12c
+// 1000:2c90      72 09                    JC 0x1000:2c9b
+// 1000:2c92      d1 eb                    SHR BX,0x1
+// 1000:2c94      3d f4 01                 CMP AX,0x1f4
+// 1000:2c97      72 02                    JC 0x1000:2c9b
+// 1000:2c99      d1 eb                    SHR BX,0x1
+// 1000:2c9b  LAB_1000_2c9b:
+// 1000:2c9b      29 5c 08                 SUB word ptr [SI + 0x8],BX
+// 1000:2c9e      79 58                    JNS 0x1000:2cf8
+// 1000:2ca0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:2ca5      eb 51                    JMP 0x1000:2cf8
+// 1000:2ca8  LAB_1000_2ca8:
+// 1000:2ca8      80 4d 16 01              OR byte ptr [DI + 0x16],0x1
+// 1000:2cac      80 0c 01                 OR byte ptr [SI],0x1
+// 1000:2caf      3d dc 05                 CMP AX,0x5dc
+// 1000:2cb2      77 44                    JA 0x1000:2cf8
+// 1000:2cb4      80 0c 02                 OR byte ptr [SI],0x2
+// 1000:2cb7      3d ee 02                 CMP AX,0x2ee
+// 1000:2cba      77 3c                    JA 0x1000:2cf8
+// 1000:2cbc      80 0c 04                 OR byte ptr [SI],0x4
+// 1000:2cbf      3d fa 00                 CMP AX,0xfa
+// 1000:2cc2      73 34                    JNC 0x1000:2cf8
+// 1000:2cc4      bb 2c 01                 MOV BX,0x12c
+// 1000:2cc7      2b d8                    SUB BX,AX
+// 1000:2cc9      8b c3                    MOV AX,BX
+// 1000:2ccb      d1 e0                    SHL AX,0x1
+// 1000:2ccd      80 7c 0d 04              CMP byte ptr [SI + 0xd],0x4
+// 1000:2cd1      74 02                    JZ 0x1000:2cd5
+// 1000:2cd3      d1 e0                    SHL AX,0x1
+// 1000:2cd5  LAB_1000_2cd5:
+// 1000:2cd5      3d 96 00                 CMP AX,0x96
+// 1000:2cd8      72 1b                    JC 0x1000:2cf5
+// 1000:2cda      c6 45 15 10              MOV byte ptr [DI + 0x15],0x10
+// 1000:2cde      8a 5d 17                 MOV BL,byte ptr [DI + 0x17]
+// 1000:2ce1      b8 e8 03                 MOV AX,0x3e8
+// 1000:2ce4      e8 ed 01                 CALL 0x1000:2ed4
+// 1000:2ce7      b8 f4 01                 MOV AX,0x1f4
+// 1000:2cea      83 6c 08 64              SUB word ptr [SI + 0x8],0x64
+// 1000:2cee      79 05                    JNS 0x1000:2cf5
+// 1000:2cf0      c7 44 08 00 00           MOV word ptr [SI + 0x8],0x0
+// 1000:2cf5  LAB_1000_2cf5:
+// 1000:2cf5      e8 83 f6                 CALL 0x1000:237b
+// 1000:2cf8  LAB_1000_2cf8:
+// 1000:2cf8      f9                       STC
+// 1000:2cf9      c3                       RET
+fun_2c6d :: proc() {
+}
+
+// @proc 1000:2cfa
+// listing: FUN_1000_2cfa
+// status: unread
+// 1000:2cfa  FUN_1000_2cfa:
+// 1000:2cfa      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:2cfd      74 6f                    JZ 0x1000:2d6e
+// 1000:2cff      80 7c 0d 04              CMP byte ptr [SI + 0xd],0x4
+// 1000:2d03      74 0d                    JZ 0x1000:2d12
+// 1000:2d05      3d fa 00                 CMP AX,0xfa
+// 1000:2d08      77 64                    JA 0x1000:2d6e
+// 1000:2d0a      c7 45 0c 50 c3           MOV word ptr [DI + 0xc],0xc350
+// 1000:2d0f      eb 5d                    JMP 0x1000:2d6e
+// 1000:2d12  LAB_1000_2d12:
+// 1000:2d12      3d a0 00                 CMP AX,0xa0
+// 1000:2d15      77 57                    JA 0x1000:2d6e
+// 1000:2d17      83 7d 32 00              CMP word ptr [DI + 0x32],0x0
+// 1000:2d1b      74 05                    JZ 0x1000:2d22
+// 1000:2d1d      3d 5f 00                 CMP AX,0x5f
+// 1000:2d20      77 4c                    JA 0x1000:2d6e
+// 1000:2d22  LAB_1000_2d22:
+// 1000:2d22      80 0d 04                 OR byte ptr [DI],0x4
+// 1000:2d25      8a 55 11                 MOV DL,byte ptr [DI + 0x11]
+// 1000:2d28      80 e2 1f                 AND DL,0x1f
+// 1000:2d2b      80 fa 04                 CMP DL,0x4
+// 1000:2d2e      75 06                    JNZ 0x1000:2d36
+// 1000:2d30      b2 00                    MOV DL,0x0
+// 1000:2d32      c6 45 11 80              MOV byte ptr [DI + 0x11],0x80
+// 1000:2d36  LAB_1000_2d36:
+// 1000:2d36      f6 05 40                 TEST byte ptr [DI],0x40
+// 1000:2d39      75 27                    JNZ 0x1000:2d62
+// 1000:2d3b      3d 3c 00                 CMP AX,0x3c
+// 1000:2d3e      72 18                    JC 0x1000:2d58
+// 1000:2d40      80 0d 40                 OR byte ptr [DI],0x40
+// 1000:2d43      22 d2                    AND DL,DL
+// 1000:2d45      75 1b                    JNZ 0x1000:2d62
+// 1000:2d47      c6 45 0b 00              MOV byte ptr [DI + 0xb],0x0
+// 1000:2d4b      c6 45 11 07              MOV byte ptr [DI + 0x11],0x7
+// 1000:2d4f      8a 45 17                 MOV AL,byte ptr [DI + 0x17]
+// 1000:2d52      88 45 2b                 MOV byte ptr [DI + 0x2b],AL
+// 1000:2d55      eb 0b                    JMP 0x1000:2d62
+// 1000:2d58  LAB_1000_2d58:
+// 1000:2d58      f6 45 0b ff              TEST byte ptr [DI + 0xb],0xff
+// 1000:2d5c      75 04                    JNZ 0x1000:2d62
+// 1000:2d5e      c6 45 0b 11              MOV byte ptr [DI + 0xb],0x11
+// 1000:2d62  LAB_1000_2d62:
+// 1000:2d62      c6 45 0e 00              MOV byte ptr [DI + 0xe],0x0
+// 1000:2d66      80 24 7f                 AND byte ptr [SI],0x7f
+// 1000:2d69      e8 04 00                 CALL 0x1000:2d70
+// 1000:2d6c      f9                       STC
+// 1000:2d6d      c3                       RET
+// 1000:2d6e  LAB_1000_2d6e:
+// 1000:2d6e      f8                       CLC
+// 1000:2d6f      c3                       RET
+fun_2cfa :: proc() {
+}
+
+// @proc 1000:2d70
+// listing: FUN_1000_2d70
+// status: unread
+// 1000:2d70  FUN_1000_2d70:
+// 1000:2d70      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:2d73      24 07                    AND AL,0x7
+// 1000:2d75      75 7e                    JNZ 0x1000:2df5
+// 1000:2d77      c6 06 9c a2 00           MOV byte ptr [0xa29c],0x0
+// 1000:2d7c      81 7d 08 10 27           CMP word ptr [DI + 0x8],0x2710
+// 1000:2d81      77 11                    JA 0x1000:2d94
+// 1000:2d83      83 7c 08 64              CMP word ptr [SI + 0x8],0x64
+// 1000:2d87      76 0b                    JBE 0x1000:2d94
+// 1000:2d89      83 6c 08 32              SUB word ptr [SI + 0x8],0x32
+// 1000:2d8d      81 45 08 f4 01           ADD word ptr [DI + 0x8],0x1f4
+// 1000:2d92      eb 2b                    JMP 0x1000:2dbf
+// 1000:2d94  LAB_1000_2d94:
+// 1000:2d94      81 7d 08 98 3a           CMP word ptr [DI + 0x8],0x3a98
+// 1000:2d99      72 1f                    JC 0x1000:2dba
+// 1000:2d9b      81 7c 08 20 4e           CMP word ptr [SI + 0x8],0x4e20
+// 1000:2da0      73 18                    JNC 0x1000:2dba
+// 1000:2da2      83 7c 08 19              CMP word ptr [SI + 0x8],0x19
+// 1000:2da6      72 12                    JC 0x1000:2dba
+// 1000:2da8      83 44 08 64              ADD word ptr [SI + 0x8],0x64
+// 1000:2dac      81 6d 08 e8 03           SUB word ptr [DI + 0x8],0x3e8
+// 1000:2db1      80 7c 07 63              CMP byte ptr [SI + 0x7],0x63
+// 1000:2db5      77 03                    JA 0x1000:2dba
+// 1000:2db7      fe 44 07                 INC byte ptr [SI + 0x7]
+// 1000:2dba  LAB_1000_2dba:
+// 1000:2dba      80 0e 9c a2 01           OR byte ptr [0xa29c],0x1
+// 1000:2dbf  LAB_1000_2dbf:
+// 1000:2dbf      80 7d 07 0a              CMP byte ptr [DI + 0x7],0xa
+// 1000:2dc3      73 0f                    JNC 0x1000:2dd4
+// 1000:2dc5      f6 44 07 ff              TEST byte ptr [SI + 0x7],0xff
+// 1000:2dc9      74 09                    JZ 0x1000:2dd4
+// 1000:2dcb      fe 4c 07                 DEC byte ptr [SI + 0x7]
+// 1000:2dce      fe 45 07                 INC byte ptr [DI + 0x7]
+// 1000:2dd1      eb 06                    JMP 0x1000:2dd9
+// 1000:2dd4  LAB_1000_2dd4:
+// 1000:2dd4      80 0e 9c a2 02           OR byte ptr [0xa29c],0x2
+// 1000:2dd9  LAB_1000_2dd9:
+// 1000:2dd9      f6 06 d2 89 08           TEST byte ptr [0x89d2],0x8
+// 1000:2dde      75 1a                    JNZ 0x1000:2dfa
+// 1000:2de0      80 7d 06 05              CMP byte ptr [DI + 0x6],0x5
+// 1000:2de4      73 0f                    JNC 0x1000:2df5
+// 1000:2de6      80 7c 06 00              CMP byte ptr [SI + 0x6],0x0
+// 1000:2dea      74 09                    JZ 0x1000:2df5
+// 1000:2dec      fe 4c 06                 DEC byte ptr [SI + 0x6]
+// 1000:2def      fe 45 06                 INC byte ptr [DI + 0x6]
+// 1000:2df2      eb 06                    JMP 0x1000:2dfa
+// 1000:2df5  LAB_1000_2df5:
+// 1000:2df5      80 0e 9c a2 04           OR byte ptr [0xa29c],0x4
+// 1000:2dfa  LAB_1000_2dfa:
+// 1000:2dfa      80 3e 9c a2 07           CMP byte ptr [0xa29c],0x7
+// 1000:2dff      75 00                    JNZ 0x1000:2e01
+// 1000:2e01  LAB_1000_2e01:
+// 1000:2e01      c3                       RET
+fun_2d70 :: proc() {
+}
+
+// @proc 1000:2e02
+// listing: FUN_1000_2e02
+// status: unread
+// 1000:2e02  FUN_1000_2e02:
+// 1000:2e02      be 64 8c                 MOV SI,0x8c64
+// 1000:2e05      b9 10 00                 MOV CX,0x10
+// 1000:2e08  LAB_1000_2e08:
+// 1000:2e08      f6 44 19 ff              TEST byte ptr [SI + 0x19],0xff
+// 1000:2e0c      74 29                    JZ 0x1000:2e37
+// 1000:2e0e      bf 64 8c                 MOV DI,0x8c64
+// 1000:2e11      51                       PUSH CX
+// 1000:2e12      b9 10 00                 MOV CX,0x10
+// 1000:2e15  LAB_1000_2e15:
+// 1000:2e15      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:2e18      74 17                    JZ 0x1000:2e31
+// 1000:2e1a      3b f7                    CMP SI,DI
+// 1000:2e1c      74 13                    JZ 0x1000:2e31
+// 1000:2e1e      80 7d 34 00              CMP byte ptr [DI + 0x34],0x0
+// 1000:2e22      74 08                    JZ 0x1000:2e2c
+// 1000:2e24      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
+// 1000:2e27      3a 44 18                 CMP AL,byte ptr [SI + 0x18]
+// 1000:2e2a      74 05                    JZ 0x1000:2e31
+// 1000:2e2c  LAB_1000_2e2c:
+// 1000:2e2c      51                       PUSH CX
+// 1000:2e2d      e8 0d 00                 CALL 0x1000:2e3d
+// 1000:2e30      59                       POP CX
+// 1000:2e31  LAB_1000_2e31:
+// 1000:2e31      83 c7 3b                 ADD DI,0x3b
+// 1000:2e34      e2 df                    LOOP 0x1000:2e15
+// 1000:2e36      59                       POP CX
+// 1000:2e37  LAB_1000_2e37:
+// 1000:2e37      83 c6 3b                 ADD SI,0x3b
+// 1000:2e3a      e2 cc                    LOOP 0x1000:2e08
+// 1000:2e3c      c3                       RET
+fun_2e02 :: proc() {
+}
+
+// @proc 1000:2e3d
+// listing: FUN_1000_2e3d
+// status: unread
+// 1000:2e3d  FUN_1000_2e3d:
+// 1000:2e3d      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2e40      74 09                    JZ 0x1000:2e4b
+// 1000:2e42      8a 45 18                 MOV AL,byte ptr [DI + 0x18]
+// 1000:2e45      3a 44 18                 CMP AL,byte ptr [SI + 0x18]
+// 1000:2e48      75 01                    JNZ 0x1000:2e4b
+// 1000:2e4a      c3                       RET
+// 1000:2e4b  LAB_1000_2e4b:
+// 1000:2e4b      56                       PUSH SI
+// 1000:2e4c      83 c6 19                 ADD SI,0x19
+// 1000:2e4f      b1 02                    MOV CL,0x2
+// 1000:2e51      e8 70 f5                 CALL 0x1000:23c4
+// 1000:2e54      5e                       POP SI
+// 1000:2e55      f6 44 19 80              TEST byte ptr [SI + 0x19],0x80
+// 1000:2e59      74 31                    JZ 0x1000:2e8c
+// 1000:2e5b      3d 58 02                 CMP AX,0x258
+// 1000:2e5e      77 73                    JA 0x1000:2ed3
+// 1000:2e60      80 4d 16 20              OR byte ptr [DI + 0x16],0x20
+// 1000:2e64      3d c2 01                 CMP AX,0x1c2
+// 1000:2e67      77 6a                    JA 0x1000:2ed3
+// 1000:2e69      ba ea 01                 MOV DX,0x1ea
+// 1000:2e6c      2b d0                    SUB DX,AX
+// 1000:2e6e      8b c2                    MOV AX,DX
+// 1000:2e70      d1 e0                    SHL AX,0x1
+// 1000:2e72      03 d0                    ADD DX,AX
+// 1000:2e74      03 d0                    ADD DX,AX
+// 1000:2e76      f6 44 19 40              TEST byte ptr [SI + 0x19],0x40
+// 1000:2e7a      74 05                    JZ 0x1000:2e81
+// 1000:2e7c      03 d0                    ADD DX,AX
+// 1000:2e7e      83 c2 19                 ADD DX,0x19
+// 1000:2e81  LAB_1000_2e81:
+// 1000:2e81      8a 44 19                 MOV AL,byte ptr [SI + 0x19]
+// 1000:2e84      24 0f                    AND AL,0xf
+// 1000:2e86      2c 04                    SUB AL,0x4
+// 1000:2e88      78 49                    JS 0x1000:2ed3
+// 1000:2e8a      eb 3c                    JMP 0x1000:2ec8
+// 1000:2e8c  LAB_1000_2e8c:
+// 1000:2e8c      3d 58 02                 CMP AX,0x258
+// 1000:2e8f      77 42                    JA 0x1000:2ed3
+// 1000:2e91      8a 55 18                 MOV DL,byte ptr [DI + 0x18]
+// 1000:2e94      3a 54 18                 CMP DL,byte ptr [SI + 0x18]
+// 1000:2e97      74 04                    JZ 0x1000:2e9d
+// 1000:2e99      80 4d 16 02              OR byte ptr [DI + 0x16],0x2
+// 1000:2e9d  LAB_1000_2e9d:
+// 1000:2e9d      3d 8c 00                 CMP AX,0x8c
+// 1000:2ea0      77 31                    JA 0x1000:2ed3
+// 1000:2ea2      ba c8 00                 MOV DX,0xc8
+// 1000:2ea5      2b d0                    SUB DX,AX
+// 1000:2ea7      d1 e2                    SHL DX,0x1
+// 1000:2ea9      d1 e2                    SHL DX,0x1
+// 1000:2eab      d1 e2                    SHL DX,0x1
+// 1000:2ead      81 c2 96 00              ADD DX,0x96
+// 1000:2eb1      8a 44 19                 MOV AL,byte ptr [SI + 0x19]
+// 1000:2eb4      3c 04                    CMP AL,0x4
+// 1000:2eb6      72 0c                    JC 0x1000:2ec4
+// 1000:2eb8      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2ebb      75 16                    JNZ 0x1000:2ed3
+// 1000:2ebd      c6 44 19 03              MOV byte ptr [SI + 0x19],0x3
+// 1000:2ec1      ba 41 00                 MOV DX,0x41
+// 1000:2ec4  LAB_1000_2ec4:
+// 1000:2ec4      f7 e2                    MUL DX
+// 1000:2ec6      8b d0                    MOV DX,AX
+// 1000:2ec8  LAB_1000_2ec8:
+// 1000:2ec8      8b c2                    MOV AX,DX
+// 1000:2eca      e8 ae f4                 CALL 0x1000:237b
+// 1000:2ecd      8a 5c 17                 MOV BL,byte ptr [SI + 0x17]
+// 1000:2ed0      e8 01 00                 CALL 0x1000:2ed4
+// 1000:2ed3  LAB_1000_2ed3:
+// 1000:2ed3      c3                       RET
+fun_2e3d :: proc() {
+}
+
+// @proc 1000:2ed4
+// listing: FUN_1000_2ed4
+// notes: add_score_div100
+// status: unread
+// 1000:2ed4  FUN_1000_2ed4:
+// 1000:2ed4      32 ff                    XOR BH,BH
+// 1000:2ed6      83 fb 04                 CMP BX,0x4
+// 1000:2ed9      73 17                    JNC 0x1000:2ef2
+// 1000:2edb      d1 e3                    SHL BX,0x1
+// 1000:2edd      52                       PUSH DX
+// 1000:2ede      53                       PUSH BX
+// 1000:2edf      33 d2                    XOR DX,DX
+// 1000:2ee1      bb 64 00                 MOV BX,0x64
+// 1000:2ee4      f7 f3                    DIV BX
+// 1000:2ee6      83 fa 32                 CMP DX,0x32
+// 1000:2ee9      72 01                    JC 0x1000:2eec
+// 1000:2eeb      40                       INC AX
+// 1000:2eec  LAB_1000_2eec:
+// 1000:2eec      5b                       POP BX
+// 1000:2eed      5a                       POP DX
+// 1000:2eee      01 87 e4 89              ADD word ptr [BX + 0x89e4],AX
+// 1000:2ef2  LAB_1000_2ef2:
+// 1000:2ef2      c3                       RET
+fun_2ed4 :: proc() {
+}
+
+// @proc 1000:2ef3
+// listing: FUN_1000_2ef3
+// status: unread
+// 1000:2ef3  FUN_1000_2ef3:
+// 1000:2ef3      be 64 8c                 MOV SI,0x8c64
+// 1000:2ef6      bf 50 8d                 MOV DI,0x8d50
+// 1000:2ef9      b9 0c 00                 MOV CX,0xc
+// 1000:2efc  LAB_1000_2efc:
+// 1000:2efc      51                       PUSH CX
+// 1000:2efd      57                       PUSH DI
+// 1000:2efe      56                       PUSH SI
+// 1000:2eff  LAB_1000_2eff:
+// 1000:2eff      51                       PUSH CX
+// 1000:2f00      56                       PUSH SI
+// 1000:2f01      b9 04 00                 MOV CX,0x4
+// 1000:2f04  LAB_1000_2f04:
+// 1000:2f04      e8 1d 00                 CALL 0x1000:2f24
+// 1000:2f07      83 c6 3b                 ADD SI,0x3b
+// 1000:2f0a      e2 f8                    LOOP 0x1000:2f04
+// 1000:2f0c      5e                       POP SI
+// 1000:2f0d      59                       POP CX
+// 1000:2f0e      83 c7 3b                 ADD DI,0x3b
+// 1000:2f11      e2 ec                    LOOP 0x1000:2eff
+// 1000:2f13      5e                       POP SI
+// 1000:2f14      5f                       POP DI
+// 1000:2f15      59                       POP CX
+// 1000:2f16      81 c6 ec 00              ADD SI,0xec
+// 1000:2f1a      81 c7 ec 00              ADD DI,0xec
+// 1000:2f1e      83 e9 04                 SUB CX,0x4
+// 1000:2f21      75 d9                    JNZ 0x1000:2efc
+// 1000:2f23      c3                       RET
+fun_2ef3 :: proc() {
+}
+
+// @proc 1000:2f24
+// listing: FUN_1000_2f24
+// status: unread
+// 1000:2f24  FUN_1000_2f24:
+// 1000:2f24      8a 44 19                 MOV AL,byte ptr [SI + 0x19]
+// 1000:2f27      3c 03                    CMP AL,0x3
+// 1000:2f29      72 39                    JC 0x1000:2f64
+// 1000:2f2b      3c 80                    CMP AL,0x80
+// 1000:2f2d      73 35                    JNC 0x1000:2f64
+// 1000:2f2f      8a 45 19                 MOV AL,byte ptr [DI + 0x19]
+// 1000:2f32      3c 03                    CMP AL,0x3
+// 1000:2f34      72 2e                    JC 0x1000:2f64
+// 1000:2f36      3c 80                    CMP AL,0x80
+// 1000:2f38      73 2a                    JNC 0x1000:2f64
+// 1000:2f3a      51                       PUSH CX
+// 1000:2f3b      56                       PUSH SI
+// 1000:2f3c      57                       PUSH DI
+// 1000:2f3d      83 c6 19                 ADD SI,0x19
+// 1000:2f40      83 c7 19                 ADD DI,0x19
+// 1000:2f43      b1 01                    MOV CL,0x1
+// 1000:2f45      e8 7c f4                 CALL 0x1000:23c4
+// 1000:2f48      5f                       POP DI
+// 1000:2f49      5e                       POP SI
+// 1000:2f4a      59                       POP CX
+// 1000:2f4b      3d 5a 00                 CMP AX,0x5a
+// 1000:2f4e      77 14                    JA 0x1000:2f64
+// 1000:2f50      80 7c 19 04              CMP byte ptr [SI + 0x19],0x4
+// 1000:2f54      72 04                    JC 0x1000:2f5a
+// 1000:2f56      c6 44 19 03              MOV byte ptr [SI + 0x19],0x3
+// 1000:2f5a  LAB_1000_2f5a:
+// 1000:2f5a      80 7d 19 04              CMP byte ptr [DI + 0x19],0x4
+// 1000:2f5e      72 04                    JC 0x1000:2f64
+// 1000:2f60      c6 45 19 03              MOV byte ptr [DI + 0x19],0x3
+// 1000:2f64  LAB_1000_2f64:
+// 1000:2f64      c3                       RET
+fun_2f24 :: proc() {
+}
+
+// @proc 1000:2f65
+// listing: FUN_1000_2f65
+// status: unread
+// 1000:2f65  FUN_1000_2f65:
+// 1000:2f65      be 64 8c                 MOV SI,0x8c64
+// 1000:2f68      bf 50 8d                 MOV DI,0x8d50
+// 1000:2f6b      b9 0c 00                 MOV CX,0xc
+// 1000:2f6e  LAB_1000_2f6e:
+// 1000:2f6e      51                       PUSH CX
+// 1000:2f6f      57                       PUSH DI
+// 1000:2f70      56                       PUSH SI
+// 1000:2f71  LAB_1000_2f71:
+// 1000:2f71      f6 05 ff                 TEST byte ptr [DI],0xff
+// 1000:2f74      74 11                    JZ 0x1000:2f87
+// 1000:2f76      51                       PUSH CX
+// 1000:2f77      56                       PUSH SI
+// 1000:2f78      b9 04 00                 MOV CX,0x4
+// 1000:2f7b  LAB_1000_2f7b:
+// 1000:2f7b      51                       PUSH CX
+// 1000:2f7c      e8 1e 00                 CALL 0x1000:2f9d
+// 1000:2f7f      59                       POP CX
+// 1000:2f80      83 c6 3b                 ADD SI,0x3b
+// 1000:2f83      e2 f6                    LOOP 0x1000:2f7b
+// 1000:2f85      5e                       POP SI
+// 1000:2f86      59                       POP CX
+// 1000:2f87  LAB_1000_2f87:
+// 1000:2f87      83 c7 3b                 ADD DI,0x3b
+// 1000:2f8a      e2 e5                    LOOP 0x1000:2f71
+// 1000:2f8c      5e                       POP SI
+// 1000:2f8d      5f                       POP DI
+// 1000:2f8e      59                       POP CX
+// 1000:2f8f      81 c6 ec 00              ADD SI,0xec
+// 1000:2f93      81 c7 ec 00              ADD DI,0xec
+// 1000:2f97      83 e9 04                 SUB CX,0x4
+// 1000:2f9a      75 d2                    JNZ 0x1000:2f6e
+// 1000:2f9c      c3                       RET
+fun_2f65 :: proc() {
+}
+
+// @proc 1000:2f9d
+// listing: FUN_1000_2f9d
+// status: unread
+// 1000:2f9d  FUN_1000_2f9d:
+// 1000:2f9d      f6 04 ff                 TEST byte ptr [SI],0xff
+// 1000:2fa0      75 01                    JNZ 0x1000:2fa3
+// 1000:2fa2  LAB_1000_2fa2:
+// 1000:2fa2      c3                       RET
+// 1000:2fa3  LAB_1000_2fa3:
+// 1000:2fa3      51                       PUSH CX
+// 1000:2fa4      b1 03                    MOV CL,0x3
+// 1000:2fa6      e8 1b f4                 CALL 0x1000:23c4
+// 1000:2fa9      59                       POP CX
+// 1000:2faa      3d d0 07                 CMP AX,0x7d0
+// 1000:2fad      77 f3                    JA 0x1000:2fa2
+// 1000:2faf      8a 5d 18                 MOV BL,byte ptr [DI + 0x18]
+// 1000:2fb2      3a 5c 18                 CMP BL,byte ptr [SI + 0x18]
+// 1000:2fb5      75 27                    JNZ 0x1000:2fde
+// 1000:2fb7      3d 2c 01                 CMP AX,0x12c
+// 1000:2fba      77 e6                    JA 0x1000:2fa2
+// 1000:2fbc      80 fb 20                 CMP BL,0x20
+// 1000:2fbf      75 e1                    JNZ 0x1000:2fa2
+// 1000:2fc1      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:2fc4      75 dc                    JNZ 0x1000:2fa2
+// 1000:2fc6      c6 45 15 02              MOV byte ptr [DI + 0x15],0x2
+// 1000:2fca      c6 44 15 02              MOV byte ptr [SI + 0x15],0x2
+// 1000:2fce      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:2fd1      24 0f                    AND AL,0xf
+// 1000:2fd3      3c 06                    CMP AL,0x6
+// 1000:2fd5      76 cb                    JBE 0x1000:2fa2
+// 1000:2fd7      fe 4d 0b                 DEC byte ptr [DI + 0xb]
+// 1000:2fda      fe 4d 0b                 DEC byte ptr [DI + 0xb]
+// 1000:2fdd      c3                       RET
+// 1000:2fde  LAB_1000_2fde:
+// 1000:2fde      50                       PUSH AX
+// 1000:2fdf      e8 84 00                 CALL 0x1000:3066
+// 1000:2fe2      ba d0 07                 MOV DX,0x7d0
+// 1000:2fe5      81 7d 08 40 9c           CMP word ptr [DI + 0x8],0x9c40
+// 1000:2fea      77 0d                    JA 0x1000:2ff9
+// 1000:2fec      f6 44 19 f0              TEST byte ptr [SI + 0x19],0xf0
+// 1000:2ff0      75 07                    JNZ 0x1000:2ff9
+// 1000:2ff2      f6 04 10                 TEST byte ptr [SI],0x10
+// 1000:2ff5      74 02                    JZ 0x1000:2ff9
+// 1000:2ff7      d1 ea                    SHR DX,0x1
+// 1000:2ff9  LAB_1000_2ff9:
+// 1000:2ff9      3b c2                    CMP AX,DX
+// 1000:2ffb      77 26                    JA 0x1000:3023
+// 1000:2ffd      80 4d 16 40              OR byte ptr [DI + 0x16],0x40
+// 1000:3001      8a 1d                    MOV BL,byte ptr [DI]
+// 1000:3003      80 e3 fc                 AND BL,0xfc
+// 1000:3006      79 1b                    JNS 0x1000:3023
+// 1000:3008      80 cb 01                 OR BL,0x1
+// 1000:300b      d1 ea                    SHR DX,0x1
+// 1000:300d      3b c2                    CMP AX,DX
+// 1000:300f      77 0a                    JA 0x1000:301b
+// 1000:3011      fe c3                    INC BL
+// 1000:3013      d1 ea                    SHR DX,0x1
+// 1000:3015      3b c2                    CMP AX,DX
+// 1000:3017      77 02                    JA 0x1000:301b
+// 1000:3019      fe c3                    INC BL
+// 1000:301b  LAB_1000_301b:
+// 1000:301b      8a 05                    MOV AL,byte ptr [DI]
+// 1000:301d      3a c3                    CMP AL,BL
+// 1000:301f      73 02                    JNC 0x1000:3023
+// 1000:3021      88 1d                    MOV byte ptr [DI],BL
+// 1000:3023  LAB_1000_3023:
+// 1000:3023      58                       POP AX
+// 1000:3024      ba d0 07                 MOV DX,0x7d0
+// 1000:3027      81 7c 08 40 9c           CMP word ptr [SI + 0x8],0x9c40
+// 1000:302c      77 0d                    JA 0x1000:303b
+// 1000:302e      f6 45 19 f0              TEST byte ptr [DI + 0x19],0xf0
+// 1000:3032      75 07                    JNZ 0x1000:303b
+// 1000:3034      f6 05 10                 TEST byte ptr [DI],0x10
+// 1000:3037      74 02                    JZ 0x1000:303b
+// 1000:3039      d1 ea                    SHR DX,0x1
+// 1000:303b  LAB_1000_303b:
+// 1000:303b      3b c2                    CMP AX,DX
+// 1000:303d      77 26                    JA 0x1000:3065
+// 1000:303f      80 4c 16 40              OR byte ptr [SI + 0x16],0x40
+// 1000:3043      8a 1c                    MOV BL,byte ptr [SI]
+// 1000:3045      80 e3 fc                 AND BL,0xfc
+// 1000:3048      79 1b                    JNS 0x1000:3065
+// 1000:304a      80 cb 01                 OR BL,0x1
+// 1000:304d      d1 ea                    SHR DX,0x1
+// 1000:304f      3b c2                    CMP AX,DX
+// 1000:3051      77 0a                    JA 0x1000:305d
+// 1000:3053      fe c3                    INC BL
+// 1000:3055      d1 ea                    SHR DX,0x1
+// 1000:3057      3b c2                    CMP AX,DX
+// 1000:3059      77 02                    JA 0x1000:305d
+// 1000:305b      fe c3                    INC BL
+// 1000:305d  LAB_1000_305d:
+// 1000:305d      8a 04                    MOV AL,byte ptr [SI]
+// 1000:305f      3a c3                    CMP AL,BL
+// 1000:3061      73 02                    JNC 0x1000:3065
+// 1000:3063      88 1c                    MOV byte ptr [SI],BL
+// 1000:3065  LAB_1000_3065:
+// 1000:3065      c3                       RET
+fun_2f9d :: proc() {
+}
+
