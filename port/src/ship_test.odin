@@ -2014,6 +2014,25 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_set_invisible_bit :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	ship.flags = 0x80
+	ship.invisibility = 0
+	set_invisible_bit(&ship)
+	testing.expect_value(t, ship.flags, u8(0x80))
+	ship.invisibility = 1
+	set_invisible_bit(&ship)
+	testing.expect_value(t, ship.flags, u8(0x90))
+	ship.invisibility = 0
+	set_invisible_bit(&ship)
+	testing.expect_value(t, ship.flags, u8(0x90))
+	ship.flags = 0x0F
+	ship.invisibility = 0xFF
+	set_invisible_bit(&ship)
+	testing.expect_value(t, ship.flags, u8(0x1F))
+}
+
+@(test)
 test_cap_weapons_cooldown :: proc(t: ^testing.T) {
 	ship: Ship_Record
 	ship.weapons_cooldown = 0

@@ -1809,3 +1809,32 @@ cap_weapons_cooldown :: proc(ship: ^Ship_Record) {
 		ship.weapons_cooldown = 0x0C
 	}
 }
+
+// 1000:1cc3 set_invisible_bit.
+// The name is inferred. An invisibility charge of at least 1 ORs flag
+// bit 0x10. A charge of 0 leaves the flags alone, including that bit.
+// 1000:1ccd is a command loop in the same listing. This entry returns
+// before it, and that loop stays unread.
+
+// @proc 1000:1cc3
+// status: tested
+// Odin: set_invisible_bit
+// 1000:1cc3  FUN_1000_1cc3:
+// 1000:1cc3      80 7c 0f 01              CMP byte ptr [SI + 0xf],0x1
+// 1000:1cc7      72 03                    JC 0x1000:1ccc
+// 1000:1cc9      80 0c 10                 OR byte ptr [SI],0x10
+// 1000:1ccc  LAB_1000_1ccc:
+// 1000:1ccc      c3                       RET
+// 1000:1ccd  LAB_1000_1ccd:
+// 1000:1ccd      e8 c2 01                 CALL 0x1000:1e92
+// 1000:1cd0      e8 08 00                 CALL 0x1000:1cdb
+// 1000:1cd3      8b 74 32                 MOV SI,word ptr [SI + 0x32]
+// 1000:1cd6      23 f6                    AND SI,SI
+// 1000:1cd8      75 f3                    JNZ 0x1000:1ccd
+// 1000:1cda      c3                       RET
+
+set_invisible_bit :: proc(ship: ^Ship_Record) {
+	if ship.invisibility >= 1 {
+		ship.flags |= 0x10
+	}
+}
