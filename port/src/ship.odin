@@ -2397,3 +2397,67 @@ clear_frame_scratch :: proc(ds: ^DS_Segment) {
 		ds.bases[side][0] &= 0xF8
 	}
 }
+
+// 1000:2f24 cancel_close_shots.
+// The name is inferred. Both shot bytes must be in 3..0x7F. The shot
+// records, 0x19 bytes into each ship, are passed to
+// distance_if_same_plane with shift 1. AX above 0x5A leaves both shots.
+// Otherwise a shot of 4 or more is stored as 3. A shot of 3 stays 3.
+// 0xFFFE and 0xFFFF are above 0x5A.
+
+// @proc 1000:2f24
+// status: tested
+// Odin: cancel_close_shots
+// 1000:2f24  FUN_1000_2f24:
+// 1000:2f24      8a 44 19                 MOV AL,byte ptr [SI + 0x19]
+// 1000:2f27      3c 03                    CMP AL,0x3
+// 1000:2f29      72 39                    JC 0x1000:2f64
+// 1000:2f2b      3c 80                    CMP AL,0x80
+// 1000:2f2d      73 35                    JNC 0x1000:2f64
+// 1000:2f2f      8a 45 19                 MOV AL,byte ptr [DI + 0x19]
+// 1000:2f32      3c 03                    CMP AL,0x3
+// 1000:2f34      72 2e                    JC 0x1000:2f64
+// 1000:2f36      3c 80                    CMP AL,0x80
+// 1000:2f38      73 2a                    JNC 0x1000:2f64
+// 1000:2f3a      51                       PUSH CX
+// 1000:2f3b      56                       PUSH SI
+// 1000:2f3c      57                       PUSH DI
+// 1000:2f3d      83 c6 19                 ADD SI,0x19
+// 1000:2f40      83 c7 19                 ADD DI,0x19
+// 1000:2f43      b1 01                    MOV CL,0x1
+// 1000:2f45      e8 7c f4                 CALL 0x1000:23c4
+// 1000:2f48      5f                       POP DI
+// 1000:2f49      5e                       POP SI
+// 1000:2f4a      59                       POP CX
+// 1000:2f4b      3d 5a 00                 CMP AX,0x5a
+// 1000:2f4e      77 14                    JA 0x1000:2f64
+// 1000:2f50      80 7c 19 04              CMP byte ptr [SI + 0x19],0x4
+// 1000:2f54      72 04                    JC 0x1000:2f5a
+// 1000:2f56      c6 44 19 03              MOV byte ptr [SI + 0x19],0x3
+// 1000:2f5a  LAB_1000_2f5a:
+// 1000:2f5a      80 7d 19 04              CMP byte ptr [DI + 0x19],0x4
+// 1000:2f5e      72 04                    JC 0x1000:2f64
+// 1000:2f60      c6 45 19 03              MOV byte ptr [DI + 0x19],0x3
+// 1000:2f64  LAB_1000_2f64:
+// 1000:2f64      c3                       RET
+
+cancel_close_shots :: proc(m: ^Machine, si, di: u16) {
+	a := read_u8(&m.ds, add16(si, 0x19))
+	if a < 3 || a >= 0x80 {
+		return
+	}
+	b := read_u8(&m.ds, add16(di, 0x19))
+	if b < 3 || b >= 0x80 {
+		return
+	}
+	ax, _ := distance_if_same_plane(m, add16(si, 0x19), add16(di, 0x19), 1)
+	if ax > 0x5A {
+		return
+	}
+	if a >= 4 {
+		write_u8(&m.ds, add16(si, 0x19), 3)
+	}
+	if b >= 4 {
+		write_u8(&m.ds, add16(di, 0x19), 3)
+	}
+}

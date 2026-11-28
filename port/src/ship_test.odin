@@ -2191,6 +2191,92 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_cancel_close_shots :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	a := &ds.ships[0][0]
+	b := &ds.ships[0][1]
+	si := u16(offset_of(DS_Segment, ships))
+	di := add16(si, 0x3B)
+
+	a.energy = 40
+	a.shot_x = 100
+	a.shot_y = 200
+	a.shot_level = 1
+	a.shot = 4
+	b.shot_x = 100
+	b.shot_y = 200
+	b.shot_level = 1
+	b.shot = 0x7F
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(3))
+	testing.expect_value(t, b.shot, u8(3))
+	testing.expect_value(t, a.energy, u16(40))
+
+	a.shot = 3
+	b.shot = 4
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(3))
+	testing.expect_value(t, b.shot, u8(3))
+
+	a.shot = 3
+	b.shot = 3
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(3))
+	testing.expect_value(t, b.shot, u8(3))
+
+	a.shot = 2
+	b.shot = 4
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(2))
+	testing.expect_value(t, b.shot, u8(4))
+
+	a.shot = 0x80
+	b.shot = 4
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(0x80))
+	testing.expect_value(t, b.shot, u8(4))
+
+	a.shot = 0
+	b.shot = 0x7F
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(0))
+	testing.expect_value(t, b.shot, u8(0x7F))
+
+	// A Y gap of 0x10 at shift 1 is still inside 0x5A.
+	a.shot = 4
+	b.shot = 5
+	b.shot_y = 200 + 0x10
+	ax, _ := distance_if_same_plane(m, add16(si, 0x19), add16(di, 0x19), 1)
+	testing.expect_value(t, ax <= 0x5A, true)
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(3))
+	testing.expect_value(t, b.shot, u8(3))
+
+	// A Y gap of 0x200 does not fit in a byte after the shift.
+	a.shot = 4
+	b.shot = 5
+	b.shot_y = 200 + 0x200
+	ax, _ = distance_if_same_plane(m, add16(si, 0x19), add16(di, 0x19), 1)
+	testing.expect_value(t, ax, u16(0xFFFF))
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(4))
+	testing.expect_value(t, b.shot, u8(5))
+
+	a.shot = 4
+	b.shot = 5
+	b.shot_y = 200
+	b.shot_level = 2
+	ax, _ = distance_if_same_plane(m, add16(si, 0x19), add16(di, 0x19), 1)
+	testing.expect_value(t, ax, u16(0xFFFE))
+	cancel_close_shots(m, si, di)
+	testing.expect_value(t, a.shot, u8(4))
+	testing.expect_value(t, b.shot, u8(5))
+}
+
+@(test)
 test_clear_frame_scratch :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)
