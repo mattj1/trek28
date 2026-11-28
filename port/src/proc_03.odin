@@ -236,13 +236,7 @@ fun_31d1 :: proc() {
 fun_31f0 :: proc() {
 }
 
-// @proc 1000:3225
-// listing: FUN_1000_3225
-// status: unread
-// 1000:3225  FUN_1000_3225:
-// 1000:3225      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
-fun_3225 :: proc() {
-}
+// 1000:3225 planet_array_for_record is in planet.odin.
 
 // 1000:3228 planet_array_for_level is in ship.odin.
 

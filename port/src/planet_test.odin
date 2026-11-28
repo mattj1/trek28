@@ -121,6 +121,27 @@ test_step_orbit :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_planet_array_for_record :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.objects_per_level = 0x50
+	ds.planets[0][0][5] = 1
+	array, count := planet_array_for_record(ds, u16(offset_of(DS_Segment, planets)))
+	testing.expect_value(t, array, &ds.planets[1])
+	testing.expect_value(t, count, u16(0x50))
+
+	ds.planets[0][0][5] = 0xFF
+	array, count = planet_array_for_record(ds, u16(offset_of(DS_Segment, planets)))
+	testing.expect_value(t, array, &ds.planets[3])
+
+	// SI+5 wraps onto DS:0000, which is objects_per_level.
+	ds.objects_per_level = 2
+	array, count = planet_array_for_record(ds, 0xFFFB)
+	testing.expect_value(t, array, &ds.planets[2])
+	testing.expect_value(t, count, u16(2))
+}
+
+@(test)
 test_timed_type :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

@@ -149,6 +149,22 @@ step_orbit :: proc(m: ^Machine, di: u16) {
 	write_u16(&m.ds, add16(di, 3), add16(y, dy))
 }
 
+// 1000:3225 planet_array_for_record.
+// The name is inferred. This entry falls into planet_array_for_level.
+// AL is the level byte at SI+5. A word offset near the top of the
+// segment wraps onto DS:0000.
+
+// @proc 1000:3225
+// status: tested
+// Odin: planet_array_for_record
+// 1000:3225  FUN_1000_3225:
+// 1000:3225      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
+
+planet_array_for_record :: proc(ds: ^DS_Segment, si: u16) -> (array: ^[0x50][11]u8, count: u16) {
+	raw := transmute(^[DS_SIZE]u8)ds
+	return planet_array_for_level(ds, raw[add16(si, 5)])
+}
+
 // 1000:41f0 timed_type.
 // The name is inferred. When mode bit 0 is set, the type byte in AL
 // is ORed with 0xF0. Otherwise AL is unchanged.

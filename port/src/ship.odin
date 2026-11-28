@@ -1577,7 +1577,8 @@ update_side_ships :: proc(ds: ^DS_Segment, ships: ^[4]Ship_Record) {
 // including 3 and above, is 9D1C. The level is not masked with 3.
 // CX is objects_per_level at DS:0000, zero-extended, and it is not
 // clamped to the 0x50 records in the array. 1000:3225 loads AL from
-// the record at SI+5 and falls into this entry. That entry stays unread.
+// the record at SI+5 and falls into this entry. That wrapper is
+// planet_array_for_record.
 
 // @proc 1000:3228
 // status: tested
