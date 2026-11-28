@@ -2191,6 +2191,77 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_clear_frame_scratch :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	alive := &ds.ships[0][0]
+	alive.flags = 0xFF
+	alive.byte_16 = 1
+	alive.byte_28 = 2
+	alive.formation = 0xFFFF
+	alive.byte_34 = 4
+	alive.energy = 50
+
+	dead := &ds.ships[0][1]
+	dead.flags = 0x03
+	dead.byte_16 = 9
+	dead.byte_28 = 9
+	dead.formation = 9
+	dead.byte_34 = 9
+
+	last := &ds.ships[3][3]
+	last.flags = 0x83
+	last.byte_16 = 6
+	last.formation = 6
+	last.byte_34 = 6
+
+	extra := &ds.extra_records[0]
+	extra.flags = 0xFF
+	extra.byte_16 = 5
+	extra.byte_28 = 5
+	extra.formation = 5
+	extra.byte_34 = 5
+
+	ds.bases[0][0] = 0xFF
+	ds.bases[0][1] = 0x11
+	ds.bases[1][0] = 0x07
+	ds.bases[2][0] = 0xF8
+	ds.bases[3][0] = 0x05
+
+	clear_frame_scratch(ds)
+
+	testing.expect_value(t, alive.flags, u8(0xFC))
+	testing.expect_value(t, alive.byte_16, u8(0))
+	testing.expect_value(t, alive.byte_28, u8(0))
+	testing.expect_value(t, alive.formation, u16(0))
+	testing.expect_value(t, alive.byte_34, u8(0))
+	testing.expect_value(t, alive.energy, u16(50))
+
+	testing.expect_value(t, dead.flags, u8(0x03))
+	testing.expect_value(t, dead.byte_16, u8(0))
+	testing.expect_value(t, dead.byte_28, u8(0))
+	testing.expect_value(t, dead.formation, u16(0))
+	testing.expect_value(t, dead.byte_34, u8(0))
+
+	testing.expect_value(t, last.flags, u8(0x80))
+	testing.expect_value(t, last.byte_16, u8(0))
+	testing.expect_value(t, last.formation, u16(0))
+	testing.expect_value(t, last.byte_34, u8(0))
+
+	testing.expect_value(t, extra.flags, u8(0xFF))
+	testing.expect_value(t, extra.byte_16, u8(5))
+	testing.expect_value(t, extra.byte_28, u8(5))
+	testing.expect_value(t, extra.formation, u16(5))
+	testing.expect_value(t, extra.byte_34, u8(5))
+
+	testing.expect_value(t, ds.bases[0][0], u8(0xF8))
+	testing.expect_value(t, ds.bases[0][1], u8(0x11))
+	testing.expect_value(t, ds.bases[1][0], u8(0))
+	testing.expect_value(t, ds.bases[2][0], u8(0xF8))
+	testing.expect_value(t, ds.bases[3][0], u8(0))
+}
+
+@(test)
 test_scroll_message_queue :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

@@ -80,6 +80,7 @@ odin run src
 | `1000:1696` | `add_energy_score` | tested. The name is inferred. Each side adds round(energy / 100) for its four living ships and round(base energy / 10). A dead ship adds nothing. The total is added to that side's score and wraps |
 | `1000:16e9` | `end_two_player_sides` | tested. The name is inferred. When two players are in and the word at `side_end[0]` is nonzero, `side_end[2]` and `side_end[3]` become 3 |
 | `1000:1a4d` | `scroll_message_queue` | tested. The name is inferred. The last three message lines move up, and the last line is cleared |
+| `1000:2b74` | `clear_frame_scratch` | tested. The name is inferred. The 16 ships lose bytes `0x16`, `0x28`, and `0x34`, and the formation word. An alive ship also loses flag bits 0 and 1. Each base byte 0 loses its low 3 bits |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 

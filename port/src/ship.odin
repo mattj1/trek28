@@ -2348,3 +2348,52 @@ scroll_message_queue :: proc(ds: ^DS_Segment) {
 	ds.message_queue[2] = ds.message_queue[3]
 	ds.message_queue[3] = {}
 }
+
+// 1000:2b74 clear_frame_scratch.
+// The name is inferred. The 16 ships at 8C64, not the extra records,
+// lose byte 0x16, byte 0x28, the formation word, and byte 0x34.
+// An alive ship also loses flag bits 0 and 1. A dead ship keeps its
+// flag byte. Each of the four bases loses the low 3 bits of byte 0.
+
+// @proc 1000:2b74
+// status: tested
+// Odin: clear_frame_scratch
+// 1000:2b74  FUN_1000_2b74:
+// 1000:2b74      b9 10 00                 MOV CX,0x10
+// 1000:2b77      be 64 8c                 MOV SI,0x8c64
+// 1000:2b7a  LAB_1000_2b7a:
+// 1000:2b7a      c6 44 16 00              MOV byte ptr [SI + 0x16],0x0
+// 1000:2b7e      c6 44 28 00              MOV byte ptr [SI + 0x28],0x0
+// 1000:2b82      c7 44 32 00 00           MOV word ptr [SI + 0x32],0x0
+// 1000:2b87      c6 44 34 00              MOV byte ptr [SI + 0x34],0x0
+// 1000:2b8b      f6 04 80                 TEST byte ptr [SI],0x80
+// 1000:2b8e      74 03                    JZ 0x1000:2b93
+// 1000:2b90      80 24 fc                 AND byte ptr [SI],0xfc
+// 1000:2b93  LAB_1000_2b93:
+// 1000:2b93      83 c6 3b                 ADD SI,0x3b
+// 1000:2b96      e2 e2                    LOOP 0x1000:2b7a
+// 1000:2b98      b9 04 00                 MOV CX,0x4
+// 1000:2b9b      be 14 90                 MOV SI,0x9014
+// 1000:2b9e  LAB_1000_2b9e:
+// 1000:2b9e      80 24 f8                 AND byte ptr [SI],0xf8
+// 1000:2ba1      83 c6 0e                 ADD SI,0xe
+// 1000:2ba4      e2 f8                    LOOP 0x1000:2b9e
+// 1000:2ba6      c3                       RET
+
+clear_frame_scratch :: proc(ds: ^DS_Segment) {
+	for side in 0 ..< 4 {
+		for slot in 0 ..< 4 {
+			ship := &ds.ships[side][slot]
+			ship.byte_16 = 0
+			ship.byte_28 = 0
+			ship.formation = 0
+			ship.byte_34 = 0
+			if ship.flags & 0x80 != 0 {
+				ship.flags &= 0xFC
+			}
+		}
+	}
+	for side in 0 ..< 4 {
+		ds.bases[side][0] &= 0xF8
+	}
+}
