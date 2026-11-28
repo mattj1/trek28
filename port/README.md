@@ -68,6 +68,7 @@ odin run src
 | `1000:0b28` | `cycle_computer_count` | tested. Mode bits 2–3 cycle `00`, `04`, `0C`, then `00`. The other bits stay |
 | `1000:2b36` | `short_delta` | tested. The name is inferred. A positive value at or above `0x2000` loses `0x4000` and stays negative. A negative value whose magnitude reaches `0x2000` comes back positive. `0x8000` returns `0xC000` |
 | `1000:1cc3` | `set_invisible_bit` | tested. The name is inferred. An invisibility charge of at least 1 ORs flag bit `0x10`. A charge of 0 leaves the bit alone |
+| `1000:31d1` | `decay_impulse` | tested. The name is inferred. The impulse byte decrements when seek's low 5 bits are 0, byte `0x16` has bit 2, byte `0x2A` is above 2, and the actual nibble is above 6 |
 | `1000:37a1` | `cap_weapons_cooldown` | tested. The name is inferred. A cooldown above `0x0C` is stored as `0x0C` |
 | `1000:2b52` | `abs_word` | tested. The name is inferred. Bit 15 selects `NEG`. `0x8000` stays `0x8000` |
 

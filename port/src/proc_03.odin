@@ -186,25 +186,7 @@ fun_30ec :: proc() {
 fun_3109 :: proc() {
 }
 
-// @proc 1000:31d1
-// listing: FUN_1000_31d1
-// status: unread
-// 1000:31d1  FUN_1000_31d1:
-// 1000:31d1      f6 45 11 1f              TEST byte ptr [DI + 0x11],0x1f
-// 1000:31d5      75 18                    JNZ 0x1000:31ef
-// 1000:31d7      f6 45 16 04              TEST byte ptr [DI + 0x16],0x4
-// 1000:31db      74 12                    JZ 0x1000:31ef
-// 1000:31dd      80 7d 2a 02              CMP byte ptr [DI + 0x2a],0x2
-// 1000:31e1      76 0c                    JBE 0x1000:31ef
-// 1000:31e3      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
-// 1000:31e6      24 0f                    AND AL,0xf
-// 1000:31e8      3c 06                    CMP AL,0x6
-// 1000:31ea      76 03                    JBE 0x1000:31ef
-// 1000:31ec      fe 4d 0b                 DEC byte ptr [DI + 0xb]
-// 1000:31ef  LAB_1000_31ef:
-// 1000:31ef      c3                       RET
-fun_31d1 :: proc() {
-}
+// 1000:31d1 decay_impulse is in ship.odin.
 
 // @proc 1000:31f0
 // listing: FUN_1000_31f0

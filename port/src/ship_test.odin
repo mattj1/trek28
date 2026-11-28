@@ -2014,6 +2014,43 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_decay_impulse :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	ship.seek = 0
+	ship.byte_16 = 0x04
+	ship.byte_2a = 3
+	ship.impulse = 0x17
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x16))
+
+	ship.impulse = 0x07
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x06))
+
+	ship.impulse = 0x16
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x16))
+
+	ship.impulse = 0x27
+	ship.byte_2a = 2
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x27))
+	ship.byte_2a = 3
+
+	ship.byte_16 = 0
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x27))
+	ship.byte_16 = 0x04
+
+	ship.seek = 0x01
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x27))
+	ship.seek = 0xE0
+	decay_impulse(&ship)
+	testing.expect_value(t, ship.impulse, u8(0x26))
+}
+
+@(test)
 test_set_invisible_bit :: proc(t: ^testing.T) {
 	ship: Ship_Record
 	ship.flags = 0x80

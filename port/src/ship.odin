@@ -1838,3 +1838,44 @@ set_invisible_bit :: proc(ship: ^Ship_Record) {
 		ship.flags |= 0x10
 	}
 }
+
+// 1000:31d1 decay_impulse.
+// The name is inferred. The whole impulse byte decrements when seek's
+// low 5 bits are 0, byte 0x16 has bit 2 set, byte 0x2A is above 2, and
+// the actual impulse nibble is above 6. That nibble check means the
+// decrement does not borrow into the desired nibble.
+
+// @proc 1000:31d1
+// status: tested
+// Odin: decay_impulse
+// 1000:31d1  FUN_1000_31d1:
+// 1000:31d1      f6 45 11 1f              TEST byte ptr [DI + 0x11],0x1f
+// 1000:31d5      75 18                    JNZ 0x1000:31ef
+// 1000:31d7      f6 45 16 04              TEST byte ptr [DI + 0x16],0x4
+// 1000:31db      74 12                    JZ 0x1000:31ef
+// 1000:31dd      80 7d 2a 02              CMP byte ptr [DI + 0x2a],0x2
+// 1000:31e1      76 0c                    JBE 0x1000:31ef
+// 1000:31e3      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:31e6      24 0f                    AND AL,0xf
+// 1000:31e8      3c 06                    CMP AL,0x6
+// 1000:31ea      76 03                    JBE 0x1000:31ef
+// 1000:31ec      fe 4d 0b                 DEC byte ptr [DI + 0xb]
+// 1000:31ef  LAB_1000_31ef:
+// 1000:31ef      c3                       RET
+
+decay_impulse :: proc(ship: ^Ship_Record) {
+	if ship.seek & 0x1F != 0 {
+		return
+	}
+	if ship.byte_16 & 0x04 == 0 {
+		return
+	}
+	if ship.byte_2a <= 2 {
+		return
+	}
+	if ship.impulse & 0x0F <= 6 {
+		return
+	}
+	next, _ := intrinsics.overflow_sub(ship.impulse, 1)
+	ship.impulse = next
+}
