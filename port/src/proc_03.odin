@@ -244,27 +244,7 @@ fun_31f0 :: proc() {
 fun_3225 :: proc() {
 }
 
-// @proc 1000:3228
-// listing: FUN_1000_3228
-// notes: planet_array_for_level
-// status: unread
-// 1000:3228  FUN_1000_3228:
-// 1000:3228      bf cc 92                 MOV DI,0x92cc
-// 1000:322b      22 c0                    AND AL,AL
-// 1000:322d      74 11                    JZ 0x1000:3240
-// 1000:322f      bf 3c 96                 MOV DI,0x963c
-// 1000:3232      fe c8                    DEC AL
-// 1000:3234      74 0a                    JZ 0x1000:3240
-// 1000:3236      bf ac 99                 MOV DI,0x99ac
-// 1000:3239      fe c8                    DEC AL
-// 1000:323b      74 03                    JZ 0x1000:3240
-// 1000:323d      bf 1c 9d                 MOV DI,0x9d1c
-// 1000:3240  LAB_1000_3240:
-// 1000:3240      8a 0e 00 00              MOV CL,byte ptr [0x0]
-// 1000:3244      32 ed                    XOR CH,CH
-// 1000:3246      c3                       RET
-fun_3228 :: proc() {
-}
+// 1000:3228 planet_array_for_level is in ship.odin.
 
 // @proc 1000:3247
 // listing: FUN_1000_3247

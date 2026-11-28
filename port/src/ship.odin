@@ -1570,3 +1570,42 @@ update_side_ships :: proc(ds: ^DS_Segment, ships: ^[4]Ship_Record) {
 	ds.ids[side & 3][5] = 0
 	ds.side_score[side] = 0
 }
+
+// 1000:3228 planet_array_for_level.
+// The notes already use this name. AL selects one of the four 11-byte
+// planet arrays. 0, 1, and 2 are 92CC, 963C, and 99AC. Any other byte,
+// including 3 and above, is 9D1C. The level is not masked with 3.
+// CX is objects_per_level at DS:0000, zero-extended, and it is not
+// clamped to the 0x50 records in the array. 1000:3225 loads AL from
+// the record at SI+5 and falls into this entry. That entry stays unread.
+
+// @proc 1000:3228
+// status: tested
+// Odin: planet_array_for_level
+// 1000:3228  FUN_1000_3228:
+// 1000:3228      bf cc 92                 MOV DI,0x92cc
+// 1000:322b      22 c0                    AND AL,AL
+// 1000:322d      74 11                    JZ 0x1000:3240
+// 1000:322f      bf 3c 96                 MOV DI,0x963c
+// 1000:3232      fe c8                    DEC AL
+// 1000:3234      74 0a                    JZ 0x1000:3240
+// 1000:3236      bf ac 99                 MOV DI,0x99ac
+// 1000:3239      fe c8                    DEC AL
+// 1000:323b      74 03                    JZ 0x1000:3240
+// 1000:323d      bf 1c 9d                 MOV DI,0x9d1c
+// 1000:3240  LAB_1000_3240:
+// 1000:3240      8a 0e 00 00              MOV CL,byte ptr [0x0]
+// 1000:3244      32 ed                    XOR CH,CH
+// 1000:3246      c3                       RET
+
+planet_array_for_level :: proc(ds: ^DS_Segment, level: u8) -> (array: ^[0x50][11]u8, count: u16) {
+	index := 3
+	if level == 0 {
+		index = 0
+	} else if level == 1 {
+		index = 1
+	} else if level == 2 {
+		index = 2
+	}
+	return &ds.planets[index], u16(ds.objects_per_level)
+}

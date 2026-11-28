@@ -1969,6 +1969,50 @@ test_spawn_ship :: proc(t: ^testing.T) {
 	testing.expect_value(t, base_energy(&ds.bases[0]), u16(4500))
 }
 
+@(test)
+test_planet_array_for_level :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.objects_per_level = 0x50
+	ds.planets[0][0][0] = 0x07
+	ds.planets[1][0][0] = 0x0E
+	ds.planets[2][1][5] = 0x22
+	ds.planets[3][0x4F][10] = 0xFF
+
+	array, count := planet_array_for_level(ds, 0)
+	testing.expect_value(t, count, u16(0x50))
+	testing.expect_value(t, array[0][0], u8(0x07))
+	array[0][1] = 0x11
+	testing.expect_value(t, ds.planets[0][0][1], u8(0x11))
+	testing.expect_value(t, ds.planets[1][0][1], u8(0))
+
+	array, count = planet_array_for_level(ds, 1)
+	testing.expect_value(t, count, u16(0x50))
+	testing.expect_value(t, array[0][0], u8(0x0E))
+	testing.expect_value(t, array[0][1], u8(0))
+
+	array, _ = planet_array_for_level(ds, 2)
+	testing.expect_value(t, array[1][5], u8(0x22))
+	testing.expect_value(t, array[0][0], u8(0))
+
+	array, _ = planet_array_for_level(ds, 3)
+	testing.expect_value(t, array[0x4F][10], u8(0xFF))
+	array, _ = planet_array_for_level(ds, 4)
+	testing.expect_value(t, array[0x4F][10], u8(0xFF))
+	array, _ = planet_array_for_level(ds, 0xFF)
+	testing.expect_value(t, array[0x4F][10], u8(0xFF))
+	testing.expect_value(t, ds.planets[2][0x4F][10], u8(0))
+
+	ds.objects_per_level = 0
+	_, count = planet_array_for_level(ds, 0)
+	testing.expect_value(t, count, u16(0))
+
+	ds.objects_per_level = 0xFF
+	_, count = planet_array_for_level(ds, 2)
+	testing.expect_value(t, count, u16(0xFF))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
