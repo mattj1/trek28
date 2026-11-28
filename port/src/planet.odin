@@ -170,6 +170,88 @@ timed_type :: proc(ds: ^DS_Segment, al: u8) -> u8 {
 	return al
 }
 
+// 1000:4217 reject_near_base.
+// The name is inferred. Carry set means the position is rejected.
+// SI is the record being placed. DX is the multi-plane radius.
+// BP is the base radius, and a local copy shrinks from 0x157C to 0x1F4.
+// That copy does not escape to the caller.
+//
+// Mode bit 1 compares SI with the record at DS:0100, shift 5.
+// Distance >= DX rejects immediately. The distance carry is ignored.
+// Then each of the four bases at 9014 is checked, stride 0x0E, shift 4.
+// A base is skipped when SI is that base or its energy word at +08 is 0.
+// Distance < BP rejects. 0xFFFF is not below BP.
+
+// @proc 1000:4217
+// status: tested
+// Odin: reject_near_base
+// 1000:4217  FUN_1000_4217:
+// 1000:4217      51                       PUSH CX
+// 1000:4218      f6 06 12 00 02           TEST byte ptr [0x12],0x2
+// 1000:421d      74 19                    JZ 0x1000:4238
+// 1000:421f      bf 00 01                 MOV DI,0x100
+// 1000:4222      b1 05                    MOV CL,0x5
+// 1000:4224      52                       PUSH DX
+// 1000:4225      e8 a4 e1                 CALL 0x1000:23cc
+// 1000:4228      5a                       POP DX
+// 1000:4229      3b c2                    CMP AX,DX
+// 1000:422b      f5                       CMC
+// 1000:422c      72 2b                    JC 0x1000:4259
+// 1000:422e      81 fd 7c 15              CMP BP,0x157c
+// 1000:4232      f8                       CLC
+// 1000:4233      75 03                    JNZ 0x1000:4238
+// 1000:4235      bd f4 01                 MOV BP,0x1f4
+// 1000:4238  LAB_1000_4238:
+// 1000:4238      bf 14 90                 MOV DI,0x9014
+// 1000:423b      b9 04 00                 MOV CX,0x4
+// 1000:423e  LAB_1000_423e:
+// 1000:423e      3b f7                    CMP SI,DI
+// 1000:4240      74 11                    JZ 0x1000:4253
+// 1000:4242      83 7d 08 00              CMP word ptr [DI + 0x8],0x0
+// 1000:4246      74 0b                    JZ 0x1000:4253
+// 1000:4248      51                       PUSH CX
+// 1000:4249      b1 04                    MOV CL,0x4
+// 1000:424b      e8 7e e1                 CALL 0x1000:23cc
+// 1000:424e      59                       POP CX
+// 1000:424f      3b c5                    CMP AX,BP
+// 1000:4251      72 06                    JC 0x1000:4259
+// 1000:4253  LAB_1000_4253:
+// 1000:4253      83 c7 0e                 ADD DI,0xe
+// 1000:4256      e2 e6                    LOOP 0x1000:423e
+// 1000:4258      f8                       CLC
+// 1000:4259  LAB_1000_4259:
+// 1000:4259      59                       POP CX
+// 1000:425a      c3                       RET
+
+reject_near_base :: proc(m: ^Machine, si, bp, dx: u16) -> bool {
+	ds := transmute(^DS_Segment)&m.ds
+	radius := bp
+	if ds.mode_bits & 2 != 0 {
+		ax, _ := toroidal_distance(m, si, 0x0100, 5)
+		// CMP AX, DX / CMC / JC. Carry is set when AX >= DX.
+		if ax >= dx {
+			return true
+		}
+		if radius == 0x157C {
+			radius = 0x1F4
+		}
+	}
+	di := u16(0x9014)
+	for _ in 0 ..< 4 {
+		if si != di {
+			energy := read_u16(&m.ds, add16(di, 8))
+			if energy != 0 {
+				ax, _ := toroidal_distance(m, si, di, 4)
+				if ax < radius {
+					return true
+				}
+			}
+		}
+		di = add16(di, 0x0E)
+	}
+	return false
+}
+
 // CBW. A byte at or above 0x80 becomes a negative word.
 @(private)
 cbw :: proc(v: u8) -> u16 {

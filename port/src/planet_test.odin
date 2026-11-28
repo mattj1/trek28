@@ -140,3 +140,65 @@ test_timed_type :: proc(t: ^testing.T) {
 	testing.expect_value(t, timed_type(ds, 0x0E), u8(0xFE))
 	testing.expect_value(t, ds.mode_bits, u8(0xF3))
 }
+
+@(test)
+test_reject_near_base :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	si := u16(offset_of(DS_Segment, planets))
+	base0 := u16(offset_of(DS_Segment, bases))
+	base1 := add16(base0, 0x0E)
+
+	// No live base, and multi-plane is clear. The position is accepted.
+	place_object(m, si, 0, 0)
+	testing.expect_value(t, reject_near_base(m, si, 1, 1), false)
+
+	// A live base at the same point rejects when the distance is below BP.
+	place_object(m, base0, 0, 0)
+	write_u16(&m.ds, add16(base0, 8), 100)
+	testing.expect_value(t, reject_near_base(m, si, 1, 1), true)
+
+	// BP of 0 never sees a distance below it. 0xFFFF is also not below BP.
+	testing.expect_value(t, reject_near_base(m, si, 0, 1), false)
+	place_object(m, si, 0, 0x2000)
+	testing.expect_value(t, reject_near_base(m, si, 0x100, 1), false)
+
+	// SI is the base itself, so that base is skipped.
+	testing.expect_value(t, reject_near_base(m, base0, 1, 1), false)
+
+	// The first base is empty and the second is on top of SI.
+	write_u16(&m.ds, add16(base0, 8), 0)
+	place_object(m, si, 50, 60)
+	place_object(m, base1, 50, 60)
+	write_u16(&m.ds, add16(base1, 8), 1)
+	testing.expect_value(t, reject_near_base(m, si, 1, 1), true)
+	write_u16(&m.ds, add16(base1, 8), 0)
+
+	// Mode bit 1 rejects when the shift-5 distance from DS:0100 is >= DX.
+	ds.mode_bits = 2
+	place_object(m, 0x0100, 0, 0)
+	place_object(m, si, 0, 0x2000)
+	testing.expect_value(t, reject_near_base(m, si, 1, 1), true)
+
+	// Inside that radius, a colocated live base still rejects.
+	place_object(m, si, 0, 0)
+	place_object(m, base0, 0, 0)
+	write_u16(&m.ds, add16(base0, 8), 100)
+	testing.expect_value(t, reject_near_base(m, si, 0x157C, 1), true)
+
+	// Y gap 0x200 is below the unshrunk BP and not below the shrunk 0x1F4.
+	place_object(m, base0, 0, 0x200)
+	ax, carry := toroidal_distance(m, si, base0, 4)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, ax, u16(0x200))
+	testing.expect_value(t, reject_near_base(m, si, 0x157C, 0xFFFF), false)
+	testing.expect_value(t, reject_near_base(m, si, 0x300, 0xFFFF), true)
+}
+
+@(private)
+place_object :: proc(m: ^Machine, at, x, y: u16) {
+	write_u16(&m.ds, add16(at, 1), x)
+	write_u16(&m.ds, add16(at, 3), y)
+}
