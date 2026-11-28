@@ -76,6 +76,7 @@ odin run src
 | `1000:2a0c` | `ship_ptr_from_al` | tested. AL keeps its low 2 bits. `current_side` is shifted left twice as a byte and ORed in. The record is `0x8C64` plus that index times `0x3B`. Bit 7 is the alive flag. An index of 16 or more is past the 16 ships |
 | `1000:2ed4` | `add_score_div100` | tested. BL below 4 adds round(AX / 100) into that side's score. A remainder of `0x32` or more rounds up. The word add wraps |
 | `1000:1cdb` | `apply_warp` | tested. The name is inferred. Seek bit 7 is cleared. Flag bits `0x44` force the actual impulse nibble to 11, then the byte is stored with desired nibble 11. Warp above `0x5A` becomes `0x64`. Otherwise it gains 10 |
+| `1000:1d0f` | `emergency_stop` | tested. The name is inferred. The actual impulse nibble, or `0x14` when that nibble is above 10, is shifted left 5 and charged. Warp and the impulse byte are cleared |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 

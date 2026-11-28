@@ -2191,6 +2191,50 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_emergency_stop :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	ship.impulse = 0
+	ship.warp = 5
+	ship.pending_charge = 0
+	ship.seek = 0x11
+	emergency_stop(&ship)
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ship.damage, u8(0))
+	testing.expect_value(t, ship.warp, u8(0))
+	testing.expect_value(t, ship.impulse, u8(0))
+	testing.expect_value(t, ship.seek, u8(0x11))
+
+	ship.impulse = 1
+	ship.warp = 9
+	emergency_stop(&ship)
+	testing.expect_value(t, ship.pending_charge, u16(0x20))
+	testing.expect_value(t, ship.impulse, u8(0))
+	testing.expect_value(t, ship.warp, u8(0))
+
+	ship.impulse = 0x4A
+	ship.pending_charge = 100
+	emergency_stop(&ship)
+	testing.expect_value(t, ship.pending_charge, u16(100 + 0x140))
+	testing.expect_value(t, ship.impulse, u8(0))
+
+	ship.impulse = 0x0B
+	ship.pending_charge = 0
+	emergency_stop(&ship)
+	testing.expect_value(t, ship.pending_charge, u16(0x280))
+	testing.expect_value(t, ship.damage, u8(0))
+
+	ship.impulse = 0xBF
+	ship.pending_charge = 0
+	emergency_stop(&ship)
+	testing.expect_value(t, ship.pending_charge, u16(0x280))
+
+	ship.impulse = 1
+	ship.pending_charge = 0xFFFF
+	emergency_stop(&ship)
+	testing.expect_value(t, ship.pending_charge, u16(0xFFFF))
+}
+
+@(test)
 test_apply_warp :: proc(t: ^testing.T) {
 	ship: Ship_Record
 	ship.flags = 0

@@ -994,46 +994,7 @@ fun_1c41 :: proc() {
 
 // 1000:1cdb apply_warp is in ship.odin.
 
-// @proc 1000:1d0f
-// listing: FUN_1000_1d0f
-// status: unread
-// 1000:1d0f  FUN_1000_1d0f:
-// 1000:1d0f      8a 44 0b                 MOV AL,byte ptr [SI + 0xb]
-// 1000:1d12      25 0f 00                 AND AX,0xf
-// 1000:1d15      3d 0a 00                 CMP AX,0xa
-// 1000:1d18      76 03                    JBE 0x1000:1d1d
-// 1000:1d1a      b8 14 00                 MOV AX,0x14
-// 1000:1d1d  LAB_1000_1d1d:
-// 1000:1d1d      b1 05                    MOV CL,0x5
-// 1000:1d1f      d3 e0                    SHL AX,CL
-// 1000:1d21      c6 44 14 00              MOV byte ptr [SI + 0x14],0x0
-// 1000:1d25      c6 44 0b 00              MOV byte ptr [SI + 0xb],0x0
-// 1000:1d29      8b fe                    MOV DI,SI
-// 1000:1d2b      e8 6d 06                 CALL 0x1000:239b
-// 1000:1d2e      c3                       RET
-// 1000:1d2f  LAB_1000_1d2f:
-// 1000:1d2f      e8 60 01                 CALL 0x1000:1e92
-// 1000:1d32      c6 44 22 00              MOV byte ptr [SI + 0x22],0x0
-// 1000:1d36      80 7c 15 14              CMP byte ptr [SI + 0x15],0x14
-// 1000:1d3a      77 17                    JA 0x1000:1d53
-// 1000:1d3c      e8 8f 01                 CALL 0x1000:1ece
-//                 ; ptr table -> 1000:1d47  [ptr] 1000:904c 1000:90ec 1000:918c 1000:922c
-// 1000:1d47  LAB_1000_1d47:
-// 1000:1d47      8b fb                    MOV DI,BX
-// 1000:1d49      87 fe                    XCHG SI,DI
-// 1000:1d4b      80 7d 06 00              CMP byte ptr [DI + 0x6],0x0
-// 1000:1d4f      75 13                    JNZ 0x1000:1d64
-// 1000:1d51      87 fe                    XCHG SI,DI
-// 1000:1d53  LAB_1000_1d53:
-// 1000:1d53      8b 74 32                 MOV SI,word ptr [SI + 0x32]
-// 1000:1d56      23 f6                    AND SI,SI
-// 1000:1d58      75 d5                    JNZ 0x1000:1d2f
-// 1000:1d5a      b8 04 00                 MOV AX,0x4
-// 1000:1d5d      bb 5a a2                 MOV BX,0xa25a
-// 1000:1d60      e8 34 fd                 CALL 0x1000:1a97
-// 1000:1d63      c3                       RET
-fun_1d0f :: proc() {
-}
+// 1000:1d0f emergency_stop is in ship.odin.
 
 // 1000:1d64 fill_mine_slot is in ship.odin.
 

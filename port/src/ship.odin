@@ -2149,3 +2149,59 @@ apply_warp :: proc(ship: ^Ship_Record) {
 		ship.warp += 0x0A
 	}
 }
+
+// 1000:1d0f emergency_stop.
+// The name is inferred. AX is the actual impulse nibble. A nibble above
+// 10 is replaced with 0x14, then AX is shifted left 5 and passed to
+// add_pending_charge. Warp and the whole impulse byte are cleared.
+// The entry returns at 1d2e. The bytes from 1d2f are a command loop in
+// this listing and stay unread. That loop calls 1000:1ece.
+
+// @proc 1000:1d0f
+// status: tested
+// Odin: emergency_stop
+// 1000:1d0f  FUN_1000_1d0f:
+// 1000:1d0f      8a 44 0b                 MOV AL,byte ptr [SI + 0xb]
+// 1000:1d12      25 0f 00                 AND AX,0xf
+// 1000:1d15      3d 0a 00                 CMP AX,0xa
+// 1000:1d18      76 03                    JBE 0x1000:1d1d
+// 1000:1d1a      b8 14 00                 MOV AX,0x14
+// 1000:1d1d  LAB_1000_1d1d:
+// 1000:1d1d      b1 05                    MOV CL,0x5
+// 1000:1d1f      d3 e0                    SHL AX,CL
+// 1000:1d21      c6 44 14 00              MOV byte ptr [SI + 0x14],0x0
+// 1000:1d25      c6 44 0b 00              MOV byte ptr [SI + 0xb],0x0
+// 1000:1d29      8b fe                    MOV DI,SI
+// 1000:1d2b      e8 6d 06                 CALL 0x1000:239b
+// 1000:1d2e      c3                       RET
+// 1000:1d2f  LAB_1000_1d2f:
+// 1000:1d2f      e8 60 01                 CALL 0x1000:1e92
+// 1000:1d32      c6 44 22 00              MOV byte ptr [SI + 0x22],0x0
+// 1000:1d36      80 7c 15 14              CMP byte ptr [SI + 0x15],0x14
+// 1000:1d3a      77 17                    JA 0x1000:1d53
+// 1000:1d3c      e8 8f 01                 CALL 0x1000:1ece
+// 1000:1d47  LAB_1000_1d47:
+// 1000:1d47      8b fb                    MOV DI,BX
+// 1000:1d49      87 fe                    XCHG SI,DI
+// 1000:1d4b      80 7d 06 00              CMP byte ptr [DI + 0x6],0x0
+// 1000:1d4f      75 13                    JNZ 0x1000:1d64
+// 1000:1d51      87 fe                    XCHG SI,DI
+// 1000:1d53  LAB_1000_1d53:
+// 1000:1d53      8b 74 32                 MOV SI,word ptr [SI + 0x32]
+// 1000:1d56      23 f6                    AND SI,SI
+// 1000:1d58      75 d5                    JNZ 0x1000:1d2f
+// 1000:1d5a      b8 04 00                 MOV AX,0x4
+// 1000:1d5d      bb 5a a2                 MOV BX,0xa25a
+// 1000:1d60      e8 34 fd                 CALL 0x1000:1a97
+// 1000:1d63      c3                       RET
+
+emergency_stop :: proc(ship: ^Ship_Record) {
+	ax := u16(ship.impulse & 0x0F)
+	if ax > 10 {
+		ax = 0x14
+	}
+	ax = shl_word(ax, 5)
+	ship.warp = 0
+	ship.impulse = 0
+	add_pending_charge(ship, ax)
+}
