@@ -283,30 +283,7 @@ fun_427d :: proc() {
 
 // 1000:42ac random_planet_type is in planet.odin.
 
-// @proc 1000:42dd
-// listing: FUN_1000_42dd
-// status: unread
-// 1000:42dd  FUN_1000_42dd:
-// 1000:42dd      83 e9 03                 SUB CX,0x3
-// 1000:42e0      8b d9                    MOV BX,CX
-// 1000:42e2      83 fb 06                 CMP BX,0x6
-// 1000:42e5      73 1d                    JNC 0x1000:4304
-// 1000:42e7      81 e3 06 00              AND BX,0x6
-// 1000:42eb      d1 e3                    SHL BX,0x1
-// 1000:42ed      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
-// 1000:42f0      25 03 00                 AND AX,0x3
-// 1000:42f3      03 d8                    ADD BX,AX
-// 1000:42f5      2e 8a 87 06 43           MOV AL,byte ptr CS:[BX + 0x4306]
-// 1000:42fa      3a 06 02 00              CMP AL,byte ptr [0x2]
-// 1000:42fe      73 04                    JNC 0x1000:4304
-// 1000:4300      04 0a                    ADD AL,0xa
-// 1000:4302      f9                       STC
-// 1000:4303      c3                       RET
-// 1000:4304  LAB_1000_4304:
-// 1000:4304      f8                       CLC
-// 1000:4305      c3                       RET
-fun_42dd :: proc() {
-}
+// 1000:42dd satellite_level is in planet.odin.
 
 // @proc 1000:4312
 // listing: FUN_1000_4312

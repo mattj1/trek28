@@ -615,6 +615,54 @@ parity_even :: proc(v: u8) -> bool {
 	return bits & 1 == 0
 }
 
+// 1000:42dd satellite_level.
+// The name is inferred. CX loses 3. A result of 6 or more returns with
+// carry clear. The 8086 left AL as the caller had it. This port returns
+// 0 on that path.
+// Otherwise the index is ((CX & 6) << 1) plus the level byte at SI+5
+// masked with 3. CX 3..4 reads table bytes 0..3, CX 5..6 reads 4..7,
+// and CX 7..8 reads 8..11. AL is CS:4306 plus that index. The bytes at
+// 4312 are the next procedure and are not read. AL below galaxy_levels
+// gains 10 and sets carry.
+
+// @proc 1000:42dd
+// status: tested
+// Odin: satellite_level
+// 1000:42dd  FUN_1000_42dd:
+// 1000:42dd      83 e9 03                 SUB CX,0x3
+// 1000:42e0      8b d9                    MOV BX,CX
+// 1000:42e2      83 fb 06                 CMP BX,0x6
+// 1000:42e5      73 1d                    JNC 0x1000:4304
+// 1000:42e7      81 e3 06 00              AND BX,0x6
+// 1000:42eb      d1 e3                    SHL BX,0x1
+// 1000:42ed      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
+// 1000:42f0      25 03 00                 AND AX,0x3
+// 1000:42f3      03 d8                    ADD BX,AX
+// 1000:42f5      2e 8a 87 06 43           MOV AL,byte ptr CS:[BX + 0x4306]
+// 1000:42fa      3a 06 02 00              CMP AL,byte ptr [0x2]
+// 1000:42fe      73 04                    JNC 0x1000:4304
+// 1000:4300      04 0a                    ADD AL,0xa
+// 1000:4302      f9                       STC
+// 1000:4303      c3                       RET
+// 1000:4304  LAB_1000_4304:
+// 1000:4304      f8                       CLC
+// 1000:4305      c3                       RET
+
+satellite_level :: proc(m: ^Machine, si: u16, cx: u16) -> (al: u8, carry: bool) {
+	adjusted := sub16(cx, 3)
+	if adjusted >= 6 {
+		return 0, false
+	}
+	ds := transmute(^DS_Segment)&m.ds
+	index := ((adjusted & 6) << 1) + u16(read_u8(&m.ds, add16(si, 5)) & 3)
+	al = m.cs[0x4306 + int(index)]
+	if al >= ds.galaxy_levels {
+		return al, false
+	}
+	sum, _ := intrinsics.overflow_add(al, 10)
+	return sum, true
+}
+
 @(private)
 rcr8 :: proc(v: u8, carry: bool) -> (u8, bool) {
 	out_carry := v & 1 == 1

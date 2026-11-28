@@ -84,6 +84,7 @@ odin run src
 | `1000:2f24` | `cancel_close_shots` | tested. The name is inferred. Both shot bytes must be in 3..`0x7F`. A same-plane distance of `0x5A` or less stores 3 into a shot that is at least 4 |
 | `1000:3f57` | `planet_team_flag` | tested. The name is inferred. Returns ZF. A nonzero planet lifetime clears it. An owner of `0xFF` sets it. Otherwise it is set when the ship team matches the owner |
 | `1000:3fc1` | `store_desired_heading` | tested. The name is inferred. CH is shifted left 4 as a byte and stored in the desired heading nibble. The actual nibble stays |
+| `1000:42dd` | `satellite_level` | tested. The name is inferred. CX in 3..8 indexes the 12-byte table at `CS:4306`. A table byte below `galaxy_levels` gains 10 and sets carry. Any other CX returns 0 with carry clear. The 8086 left AL unchanged on that path |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -91,6 +92,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:1ee6` updates every side. It calls `walk_planets` and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns. The closed key, score, and ship helpers are the procedures being translated.
+`1000:1ee6` updates every side. It calls `walk_planets` and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns.
 
 How to resume on another machine is in `RESUME.md`.

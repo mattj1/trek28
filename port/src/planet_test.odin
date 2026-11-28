@@ -573,6 +573,79 @@ test_reject_near_base :: proc(t: ^testing.T) {
 	testing.expect_value(t, reject_near_base(m, si, 0x300, 0xFFFF), true)
 }
 
+@(test)
+test_satellite_level :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	si := u16(offset_of(DS_Segment, planets))
+
+	// CX outside 3..8 returns 0 with carry clear. The 8086 left AL alone.
+	for cx in ([]u16{0, 1, 2, 9, 0x8000, 0xFFFF}) {
+		write_u8(&m.ds, add16(si, 5), 0xAB)
+		al, carry := satellite_level(m, si, cx)
+		testing.expect_value(t, al, u8(0))
+		testing.expect_value(t, carry, false)
+	}
+
+	// galaxy_levels 0 never adds 10. The twelve table bytes stay.
+	ds.galaxy_levels = 0
+	table := [12]u8{1, 0, 0, 0, 2, 2, 1, 1, 3, 3, 3, 2}
+	groups := [3]u16{3, 5, 7}
+	for group in 0 ..< 3 {
+		for level in 0 ..< 4 {
+			write_u8(&m.ds, add16(si, 5), u8(level))
+			al, carry := satellite_level(m, si, groups[group])
+			testing.expect_value(t, al, table[group * 4 + level])
+			testing.expect_value(t, carry, false)
+			// CX+1 shares the same pair of table rows.
+			al, carry = satellite_level(m, si, groups[group] + 1)
+			testing.expect_value(t, al, table[group * 4 + level])
+			testing.expect_value(t, carry, false)
+		}
+	}
+
+	// A level byte above 3 keeps only its low 2 bits.
+	write_u8(&m.ds, add16(si, 5), 0xFE)
+	al, carry := satellite_level(m, si, 3)
+	testing.expect_value(t, al, u8(0))
+	testing.expect_value(t, carry, false)
+
+	// galaxy_levels 1 adds 10 only when the table byte is 0.
+	ds.galaxy_levels = 1
+	write_u8(&m.ds, add16(si, 5), 0)
+	al, carry = satellite_level(m, si, 3)
+	testing.expect_value(t, al, u8(1))
+	testing.expect_value(t, carry, false)
+	write_u8(&m.ds, add16(si, 5), 1)
+	al, carry = satellite_level(m, si, 3)
+	testing.expect_value(t, al, u8(10))
+	testing.expect_value(t, carry, true)
+
+	// galaxy_levels 4 lifts every reachable table byte.
+	ds.galaxy_levels = 4
+	for group in 0 ..< 3 {
+		for level in 0 ..< 4 {
+			write_u8(&m.ds, add16(si, 5), u8(level))
+			al, carry = satellite_level(m, si, groups[group])
+			testing.expect_value(t, al, table[group * 4 + level] + 10)
+			testing.expect_value(t, carry, true)
+		}
+	}
+
+	// galaxy_levels 3 leaves a table byte of 3 and lifts 2.
+	ds.galaxy_levels = 3
+	write_u8(&m.ds, add16(si, 5), 0)
+	al, carry = satellite_level(m, si, 7)
+	testing.expect_value(t, al, u8(3))
+	testing.expect_value(t, carry, false)
+	write_u8(&m.ds, add16(si, 5), 3)
+	al, carry = satellite_level(m, si, 7)
+	testing.expect_value(t, al, u8(12))
+	testing.expect_value(t, carry, true)
+}
+
 @(private)
 place_object :: proc(m: ^Machine, at, x, y: u16) {
 	write_u16(&m.ds, add16(at, 1), x)
