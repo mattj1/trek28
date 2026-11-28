@@ -1293,6 +1293,127 @@ test_apply_energy_charge :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.ids[1][4], u8(0))
 }
 
+@(test)
+test_move_ships_and_shots :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.extra_records[0].flags = 0x80
+	ds.extra_records[0].impulse = 1
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[0].x, u16(0))
+	testing.expect_value(t, ds.extra_records[0].y, u16(5))
+
+	ds.extra_records[1].flags = 0
+	ds.extra_records[1].impulse = 1
+	ds.extra_records[1].x = 50
+	ds.extra_records[1].y = 50
+	ds.extra_records[1].shot = 0x0A
+	ds.extra_records[1].shot_heading = 0x0100
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[1].x, u16(50))
+	testing.expect_value(t, ds.extra_records[1].y, u16(50))
+	testing.expect_value(t, ds.extra_records[1].shot_y, u16(5))
+	testing.expect_value(t, ds.extra_records[1].shot, u8(9))
+	testing.expect_value(t, ds.extra_records[0].y, u16(10))
+
+	ds.extra_records[2].flags = 0x80
+	ds.extra_records[2].impulse = 0x0B
+	ds.extra_records[2].warp = 5
+	ds.extra_records[2].energy = 0x07D0
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[2].y, u16(0x5A))
+	testing.expect_value(t, ds.extra_records[2].warp, u8(4))
+	testing.expect_value(t, ds.extra_records[2].pending_charge, u16(0x64))
+	testing.expect_value(t, ds.extra_records[2].damage, u8(0))
+
+	ds.extra_records[3].flags = 0x80
+	ds.extra_records[3].impulse = 0x0B
+	ds.extra_records[3].warp = 5
+	ds.extra_records[3].energy = 0x07CF
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[3].y, u16(0x32))
+	testing.expect_value(t, ds.extra_records[3].warp, u8(5))
+	testing.expect_value(t, ds.extra_records[3].pending_charge, u16(0))
+
+	ds.extra_records[4].flags = 0x80
+	ds.extra_records[4].impulse = 0x0B
+	ds.extra_records[4].warp = 0
+	ds.extra_records[4].energy = 0x2000
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[4].y, u16(0x32))
+	testing.expect_value(t, ds.extra_records[4].warp, u8(0))
+
+	ds.extra_records[5].flags = 0x80
+	ds.extra_records[5].heading = 0x10
+	ds.extra_records[5].x = 1
+	ds.extra_records[5].y = 1
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[5].x, u16(1))
+	testing.expect_value(t, ds.extra_records[5].y, u16(1))
+
+	ds.extra_records[6].flags = 0x80
+	ds.extra_records[6].impulse = 1
+	ds.extra_records[6].heading = 0x14
+	ds.extra_records[6].x = 0x3FFE
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[6].x, u16(3))
+	testing.expect_value(t, ds.extra_records[6].y, u16(0))
+
+	ds.extra_records[7].flags = 0x80
+	ds.extra_records[7].impulse = 0x0F
+	ds.extra_records[7].warp = 1
+	ds.extra_records[7].energy = 3000
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ds.extra_records[7].y, u16(0x6C))
+	testing.expect_value(t, ds.extra_records[7].warp, u8(0))
+	testing.expect_value(t, ds.extra_records[7].pending_charge, u16(0x64))
+
+	ship := &ds.ships[1][2]
+	ship.flags = 0x80
+	ship.shot = 2
+	ship.shot_heading = 0xFF00
+	move_ships_and_shots(ds)
+	testing.expect_value(t, ship.shot_heading, u16(0x0800))
+	testing.expect_value(t, ship.shot_y, u16(0x24))
+	testing.expect_value(t, ship.shot, u8(1))
+	testing.expect_value(t, ship.x, u16(0))
+	testing.expect_value(t, ship.y, u16(0))
+
+	phaser := &ds.ships[0][0]
+	phaser.shot = 0x81
+	phaser.shot_heading = 0x0100
+	phaser.shot_x = 10
+	move_ships_and_shots(ds)
+	testing.expect_value(t, phaser.shot_x, u16(10))
+	testing.expect_value(t, phaser.shot_y, u16(5))
+	testing.expect_value(t, phaser.shot, u8(0))
+
+	aft := &ds.ships[0][1]
+	aft.shot = 0xC1
+	aft.shot_heading = 0
+	move_ships_and_shots(ds)
+	testing.expect_value(t, aft.shot, u8(0))
+	testing.expect_value(t, aft.shot_x, u16(0))
+	testing.expect_value(t, aft.shot_y, u16(0))
+
+	held := &ds.ships[0][2]
+	held.shot = 5
+	held.shot_heading = 0x0003
+	move_ships_and_shots(ds)
+	testing.expect_value(t, held.shot, u8(4))
+	testing.expect_value(t, held.shot_heading, u16(0x0003))
+	testing.expect_value(t, held.shot_x, u16(0))
+
+	last := &ds.ships[3][3]
+	last.flags = 0x80
+	last.impulse = 1
+	last.y = 7
+	move_ships_and_shots(ds)
+	testing.expect_value(t, last.y, u16(12))
+	testing.expect_value(t, ds.ships[2][0].y, u16(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

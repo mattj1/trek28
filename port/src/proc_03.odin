@@ -489,72 +489,7 @@ fun_36b5 :: proc() {
 fun_37a1 :: proc() {
 }
 
-// @proc 1000:37ac
-// listing: FUN_1000_37ac
-// notes: move_ships_and_shots
-// status: unread
-// 1000:37ac  FUN_1000_37ac:
-// 1000:37ac      bf 8c 8a                 MOV DI,0x8a8c
-// 1000:37af      b1 08                    MOV CL,0x8
-// 1000:37b1      80 c1 10                 ADD CL,0x10
-// 1000:37b4      32 ed                    XOR CH,CH
-// 1000:37b6  LAB_1000_37b6:
-// 1000:37b6      51                       PUSH CX
-// 1000:37b7      f6 05 80                 TEST byte ptr [DI],0x80
-// 1000:37ba      74 30                    JZ 0x1000:37ec
-// 1000:37bc      8b 45 0a                 MOV AX,word ptr [DI + 0xa]
-// 1000:37bf      80 e4 0f                 AND AH,0xf
-// 1000:37c2      80 fc 0b                 CMP AH,0xb
-// 1000:37c5      72 1b                    JC 0x1000:37e2
-// 1000:37c7      f6 45 14 ff              TEST byte ptr [DI + 0x14],0xff
-// 1000:37cb      74 15                    JZ 0x1000:37e2
-// 1000:37cd      81 7d 08 d0 07           CMP word ptr [DI + 0x8],0x7d0
-// 1000:37d2      72 0e                    JC 0x1000:37e2
-// 1000:37d4      fe 4d 14                 DEC byte ptr [DI + 0x14]
-// 1000:37d7      50                       PUSH AX
-// 1000:37d8      b8 64 00                 MOV AX,0x64
-// 1000:37db      e8 bd eb                 CALL 0x1000:239b
-// 1000:37de      58                       POP AX
-// 1000:37df      80 c4 09                 ADD AH,0x9
-// 1000:37e2  LAB_1000_37e2:
-// 1000:37e2      80 e4 1f                 AND AH,0x1f
-// 1000:37e5      74 05                    JZ 0x1000:37ec
-// 1000:37e7      24 0f                    AND AL,0xf
-// 1000:37e9      e8 3e 00                 CALL 0x1000:382a
-// 1000:37ec  LAB_1000_37ec:
-// 1000:37ec      8a 45 19                 MOV AL,byte ptr [DI + 0x19]
-// 1000:37ef      a8 ff                    TEST AL,0xff
-// 1000:37f1      74 30                    JZ 0x1000:3823
-// 1000:37f3      3c 04                    CMP AL,0x4
-// 1000:37f5      73 07                    JNC 0x1000:37fe
-// 1000:37f7      02 c0                    ADD AL,AL
-// 1000:37f9      02 c0                    ADD AL,AL
-// 1000:37fb      88 45 20                 MOV byte ptr [DI + 0x20],AL
-// 1000:37fe  LAB_1000_37fe:
-// 1000:37fe      8b 45 1f                 MOV AX,word ptr [DI + 0x1f]
-// 1000:3801      25 0f 1f                 AND AX,0x1f0f
-// 1000:3804      80 fc 00                 CMP AH,0x0
-// 1000:3807      74 08                    JZ 0x1000:3811
-// 1000:3809      57                       PUSH DI
-// 1000:380a      83 c7 19                 ADD DI,0x19
-// 1000:380d      e8 1a 00                 CALL 0x1000:382a
-// 1000:3810      5f                       POP DI
-// 1000:3811  LAB_1000_3811:
-// 1000:3811      fe 4d 19                 DEC byte ptr [DI + 0x19]
-// 1000:3814      8a 45 19                 MOV AL,byte ptr [DI + 0x19]
-// 1000:3817      3c 80                    CMP AL,0x80
-// 1000:3819      74 04                    JZ 0x1000:381f
-// 1000:381b      3c c0                    CMP AL,0xc0
-// 1000:381d      75 04                    JNZ 0x1000:3823
-// 1000:381f  LAB_1000_381f:
-// 1000:381f      c6 45 19 00              MOV byte ptr [DI + 0x19],0x0
-// 1000:3823  LAB_1000_3823:
-// 1000:3823      83 c7 3b                 ADD DI,0x3b
-// 1000:3826      59                       POP CX
-// 1000:3827      e2 8d                    LOOP 0x1000:37b6
-// 1000:3829      c3                       RET
-fun_37ac :: proc() {
-}
+// 1000:37ac move_ships_and_shots is in ship.odin.
 
 // 1000:382a step_position is in ship.odin.
 
