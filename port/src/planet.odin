@@ -144,6 +144,137 @@ random_planet_type :: proc(m: ^Machine) -> u8 {
 	return m.cs[0x42BD + int(ax)]
 }
 
+// 1000:22a2 walk_planets.
+// The name is inferred. AL starts at 0 and the body runs, then AL
+// increments while it is still below galaxy_levels. A galaxy_levels of
+// 0 still walks level 0 once. Levels 3 and above share planets[3], so
+// a higher count walks that array again.
+//
+// CL during a record is the remaining count, including the current one.
+// 8086 LOOP with CX=0 repeats 65536 times. The count is objects_per_level,
+// and a zero count walks nothing here.
+//
+// A low nibble of 0 clears byte_a280. On a frame whose low 7 bits are
+// 0 it decrements a nonzero lifetime, and a lifetime that hits 0 sets
+// byte_a280 and falls into the scatter below. A nibble of 1..0x0A takes
+// that same scatter while byte_a280 is 1. Anything else, including a
+// nibble above 0x0A, steps the orbit when (frame_count + CL) & 7 is 0
+// and then decrements a nonzero lifetime. The scatter calls mix_rng.
+// A low nibble of 0 relocates the planet. Any other nibble ORs the
+// type with 0x0F.
+
+// @proc 1000:22a2
+// status: tested
+// Odin: walk_planets
+// 1000:22a2  FUN_1000_22a2:
+// 1000:22a2      b0 00                    MOV AL,0x0
+// 1000:22a4  LAB_1000_22a4:
+// 1000:22a4      50                       PUSH AX
+// 1000:22a5      e8 80 0f                 CALL 0x1000:3228
+// 1000:22a8      c6 06 80 a2 00           MOV byte ptr [0xa280],0x0
+// 1000:22ad  LAB_1000_22ad:
+// 1000:22ad      8a 05                    MOV AL,byte ptr [DI]
+// 1000:22af      24 0f                    AND AL,0xf
+// 1000:22b1      74 23                    JZ 0x1000:22d6
+// 1000:22b3      3c 0a                    CMP AL,0xa
+// 1000:22b5      77 07                    JA 0x1000:22be
+// 1000:22b7      80 3e 80 a2 01           CMP byte ptr [0xa280],0x1
+// 1000:22bc      74 34                    JZ 0x1000:22f2
+// 1000:22be  LAB_1000_22be:
+// 1000:22be      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:22c1      02 c1                    ADD AL,CL
+// 1000:22c3      24 07                    AND AL,0x7
+// 1000:22c5      75 3a                    JNZ 0x1000:2301
+// 1000:22c7      e8 e7 20                 CALL 0x1000:43b1
+// 1000:22ca      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
+// 1000:22ce      74 31                    JZ 0x1000:2301
+// 1000:22d0      fe 4d 06                 DEC byte ptr [DI + 0x6]
+// 1000:22d3      eb 2c                    JMP 0x1000:2301
+// 1000:22d6  LAB_1000_22d6:
+// 1000:22d6      c6 06 80 a2 00           MOV byte ptr [0xa280],0x0
+// 1000:22db      a0 d2 89                 MOV AL,[0x89d2]
+// 1000:22de      24 7f                    AND AL,0x7f
+// 1000:22e0      75 1f                    JNZ 0x1000:2301
+// 1000:22e2      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
+// 1000:22e6      74 19                    JZ 0x1000:2301
+// 1000:22e8      fe 4d 06                 DEC byte ptr [DI + 0x6]
+// 1000:22eb      75 14                    JNZ 0x1000:2301
+// 1000:22ed      c6 06 80 a2 01           MOV byte ptr [0xa280],0x1
+// 1000:22f2  LAB_1000_22f2:
+// 1000:22f2      e8 85 20                 CALL 0x1000:437a
+// 1000:22f5      24 0f                    AND AL,0xf
+// 1000:22f7      75 05                    JNZ 0x1000:22fe
+// 1000:22f9      e8 14 00                 CALL 0x1000:2310
+// 1000:22fc      eb 03                    JMP 0x1000:2301
+// 1000:22fe  LAB_1000_22fe:
+// 1000:22fe      80 0d 0f                 OR byte ptr [DI],0xf
+// 1000:2301  LAB_1000_2301:
+// 1000:2301      83 c7 0b                 ADD DI,0xb
+// 1000:2304      e2 a7                    LOOP 0x1000:22ad
+// 1000:2306      58                       POP AX
+// 1000:2307      fe c0                    INC AL
+// 1000:2309      3a 06 02 00              CMP AL,byte ptr [0x2]
+// 1000:230d      72 95                    JC 0x1000:22a4
+// 1000:230f      c3                       RET
+
+walk_planets :: proc(m: ^Machine) {
+	ds := transmute(^DS_Segment)&m.ds
+	level: u8 = 0
+	for {
+		array, count := planet_array_for_level(ds, level)
+		ds.byte_a280 = 0
+		base := planet_array_offset(ds, array)
+		for i in 0 ..< count {
+			// CL is the LOOP count before this iteration's decrement.
+			remaining := u8(count - i)
+			di := add16(base, u16(i) * 0x0B)
+			nibble := read_u8(&m.ds, di) & 0x0F
+			if nibble == 0 {
+				ds.byte_a280 = 0
+				if u8(ds.frame_count) & 0x7F == 0 {
+					life := read_u8(&m.ds, add16(di, 6))
+					if life != 0 {
+						next, _ := intrinsics.overflow_sub(life, 1)
+						write_u8(&m.ds, add16(di, 6), next)
+						if next == 0 {
+							ds.byte_a280 = 1
+							scatter_planet(m, di)
+						}
+					}
+				}
+			} else if nibble <= 0x0A && ds.byte_a280 == 1 {
+				scatter_planet(m, di)
+			} else {
+				sum, _ := intrinsics.overflow_add(u8(ds.frame_count), remaining)
+				if sum & 7 == 0 {
+					step_orbit(m, di)
+					life := read_u8(&m.ds, add16(di, 6))
+					if life != 0 {
+						next, _ := intrinsics.overflow_sub(life, 1)
+						write_u8(&m.ds, add16(di, 6), next)
+					}
+				}
+			}
+		}
+		next, _ := intrinsics.overflow_add(level, 1)
+		level = next
+		if level >= ds.galaxy_levels {
+			break
+		}
+	}
+}
+
+// 1000:22f2. A zero low nibble relocates. Any other nibble marks the type.
+@(private)
+scatter_planet :: proc(m: ^Machine, di: u16) {
+	ds := transmute(^DS_Segment)&m.ds
+	if u8(mix_rng(ds)) & 0x0F == 0 {
+		relocate_planet(m, di)
+		return
+	}
+	write_u8(&m.ds, di, read_u8(&m.ds, di) | 0x0F)
+}
+
 // 1000:2310 relocate_planet.
 // The name is inferred. DI is the planet. The 8086 exchanges SI with DI,
 // so the caller's SI is left pointing at that planet. The only caller

@@ -33,6 +33,7 @@ odin run src
 | `1000:239b` | `add_pending_charge` | tested. `Ship_Record.pending_charge` saturates at `0xFFFF`. `damage` gains `AX >> 10` and the byte wraps |
 | `1000:237b` | `add_scaled_charge` | tested. A nonzero `byte_34` shifts `AX` right twice. Flag bit `0x20` with shot bit 7 clear divides `AX` by 3. The result is added and returned |
 | `1000:23b3` | `read_handicap` | tested. Returns `ids[current_side & 3][4]` |
+| `1000:22a2` | `walk_planets` | tested. The name is inferred. Walks each level, including level 0 when `galaxy_levels` is 0. Levels from 3 share `planets[3]`. A zero nibble ages on frames whose low 7 bits are clear and scatters when the lifetime hits 0. Nibbles `1..0x0A` scatter while `byte_a280` is 1. Other records step their orbit when `(frame + CL) & 7` is 0 |
 | `1000:226c` | `drain_invisibility` | tested. On an even frame, with no shot and flag bit `0x10` set, the invisibility byte counts down. A handicap of 4 or more skips the frames whose low two bits are clear. Zero clears bit `0x10` |
 | `1000:2002` | `spawn_debris` | tested. The first debris slot with a zero lifetime receives `0xC8`, the ship's X and Y, its plane, and its team |
 | `1000:1d64` | `fill_mine_slot` | tested. The name is inferred. The first empty mine slot receives lifetime `0xFA` and the ship's position, plane, side, and team, and the mine count decrements. A full side leaves the ship untouched |
@@ -67,6 +68,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:1ee6` updates every side. It calls `1000:22a2` and `1000:202f` before `update_side_ships`. `1000:22a2` calls `planet_array_for_level`, `mix_rng`, `step_orbit`, and `relocate_planet`. It stays unread. `1000:41f0` (`timed_type`) ORs a type with `0xF0` when mode bit 0 is set. `1000:4217` (`reject_near_base`) rejects a position that is outside the multi-plane radius or too close to a live base. `1000:428a` (`random_base_coord`) draws a base coordinate. `1000:429b` (`random_planet_coord`) draws a planet coordinate. `1000:425b` (`reject_near_planet`) rejects a spot too close to another occupied planet on the same level. `1000:42ac` (`random_planet_type`) reads a type from `CS:42BD`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported. `1000:3225` (`planet_array_for_record`) loads a planet's level and falls into `3228`.
+`1000:1ee6` updates every side. It calls `walk_planets` (`1000:22a2`, translated) and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns.
 
 How to resume on another machine is in `RESUME.md`.

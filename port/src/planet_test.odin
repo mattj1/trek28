@@ -185,6 +185,166 @@ test_random_planet_coord :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_walk_planets :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	a := planet_at(0, 0)
+	b := planet_at(0, 1)
+	c := planet_at(0, 2)
+
+	// galaxy_levels 0 still walks level 0 once. Frame 7 and CL 1 step the orbit.
+	ds.galaxy_levels = 0
+	ds.objects_per_level = 1
+	ds.frame_count = 7
+	ds.mode_bits = 0
+	write_u8(&m.ds, a, 1)
+	write_u8(&m.ds, add16(a, 6), 4)
+	write_u8(&m.ds, add16(a, 7), 0)
+	write_u8(&m.ds, add16(a, 8), 1)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 7)), u8(1))
+	testing.expect_value(t, read_u16(&m.ds, add16(a, 1)), u16(0x27))
+	testing.expect_value(t, read_u16(&m.ds, add16(a, 3)), u16(0xFFFC))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 6)), u8(3))
+	testing.expect_value(t, ds.byte_a280, u8(0))
+
+	// Frame 6 steps the first of two records (CL 2) and skips the second (CL 1).
+	ds.objects_per_level = 2
+	ds.frame_count = 6
+	write_u8(&m.ds, a, 1)
+	write_u16(&m.ds, add16(a, 1), 0)
+	write_u16(&m.ds, add16(a, 3), 0)
+	write_u8(&m.ds, add16(a, 6), 5)
+	write_u8(&m.ds, add16(a, 7), 0)
+	write_u8(&m.ds, add16(a, 8), 1)
+	write_u8(&m.ds, b, 1)
+	write_u16(&m.ds, add16(b, 1), 9)
+	write_u16(&m.ds, add16(b, 3), 9)
+	write_u8(&m.ds, add16(b, 6), 5)
+	write_u8(&m.ds, add16(b, 7), 0)
+	write_u8(&m.ds, add16(b, 8), 1)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 7)), u8(1))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 6)), u8(4))
+	testing.expect_value(t, read_u8(&m.ds, add16(b, 7)), u8(0))
+	testing.expect_value(t, read_u16(&m.ds, add16(b, 1)), u16(9))
+	testing.expect_value(t, read_u8(&m.ds, add16(b, 6)), u8(5))
+
+	// A zero nibble off the 128-frame mark does not age.
+	ds.objects_per_level = 1
+	ds.frame_count = 1
+	write_u8(&m.ds, a, 0)
+	write_u8(&m.ds, add16(a, 6), 4)
+	ds.byte_a280 = 7
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 6)), u8(4))
+	testing.expect_value(t, ds.byte_a280, u8(0))
+
+	// Lifetime 2 ages to 1 and does not scatter.
+	ds.frame_count = 0
+	ds.rng_seed = 0
+	write_u8(&m.ds, a, 0x20)
+	write_u8(&m.ds, add16(a, 6), 2)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, a), u8(0x20))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 6)), u8(1))
+	testing.expect_value(t, ds.byte_a280, u8(0))
+	testing.expect_value(t, ds.rng_seed, u16(0))
+
+	// Lifetime 1 hits 0. Seed 0 draws 0xC07B, so the type is ORed with 0x0F.
+	write_u8(&m.ds, add16(a, 6), 1)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, a), u8(0x2F))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 6)), u8(0))
+	testing.expect_value(t, ds.byte_a280, u8(1))
+	testing.expect_value(t, ds.rng_seed, u16(0xC07B))
+
+	// A zero lifetime does not scatter, and it clears the flag.
+	write_u8(&m.ds, a, 0)
+	write_u8(&m.ds, add16(a, 6), 0)
+	ds.rng_seed = 0
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, a), u8(0))
+	testing.expect_value(t, ds.byte_a280, u8(0))
+	testing.expect_value(t, ds.rng_seed, u16(0))
+
+	// Seed 6656 draws 0x41B0. The zero nibble relocates to 0x304B, 0x0ACF.
+	ds.rng_seed = 6656
+	write_u8(&m.ds, a, 0)
+	write_u8(&m.ds, add16(a, 5), 2)
+	write_u8(&m.ds, add16(a, 6), 1)
+	write_u8(&m.ds, add16(a, 7), 4)
+	write_u8(&m.ds, add16(a, 8), 3)
+	walk_planets(m)
+	testing.expect_value(t, read_u16(&m.ds, add16(a, 1)), u16(0x304B))
+	testing.expect_value(t, read_u16(&m.ds, add16(a, 3)), u16(0x0ACF))
+	testing.expect_value(t, read_u8(&m.ds, a), u8(0x0E))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 5)), u8(2))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 6)), u8(0))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 7)), u8(0))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 8)), u8(0))
+	testing.expect_value(t, read_u8(&m.ds, add16(a, 0x0A)), u8(0xFF))
+	testing.expect_value(t, ds.rng_seed, u16(0x8ACF))
+
+	// The expiry flag makes the next nibble of 1..0x0A scatter too.
+	// A nibble above 0x0A stays on the orbit path and leaves the flag set.
+	ds.objects_per_level = 3
+	ds.frame_count = 0
+	ds.rng_seed = 0
+	ds.mode_bits = 0
+	write_u8(&m.ds, a, 0)
+	write_u8(&m.ds, add16(a, 6), 1)
+	write_u8(&m.ds, b, 5)
+	write_u8(&m.ds, add16(b, 6), 9)
+	write_u8(&m.ds, c, 0x0B)
+	write_u8(&m.ds, add16(c, 6), 9)
+	write_u8(&m.ds, add16(c, 7), 3)
+	write_u8(&m.ds, add16(c, 8), 1)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, a), u8(0x0F))
+	testing.expect_value(t, read_u8(&m.ds, b), u8(0x0F))
+	testing.expect_value(t, read_u8(&m.ds, add16(b, 6)), u8(9))
+	testing.expect_value(t, read_u8(&m.ds, c), u8(0x0B))
+	testing.expect_value(t, read_u8(&m.ds, add16(c, 7)), u8(3))
+	testing.expect_value(t, ds.byte_a280, u8(1))
+
+	// galaxy_levels 1 does not walk level 1.
+	ds.galaxy_levels = 1
+	ds.objects_per_level = 1
+	ds.frame_count = 7
+	level1 := planet_at(1, 0)
+	write_u8(&m.ds, a, 0)
+	write_u8(&m.ds, add16(a, 6), 0)
+	write_u8(&m.ds, level1, 1)
+	write_u8(&m.ds, add16(level1, 7), 0)
+	write_u8(&m.ds, add16(level1, 8), 1)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, add16(level1, 7)), u8(0))
+
+	// Levels 3 and 4 both walk planets[3], so one record steps twice.
+	ds.galaxy_levels = 5
+	ds.objects_per_level = 1
+	ds.frame_count = 7
+	shared := planet_at(3, 0)
+	write_u8(&m.ds, a, 0)
+	write_u8(&m.ds, add16(a, 6), 0)
+	write_u8(&m.ds, planet_at(1, 0), 0)
+	write_u8(&m.ds, planet_at(2, 0), 0)
+	write_u8(&m.ds, shared, 1)
+	write_u16(&m.ds, add16(shared, 1), 0)
+	write_u16(&m.ds, add16(shared, 3), 0)
+	write_u8(&m.ds, add16(shared, 6), 0)
+	write_u8(&m.ds, add16(shared, 7), 0)
+	write_u8(&m.ds, add16(shared, 8), 1)
+	walk_planets(m)
+	testing.expect_value(t, read_u8(&m.ds, add16(shared, 7)), u8(2))
+	testing.expect_value(t, read_u16(&m.ds, add16(shared, 1)), u16(0x4D))
+	testing.expect_value(t, read_u16(&m.ds, add16(shared, 3)), u16(0xFFF1))
+}
+
+@(test)
 test_relocate_planet :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)

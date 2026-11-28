@@ -50,61 +50,7 @@ fun_202f :: proc() {
 
 // 1000:226c drain_invisibility is in ship.odin.
 
-// @proc 1000:22a2
-// listing: FUN_1000_22a2
-// status: unread
-// 1000:22a2  FUN_1000_22a2:
-// 1000:22a2      b0 00                    MOV AL,0x0
-// 1000:22a4  LAB_1000_22a4:
-// 1000:22a4      50                       PUSH AX
-// 1000:22a5      e8 80 0f                 CALL 0x1000:3228
-// 1000:22a8      c6 06 80 a2 00           MOV byte ptr [0xa280],0x0
-// 1000:22ad  LAB_1000_22ad:
-// 1000:22ad      8a 05                    MOV AL,byte ptr [DI]
-// 1000:22af      24 0f                    AND AL,0xf
-// 1000:22b1      74 23                    JZ 0x1000:22d6
-// 1000:22b3      3c 0a                    CMP AL,0xa
-// 1000:22b5      77 07                    JA 0x1000:22be
-// 1000:22b7      80 3e 80 a2 01           CMP byte ptr [0xa280],0x1
-// 1000:22bc      74 34                    JZ 0x1000:22f2
-// 1000:22be  LAB_1000_22be:
-// 1000:22be      a0 d2 89                 MOV AL,[0x89d2]
-// 1000:22c1      02 c1                    ADD AL,CL
-// 1000:22c3      24 07                    AND AL,0x7
-// 1000:22c5      75 3a                    JNZ 0x1000:2301
-// 1000:22c7      e8 e7 20                 CALL 0x1000:43b1
-// 1000:22ca      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
-// 1000:22ce      74 31                    JZ 0x1000:2301
-// 1000:22d0      fe 4d 06                 DEC byte ptr [DI + 0x6]
-// 1000:22d3      eb 2c                    JMP 0x1000:2301
-// 1000:22d6  LAB_1000_22d6:
-// 1000:22d6      c6 06 80 a2 00           MOV byte ptr [0xa280],0x0
-// 1000:22db      a0 d2 89                 MOV AL,[0x89d2]
-// 1000:22de      24 7f                    AND AL,0x7f
-// 1000:22e0      75 1f                    JNZ 0x1000:2301
-// 1000:22e2      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
-// 1000:22e6      74 19                    JZ 0x1000:2301
-// 1000:22e8      fe 4d 06                 DEC byte ptr [DI + 0x6]
-// 1000:22eb      75 14                    JNZ 0x1000:2301
-// 1000:22ed      c6 06 80 a2 01           MOV byte ptr [0xa280],0x1
-// 1000:22f2  LAB_1000_22f2:
-// 1000:22f2      e8 85 20                 CALL 0x1000:437a
-// 1000:22f5      24 0f                    AND AL,0xf
-// 1000:22f7      75 05                    JNZ 0x1000:22fe
-// 1000:22f9      e8 14 00                 CALL 0x1000:2310
-// 1000:22fc      eb 03                    JMP 0x1000:2301
-// 1000:22fe  LAB_1000_22fe:
-// 1000:22fe      80 0d 0f                 OR byte ptr [DI],0xf
-// 1000:2301  LAB_1000_2301:
-// 1000:2301      83 c7 0b                 ADD DI,0xb
-// 1000:2304      e2 a7                    LOOP 0x1000:22ad
-// 1000:2306      58                       POP AX
-// 1000:2307      fe c0                    INC AL
-// 1000:2309      3a 06 02 00              CMP AL,byte ptr [0x2]
-// 1000:230d      72 95                    JC 0x1000:22a4
-// 1000:230f      c3                       RET
-fun_22a2 :: proc() {
-}
+// 1000:22a2 walk_planets is in planet.odin.
 
 // 1000:2310 relocate_planet is in planet.odin.
 
