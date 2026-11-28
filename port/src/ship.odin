@@ -3866,3 +3866,214 @@ sweep_mines :: proc(m: ^Machine, di: u16) {
 		ds.team_tag += 1
 	}
 }
+
+// 1000:2a26 range_heading.
+// The name is inferred. SI and DI are two records with the usual X, Y,
+// and plane bytes. Different planes return AX 0xFFFF and leave the
+// scratch words alone. The 8086 also leaves CX alone on that path; this
+// port returns CX 0.
+//
+// Otherwise the short X and Y deltas land in delta_x and delta_y, and
+// their absolute values in abs_delta_x and abs_delta_y. The heading
+// nibble in CH comes from (10 * abs_delta_y) / abs_delta_x and from the
+// sign bits of the short deltas. Abs X of 0, a quotient of at least
+// 0x32, or a product that does not fit in 16 bits while abs X is below
+// 10, uses only the Y sign: 8 when that sign is clear and 0 when it is
+// set. CL counts how far the larger absolute delta is shifted until its
+// high byte is 0. distance_if_same_plane then runs at that shift, and
+// CL gains one each time the distance is 0xFFFF. AX is the distance
+// that fit. CX is CH in the high byte and CL in the low byte.
+
+// @proc 1000:2a26
+// status: tested
+// Odin: range_heading
+// 1000:2a26  FUN_1000_2a26:
+// 1000:2a26      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
+// 1000:2a29      3a 45 05                 CMP AL,byte ptr [DI + 0x5]
+// 1000:2a2c      74 04                    JZ 0x1000:2a32
+// 1000:2a2e      b8 ff ff                 MOV AX,0xffff
+// 1000:2a31      c3                       RET
+// 1000:2a32  LAB_1000_2a32:
+// 1000:2a32      8b 5c 01                 MOV BX,word ptr [SI + 0x1]
+// 1000:2a35      2b 5d 01                 SUB BX,word ptr [DI + 0x1]
+// 1000:2a38      e8 fb 00                 CALL 0x1000:2b36
+// 1000:2a3b      89 1e 83 a2              MOV word ptr [0xa283],BX
+// 1000:2a3f      8b 5c 03                 MOV BX,word ptr [SI + 0x3]
+// 1000:2a42      2b 5d 03                 SUB BX,word ptr [DI + 0x3]
+// 1000:2a45      e8 ee 00                 CALL 0x1000:2b36
+// 1000:2a48      89 1e 85 a2              MOV word ptr [0xa285],BX
+// 1000:2a4c      e8 03 01                 CALL 0x1000:2b52
+// 1000:2a4f      89 1e 89 a2              MOV word ptr [0xa289],BX
+// 1000:2a53      b8 0a 00                 MOV AX,0xa
+// 1000:2a56      f7 e3                    MUL BX
+// 1000:2a58      8b 1e 83 a2              MOV BX,word ptr [0xa283]
+// 1000:2a5c      e8 f3 00                 CALL 0x1000:2b52
+// 1000:2a5f      89 1e 87 a2              MOV word ptr [0xa287],BX
+// 1000:2a63      85 db                    TEST BX,BX
+// 1000:2a65      75 0f                    JNZ 0x1000:2a76
+// 1000:2a67  LAB_1000_2a67:
+// 1000:2a67      b5 00                    MOV CH,0x0
+// 1000:2a69      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2a6f      75 02                    JNZ 0x1000:2a73
+// 1000:2a71      b5 08                    MOV CH,0x8
+// 1000:2a73  LAB_1000_2a73:
+// 1000:2a73      e9 9b 00                 JMP 0x1000:2b11
+// 1000:2a76  LAB_1000_2a76:
+// 1000:2a76      83 fa 00                 CMP DX,0x0
+// 1000:2a79      74 05                    JZ 0x1000:2a80
+// 1000:2a7b      83 fb 0a                 CMP BX,0xa
+// 1000:2a7e      72 e7                    JC 0x1000:2a67
+// 1000:2a80  LAB_1000_2a80:
+// 1000:2a80      f7 f3                    DIV BX
+// 1000:2a82      3d 02 00                 CMP AX,0x2
+// 1000:2a85      77 0e                    JA 0x1000:2a95
+// 1000:2a87      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2a8d      b5 04                    MOV CH,0x4
+// 1000:2a8f      75 02                    JNZ 0x1000:2a93
+// 1000:2a91      b5 0c                    MOV CH,0xc
+// 1000:2a93  LAB_1000_2a93:
+// 1000:2a93      eb 7c                    JMP 0x1000:2b11
+// 1000:2a95  LAB_1000_2a95:
+// 1000:2a95      3d 07 00                 CMP AX,0x7
+// 1000:2a98      77 24                    JA 0x1000:2abe
+// 1000:2a9a      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2aa0      75 0e                    JNZ 0x1000:2ab0
+// 1000:2aa2      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2aa8      b5 0d                    MOV CH,0xd
+// 1000:2aaa      75 10                    JNZ 0x1000:2abc
+// 1000:2aac      b5 0b                    MOV CH,0xb
+// 1000:2aae      eb 0c                    JMP 0x1000:2abc
+// 1000:2ab0  LAB_1000_2ab0:
+// 1000:2ab0      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2ab6      b5 03                    MOV CH,0x3
+// 1000:2ab8      75 02                    JNZ 0x1000:2abc
+// 1000:2aba      b5 05                    MOV CH,0x5
+// 1000:2abc  LAB_1000_2abc:
+// 1000:2abc      eb 53                    JMP 0x1000:2b11
+// 1000:2abe  LAB_1000_2abe:
+// 1000:2abe      3d 0f 00                 CMP AX,0xf
+// 1000:2ac1      77 24                    JA 0x1000:2ae7
+// 1000:2ac3      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2ac9      75 0e                    JNZ 0x1000:2ad9
+// 1000:2acb      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2ad1      b5 0e                    MOV CH,0xe
+// 1000:2ad3      75 10                    JNZ 0x1000:2ae5
+// 1000:2ad5      b5 0a                    MOV CH,0xa
+// 1000:2ad7      eb 0c                    JMP 0x1000:2ae5
+// 1000:2ad9  LAB_1000_2ad9:
+// 1000:2ad9      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2adf      b5 02                    MOV CH,0x2
+// 1000:2ae1      75 02                    JNZ 0x1000:2ae5
+// 1000:2ae3      b5 06                    MOV CH,0x6
+// 1000:2ae5  LAB_1000_2ae5:
+// 1000:2ae5      eb 2a                    JMP 0x1000:2b11
+// 1000:2ae7  LAB_1000_2ae7:
+// 1000:2ae7      3d 32 00                 CMP AX,0x32
+// 1000:2aea      72 03                    JC 0x1000:2aef
+// 1000:2aec      e9 78 ff                 JMP 0x1000:2a67
+// 1000:2aef  LAB_1000_2aef:
+// 1000:2aef      f7 06 83 a2 00 80        TEST word ptr [0xa283],0x8000
+// 1000:2af5      75 0e                    JNZ 0x1000:2b05
+// 1000:2af7      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2afd      b5 0f                    MOV CH,0xf
+// 1000:2aff      75 10                    JNZ 0x1000:2b11
+// 1000:2b01      b5 09                    MOV CH,0x9
+// 1000:2b03      eb 0c                    JMP 0x1000:2b11
+// 1000:2b05  LAB_1000_2b05:
+// 1000:2b05      f7 06 85 a2 00 80        TEST word ptr [0xa285],0x8000
+// 1000:2b0b      b5 01                    MOV CH,0x1
+// 1000:2b0d      75 02                    JNZ 0x1000:2b11
+// 1000:2b0f      b5 07                    MOV CH,0x7
+// 1000:2b11  LAB_1000_2b11:
+// 1000:2b11      b1 00                    MOV CL,0x0
+// 1000:2b13      a1 87 a2                 MOV AX,[0xa287]
+// 1000:2b16      3b 06 89 a2              CMP AX,word ptr [0xa289]
+// 1000:2b1a      77 03                    JA 0x1000:2b1f
+// 1000:2b1c      a1 89 a2                 MOV AX,[0xa289]
+// 1000:2b1f  LAB_1000_2b1f:
+// 1000:2b1f      84 e4                    TEST AH,AH
+// 1000:2b21      74 06                    JZ 0x1000:2b29
+// 1000:2b23      fe c1                    INC CL
+// 1000:2b25      d1 e8                    SHR AX,0x1
+// 1000:2b27      eb f6                    JMP 0x1000:2b1f
+// 1000:2b29  LAB_1000_2b29:
+// 1000:2b29      e8 ee f8                 CALL 0x1000:241a
+// 1000:2b2c      3d ff ff                 CMP AX,0xffff
+// 1000:2b2f      75 04                    JNZ 0x1000:2b35
+// 1000:2b31      fe c1                    INC CL
+// 1000:2b33      eb f4                    JMP 0x1000:2b29
+// 1000:2b35  LAB_1000_2b35:
+// 1000:2b35      c3                       RET
+
+range_heading :: proc(m: ^Machine, si, di: u16) -> (ax, cx: u16) {
+	quadrant :: proc(x_neg, y_neg: bool, x_pos_y_pos, x_pos_y_neg, x_neg_y_pos, x_neg_y_neg: u8) -> u8 {
+		if !x_neg {
+			if y_neg {
+				return x_pos_y_neg
+			}
+			return x_pos_y_pos
+		}
+		if y_neg {
+			return x_neg_y_neg
+		}
+		return x_neg_y_pos
+	}
+
+	ds := transmute(^DS_Segment)&m.ds
+	if read_u8(&m.ds, add16(si, 5)) != read_u8(&m.ds, add16(di, 5)) {
+		return 0xFFFF, 0
+	}
+	dx := sub16(read_u16(&m.ds, add16(si, 1)), read_u16(&m.ds, add16(di, 1)))
+	dy := sub16(read_u16(&m.ds, add16(si, 3)), read_u16(&m.ds, add16(di, 3)))
+	ds.delta_x = short_delta(dx)
+	ds.delta_y = short_delta(dy)
+	ds.abs_delta_y = abs_word(ds.delta_y)
+	product := u32(ds.abs_delta_y) * 10
+	ds.abs_delta_x = abs_word(ds.delta_x)
+
+	ch: u8
+	if ds.abs_delta_x == 0 || (product > 0xFFFF && ds.abs_delta_x < 10) {
+		ch = 8
+		if ds.delta_y & 0x8000 != 0 {
+			ch = 0
+		}
+	} else {
+		quot := u16(product / u32(ds.abs_delta_x))
+		x_neg := ds.delta_x & 0x8000 != 0
+		y_neg := ds.delta_y & 0x8000 != 0
+		if quot <= 2 {
+			ch = 4
+			if !x_neg {
+				ch = 0x0C
+			}
+		} else if quot <= 7 {
+			ch = quadrant(x_neg, y_neg, 0x0B, 0x0D, 0x05, 0x03)
+		} else if quot <= 0x0F {
+			ch = quadrant(x_neg, y_neg, 0x0A, 0x0E, 0x06, 0x02)
+		} else if quot >= 0x32 {
+			ch = 8
+			if y_neg {
+				ch = 0
+			}
+		} else {
+			ch = quadrant(x_neg, y_neg, 0x09, 0x0F, 0x07, 0x01)
+		}
+	}
+
+	span := ds.abs_delta_x
+	if span <= ds.abs_delta_y {
+		span = ds.abs_delta_y
+	}
+	cl: u8 = 0
+	for span > 0xFF {
+		cl += 1
+		span >>= 1
+	}
+	for {
+		dist, _ := distance_if_same_plane(m, si, di, cl)
+		if dist != 0xFFFF {
+			return dist, u16(ch) << 8 | u16(cl)
+		}
+		cl += 1
+	}
+}

@@ -102,6 +102,7 @@ odin run src
 | `1000:2e3d` | `resolve_shot_hit` | tested. The name is inferred. Flag bits `0x44` and a matching team return before the distance. A shot with bit 7 charges `5 * (0x1EA - AX)` inside `0x1C2`, or seven gaps plus `0x19` when bit 6 is set, and a nibble below 4 does not charge. Another shot inside `0x8C` multiplies the shot byte by `8 * (0xC8 - AX) + 0x96`. A shot of at least 4 becomes 3 and uses `0x41`, unless flag bits `0x44` are set |
 | `1000:3109` | `sweep_mines` | tested. The name is inferred. Each of 80 mine slots is measured against one ship. An empty slot, a dead ship, or a distance of at least `0x258` calls `decay_impulse`. A same-team mine inside `0x64` can be picked up, and those paths skip the decay. A different team sets byte `0x16` bit 2, and inside `0x104` charges from the impulse nibble and may clear byte `0x2A`. The score uses the mine owner and the amount `add_scaled_charge` stored |
 | `1000:4312` | `fill_extra_record` | tested. The name is inferred. Low 3 bits of 0 store flag `0x82`. Any other draw stores `0x80` or `0x81`. X and Y are redrawn while `reject_near_base` (`BP` `0x32`, `DX` `0x1388`) rejects them. Byte `0x0B` is the next low 3 bits plus 5, plus another 5 when the flag is `0x82`. The energy word is the next low byte plus `0x64`. Multi-plane stores a level below `galaxy_levels` at byte `0x05` |
+| `1000:2a26` | `range_heading` | tested. The name is inferred. Different planes return AX `0xFFFF` and leave the scratch words alone. Otherwise CH is the heading nibble from `(10 * abs Y) / abs X` and the short-delta signs. Abs X of 0, a quotient of at least `0x32`, or a product past 16 bits with abs X below 10, uses only the Y sign. CL is the shift that lets `distance_if_same_plane` return a distance other than `0xFFFF` |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -111,6 +112,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 `1000:1ee6` updates every side. It calls `walk_planets` and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns.
 
-The next closed procedure is `1000:2a26`.
+No further procedure in this set is closed. `1000:3fb3` falls into `store_desired_heading` and is still unread. `1000:1ee6` and `1000:202f` stay unported until `1000:ac37` is an explicit decision.
 
 How to resume on another machine is in `RESUME.md`.

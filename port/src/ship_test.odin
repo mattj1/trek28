@@ -4468,6 +4468,146 @@ test_sweep_mines :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.side_score[3], u16(14))
 }
 
+@(test)
+test_range_heading :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	si := u16(offset_of(DS_Segment, ships))
+	di := add16(si, 0x3B)
+	from := &ds.ships[0][0]
+	to := &ds.ships[0][1]
+
+	place :: proc(from, to: ^Ship_Record, fx, fy, tx, ty: u16, plane: u8) {
+		from^ = {}
+		to^ = {}
+		from.x = fx
+		from.y = fy
+		from.plane = plane
+		to.x = tx
+		to.y = ty
+		to.plane = plane
+	}
+
+	check :: proc(t: ^testing.T, m: ^Machine, ds: ^DS_Segment, si, di: u16, ch, cl: u8) {
+		ax, cx := range_heading(m, si, di)
+		dist, _ := distance_if_same_plane(m, si, di, cl)
+		testing.expect_value(t, ax, dist)
+		testing.expect_value(t, cx, u16(ch) << 8 | u16(cl))
+		testing.expect_value(t, dist == 0xFFFF, false)
+	}
+
+	// Different planes return 0xFFFF and do not write the scratch words.
+	place(from, to, 0x1000, 0x1000, 0x1000, 0x1040, 1)
+	to.plane = 2
+	ds.delta_x = 0x1111
+	ds.delta_y = 0x2222
+	ds.abs_delta_x = 0x3333
+	ds.abs_delta_y = 0x4444
+	ax, cx := range_heading(m, si, di)
+	testing.expect_value(t, ax, u16(0xFFFF))
+	testing.expect_value(t, cx, u16(0))
+	testing.expect_value(t, ds.delta_x, u16(0x1111))
+	testing.expect_value(t, ds.delta_y, u16(0x2222))
+	testing.expect_value(t, ds.abs_delta_x, u16(0x3333))
+	testing.expect_value(t, ds.abs_delta_y, u16(0x4444))
+
+	// The same point is heading 8 at shift 0. Distance is 0.
+	place(from, to, 0x1000, 0x1000, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 8, 0)
+	testing.expect_value(t, ds.delta_x, u16(0))
+	testing.expect_value(t, ds.delta_y, u16(0))
+	testing.expect_value(t, ds.abs_delta_x, u16(0))
+	testing.expect_value(t, ds.abs_delta_y, u16(0))
+
+	// Pure axes. A positive Y is 8. A negative Y is 0. X alone is 0xC or 4.
+	place(from, to, 0x1000, 0x1040, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 8, 0)
+	testing.expect_value(t, ds.delta_y, u16(0x40))
+	testing.expect_value(t, ds.abs_delta_y, u16(0x40))
+	place(from, to, 0x1000, 0x0FC0, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0, 0)
+	testing.expect_value(t, ds.delta_y, u16(0xFFC0))
+	testing.expect_value(t, ds.abs_delta_y, u16(0x40))
+	place(from, to, 0x1040, 0x1000, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0C, 0)
+	testing.expect_value(t, ds.delta_x, u16(0x40))
+	place(from, to, 0x0FC0, 0x1000, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 4, 0)
+	testing.expect_value(t, ds.delta_x, u16(0xFFC0))
+	testing.expect_value(t, ds.abs_delta_x, u16(0x40))
+
+	// Y gap 0x100 needs one shift. Heading stays 8.
+	place(from, to, 0x1000, 0x1100, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 8, 1)
+	testing.expect_value(t, ds.abs_delta_y, u16(0x100))
+
+	// A raw X of +0x3000 folds to a negative short delta of 0x1000.
+	place(from, to, 0x4000, 0x1000, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 4, 5)
+	testing.expect_value(t, ds.delta_x, u16(0xF000))
+	testing.expect_value(t, ds.abs_delta_x, u16(0x1000))
+	testing.expect_value(t, ds.delta_y, u16(0))
+
+	// Quotient 2 uses only the X sign. Quotient 3 uses both signs.
+	place(from, to, 0x1000 + 10, 0x1000 + 2, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0C, 0)
+	place(from, to, 0x1000 + 10, 0x1000 + 3, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0B, 0)
+	place(from, to, 0x1000 + 10, 0x1000 - 3, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0D, 0)
+	place(from, to, 0x1000 - 10, 0x1000 + 3, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x05, 0)
+	place(from, to, 0x1000 - 10, 0x1000 - 3, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x03, 0)
+	testing.expect_value(t, ds.delta_x, u16(0xFFF6))
+	testing.expect_value(t, ds.delta_y, u16(0xFFFD))
+	testing.expect_value(t, ds.abs_delta_x, u16(10))
+	testing.expect_value(t, ds.abs_delta_y, u16(3))
+
+	// The other bands change at 7, 8, 15, 16, 49, and 50. X and Y are positive.
+	place(from, to, 0x1000 + 10, 0x1000 + 7, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0B, 0)
+	place(from, to, 0x1000 + 10, 0x1000 + 8, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0A, 0)
+	place(from, to, 0x1000 + 10, 0x1000 + 15, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0A, 0)
+	place(from, to, 0x1000 + 10, 0x1000 + 16, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x09, 0)
+	place(from, to, 0x1000 + 10, 0x1000 + 49, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x09, 0)
+	place(from, to, 0x1000 + 10, 0x1000 + 50, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 8, 0)
+
+	// Quotient 50 with a negative Y is heading 0. The X sign is not used.
+	place(from, to, 0x1000 - 10, 0x1000 - 50, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0, 0)
+	testing.expect_value(t, ds.delta_x & 0x8000, u16(0x8000))
+	testing.expect_value(t, ds.delta_y & 0x8000, u16(0x8000))
+
+	// One opposite-sign sample from the 8..15 and 16..49 bands.
+	place(from, to, 0x1000 - 10, 0x1000 + 15, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x06, 0)
+	place(from, to, 0x1000 + 10, 0x1000 - 16, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0F, 0)
+	place(from, to, 0x1000 - 10, 0x1000 - 16, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x01, 0)
+
+	// 10 * 0x199A does not fit in 16 bits, and abs X is below 10, so this
+	// stays on the Y-sign heading instead of dividing.
+	place(from, to, 0x1000 + 1, 0x1000 + 0x199A, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 8, 5)
+	testing.expect_value(t, ds.abs_delta_x, u16(1))
+	testing.expect_value(t, ds.abs_delta_y, u16(0x199A))
+
+	// Both axes are 0x1FF. Shift 1 overflows the sum of squares, so CL becomes 2.
+	place(from, to, 0x1000 + 0x1FF, 0x1000 + 0x1FF, 0x1000, 0x1000, 1)
+	check(t, m, ds, si, di, 0x0A, 2)
+	testing.expect_value(t, ds.abs_delta_x, u16(0x1FF))
+	testing.expect_value(t, ds.abs_delta_y, u16(0x1FF))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
