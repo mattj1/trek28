@@ -2014,6 +2014,16 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_abs_word :: proc(t: ^testing.T) {
+	testing.expect_value(t, abs_word(0), u16(0))
+	testing.expect_value(t, abs_word(1), u16(1))
+	testing.expect_value(t, abs_word(0x7FFF), u16(0x7FFF))
+	testing.expect_value(t, abs_word(0x8000), u16(0x8000))
+	testing.expect_value(t, abs_word(0x8001), u16(0x7FFF))
+	testing.expect_value(t, abs_word(0xFFFF), u16(1))
+}
+
+@(test)
 test_cycle_computer_count :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

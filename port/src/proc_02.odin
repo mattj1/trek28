@@ -226,17 +226,7 @@ fun_2a26 :: proc() {
 fun_2b36 :: proc() {
 }
 
-// @proc 1000:2b52
-// listing: FUN_1000_2b52
-// status: unread
-// 1000:2b52  FUN_1000_2b52:
-// 1000:2b52      f7 c3 00 80              TEST BX,0x8000
-// 1000:2b56      74 02                    JZ 0x1000:2b5a
-// 1000:2b58      f7 db                    NEG BX
-// 1000:2b5a  LAB_1000_2b5a:
-// 1000:2b5a      c3                       RET
-fun_2b52 :: proc() {
-}
+// 1000:2b52 abs_word is in ship.odin.
 
 // @proc 1000:2b5b
 // listing: FUN_1000_2b5b

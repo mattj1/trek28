@@ -1727,3 +1727,23 @@ cycle_computer_count :: proc(ds: ^DS_Segment) {
 	}
 	ds.mode_bits &= 0xF3
 }
+
+// 1000:2b52 abs_word.
+// The name is inferred. Bit 15 selects NEG. NEG of 0x8000 stays 0x8000.
+
+// @proc 1000:2b52
+// status: tested
+// Odin: abs_word
+// 1000:2b52  FUN_1000_2b52:
+// 1000:2b52      f7 c3 00 80              TEST BX,0x8000
+// 1000:2b56      74 02                    JZ 0x1000:2b5a
+// 1000:2b58      f7 db                    NEG BX
+// 1000:2b5a  LAB_1000_2b5a:
+// 1000:2b5a      c3                       RET
+
+abs_word :: proc(bx: u16) -> u16 {
+	if bx & 0x8000 != 0 {
+		return neg16(bx)
+	}
+	return bx
+}
