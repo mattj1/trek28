@@ -427,56 +427,7 @@ fun_15b4 :: proc() {
 fun_15d2 :: proc() {
 }
 
-// @proc 1000:1696
-// listing: FUN_1000_1696
-// status: unread
-// 1000:1696  FUN_1000_1696:
-// 1000:1696      be 64 8c                 MOV SI,0x8c64
-// 1000:1699      bf 14 90                 MOV DI,0x9014
-// 1000:169c      bb e4 89                 MOV BX,0x89e4
-// 1000:169f      b9 04 00                 MOV CX,0x4
-// 1000:16a2  LAB_1000_16a2:
-// 1000:16a2      51                       PUSH CX
-// 1000:16a3      b9 04 00                 MOV CX,0x4
-// 1000:16a6      ba 00 00                 MOV DX,0x0
-// 1000:16a9  LAB_1000_16a9:
-// 1000:16a9      f6 04 80                 TEST byte ptr [SI],0x80
-// 1000:16ac      74 16                    JZ 0x1000:16c4
-// 1000:16ae      51                       PUSH CX
-// 1000:16af      52                       PUSH DX
-// 1000:16b0      b9 64 00                 MOV CX,0x64
-// 1000:16b3      8b 44 08                 MOV AX,word ptr [SI + 0x8]
-// 1000:16b6      33 d2                    XOR DX,DX
-// 1000:16b8      f7 f1                    DIV CX
-// 1000:16ba      83 fa 32                 CMP DX,0x32
-// 1000:16bd      72 01                    JC 0x1000:16c0
-// 1000:16bf      40                       INC AX
-// 1000:16c0  LAB_1000_16c0:
-// 1000:16c0      5a                       POP DX
-// 1000:16c1      59                       POP CX
-// 1000:16c2      03 d0                    ADD DX,AX
-// 1000:16c4  LAB_1000_16c4:
-// 1000:16c4      83 c6 3b                 ADD SI,0x3b
-// 1000:16c7      e2 e0                    LOOP 0x1000:16a9
-// 1000:16c9      8b 45 08                 MOV AX,word ptr [DI + 0x8]
-// 1000:16cc      52                       PUSH DX
-// 1000:16cd      33 d2                    XOR DX,DX
-// 1000:16cf      b9 0a 00                 MOV CX,0xa
-// 1000:16d2      f7 f1                    DIV CX
-// 1000:16d4      83 fa 05                 CMP DX,0x5
-// 1000:16d7      5a                       POP DX
-// 1000:16d8      72 01                    JC 0x1000:16db
-// 1000:16da      40                       INC AX
-// 1000:16db  LAB_1000_16db:
-// 1000:16db      03 c2                    ADD AX,DX
-// 1000:16dd      01 07                    ADD word ptr [BX],AX
-// 1000:16df      83 c3 02                 ADD BX,0x2
-// 1000:16e2      83 c7 0e                 ADD DI,0xe
-// 1000:16e5      59                       POP CX
-// 1000:16e6      e2 ba                    LOOP 0x1000:16a2
-// 1000:16e8      c3                       RET
-fun_1696 :: proc() {
-}
+// 1000:1696 add_energy_score is in ship.odin.
 
 // @proc 1000:16e9
 // listing: FUN_1000_16e9

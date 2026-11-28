@@ -2191,6 +2191,83 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_add_energy_score :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.ships[0][0].flags = 0x80
+	ds.ships[0][0].energy = 49
+	set_base_energy(&ds.bases[0], 4)
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	ds.ships[0][0].energy = 50
+	set_base_energy(&ds.bases[0], 0)
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	ds.ships[0][0].energy = 99
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	ds.ships[0][0].energy = 100
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	ds.ships[0][0].energy = 149
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	ds.ships[0][0].energy = 150
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(2))
+
+	// A dead ship and an extra record do not contribute.
+	ds.side_score = {}
+	ds.ships[0][0].flags = 0
+	ds.ships[0][0].energy = 10000
+	ds.extra_records[0].flags = 0x80
+	ds.extra_records[0].energy = 10000
+	set_base_energy(&ds.bases[0], 5)
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	set_base_energy(&ds.bases[0], 10)
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	set_base_energy(&ds.bases[0], 14)
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(1))
+
+	ds.side_score[0] = 0
+	set_base_energy(&ds.bases[0], 15)
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(2))
+
+	// Four living ships on side 1, plus that base. Side 0 stays at its score.
+	ds.side_score[0] = 7
+	for slot in 0 ..< 4 {
+		ds.ships[1][slot].flags = 0x80
+		ds.ships[1][slot].energy = 150
+	}
+	set_base_energy(&ds.bases[1], 15)
+	ds.side_score[1] = 0xFFFF
+	add_energy_score(ds)
+	testing.expect_value(t, ds.side_score[0], u16(9))
+	// 4 * 2 + 2 = 10, and 0xFFFF + 10 wraps to 9.
+	testing.expect_value(t, ds.side_score[1], u16(9))
+	testing.expect_value(t, ds.side_score[2], u16(0))
+	testing.expect_value(t, ds.side_score[3], u16(0))
+}
+
+@(test)
 test_emergency_stop :: proc(t: ^testing.T) {
 	ship: Ship_Record
 	ship.impulse = 0
