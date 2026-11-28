@@ -387,20 +387,7 @@ fun_2343 :: proc() {
 
 // 1000:239b add_pending_charge is in ship.odin.
 
-// @proc 1000:23b3
-// listing: FUN_1000_23b3
-// notes: read_handicap
-// status: unread
-// 1000:23b3  FUN_1000_23b3:
-// 1000:23b3      53                       PUSH BX
-// 1000:23b4      e8 17 fb                 CALL 0x1000:1ece
-//                 ; ptr table -> 1000:23bf  [ptr] 1000:a226 1000:a231 1000:a23c 1000:a247
-// 1000:23bf  LAB_1000_23bf:
-// 1000:23bf      8a 47 04                 MOV AL,byte ptr [BX + 0x4]
-// 1000:23c2      5b                       POP BX
-// 1000:23c3      c3                       RET
-fun_23b3 :: proc() {
-}
+// 1000:23b3 read_handicap is in ship.odin.
 
 // @proc 1000:2a0c
 // listing: FUN_1000_2a0c

@@ -620,6 +620,31 @@ test_add_scaled_charge :: proc(t: ^testing.T) {
 	}
 }
 
+@(test)
+test_read_handicap :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.ids[0][3] = 9
+	ds.ids[0][4] = 2
+	ds.ids[1][4] = 7
+	ds.ids[2][4] = 0
+	ds.ids[3][4] = 0xFF
+
+	ds.current_side = 0
+	testing.expect_value(t, read_handicap(ds), u8(2))
+	ds.current_side = 1
+	testing.expect_value(t, read_handicap(ds), u8(7))
+	ds.current_side = 2
+	testing.expect_value(t, read_handicap(ds), u8(0))
+	ds.current_side = 3
+	testing.expect_value(t, read_handicap(ds), u8(0xFF))
+	// 1000:1ece masks the side with 3. 5 selects the same record as 1.
+	ds.current_side = 5
+	testing.expect_value(t, read_handicap(ds), u8(7))
+	testing.expect_value(t, ds.ids[0][3], u8(9))
+	testing.expect_value(t, ds.ids[1][4], u8(7))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

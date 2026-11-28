@@ -513,3 +513,24 @@ charge_impulse_and_heal :: proc(ds: ^DS_Segment, ship: ^Ship_Record) {
 		ship.damage -= 1
 	}
 }
+
+// 1000:23b3 read_handicap.
+// The notes already use this name. 1000:1ece pops the return address and
+// reads the pointer table that follows this call. That table is the four id
+// records at A226, stride 0x0B. The returned byte is ids[current_side & 3][4].
+
+// @proc 1000:23b3
+// status: tested
+// Odin: read_handicap
+// 1000:23b3  FUN_1000_23b3:
+// 1000:23b3      53                       PUSH BX
+// 1000:23b4      e8 17 fb                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:23bf  [ptr] 1000:a226 1000:a231 1000:a23c 1000:a247
+// 1000:23bf  LAB_1000_23bf:
+// 1000:23bf      8a 47 04                 MOV AL,byte ptr [BX + 0x4]
+// 1000:23c2      5b                       POP BX
+// 1000:23c3      c3                       RET
+
+read_handicap :: proc(ds: ^DS_Segment) -> u8 {
+	return ds.ids[ds.current_side & 3][4]
+}
