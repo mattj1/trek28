@@ -2014,6 +2014,23 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_short_delta :: proc(t: ^testing.T) {
+	testing.expect_value(t, short_delta(0), u16(0))
+	testing.expect_value(t, short_delta(0x1FFF), u16(0x1FFF))
+	testing.expect_value(t, short_delta(0x2000), u16(0xE000))
+	testing.expect_value(t, short_delta(0x3FFF), u16(0xFFFF))
+	testing.expect_value(t, short_delta(0x4000), u16(0))
+	testing.expect_value(t, short_delta(0x7FFF), u16(0x3FFF))
+	testing.expect_value(t, short_delta(0x8000), u16(0xC000))
+	testing.expect_value(t, short_delta(0x8001), u16(0xC001))
+	testing.expect_value(t, short_delta(0xC000), u16(0))
+	testing.expect_value(t, short_delta(0xD000), u16(0x1000))
+	testing.expect_value(t, short_delta(0xE000), u16(0x2000))
+	testing.expect_value(t, short_delta(0xF000), u16(0xF000))
+	testing.expect_value(t, short_delta(0xFFFF), u16(0xFFFF))
+}
+
+@(test)
 test_abs_word :: proc(t: ^testing.T) {
 	testing.expect_value(t, abs_word(0), u16(0))
 	testing.expect_value(t, abs_word(1), u16(1))

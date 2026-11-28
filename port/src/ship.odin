@@ -1747,3 +1747,45 @@ abs_word :: proc(bx: u16) -> u16 {
 	}
 	return bx
 }
+
+// 1000:2b36 short_delta.
+// The name is inferred. Both callers subtract a word into BX and then
+// call here, so the sign flag is bit 15 of BX. A positive value below
+// 0x2000 is unchanged. A positive value at or above 0x2000 loses 0x4000
+// and is returned still negative. A negative value is negated, and if
+// that absolute value is below 0x2000 it is negated back. Otherwise
+// 0x4000 is subtracted before the second negate. NEG of 0x8000 stays
+// 0x8000, so that input returns 0xC000.
+
+// @proc 1000:2b36
+// status: tested
+// Odin: short_delta
+// 1000:2b36  FUN_1000_2b36:
+// 1000:2b36      78 0b                    JS 0x1000:2b43
+// 1000:2b38      81 fb 00 20              CMP BX,0x2000
+// 1000:2b3c      72 13                    JC 0x1000:2b51
+// 1000:2b3e      81 eb 00 40              SUB BX,0x4000
+// 1000:2b42      c3                       RET
+// 1000:2b43  LAB_1000_2b43:
+// 1000:2b43      f7 db                    NEG BX
+// 1000:2b45      81 fb 00 20              CMP BX,0x2000
+// 1000:2b49      72 04                    JC 0x1000:2b4f
+// 1000:2b4b      81 eb 00 40              SUB BX,0x4000
+// 1000:2b4f  LAB_1000_2b4f:
+// 1000:2b4f      f7 db                    NEG BX
+// 1000:2b51  LAB_1000_2b51:
+// 1000:2b51      c3                       RET
+
+short_delta :: proc(bx: u16) -> u16 {
+	if bx & 0x8000 == 0 {
+		if bx < 0x2000 {
+			return bx
+		}
+		return sub16(bx, 0x4000)
+	}
+	abs := neg16(bx)
+	if abs >= 0x2000 {
+		abs = sub16(abs, 0x4000)
+	}
+	return neg16(abs)
+}

@@ -205,26 +205,7 @@ fun_2a0c :: proc() {
 fun_2a26 :: proc() {
 }
 
-// @proc 1000:2b36
-// listing: FUN_1000_2b36
-// status: unread
-// 1000:2b36  FUN_1000_2b36:
-// 1000:2b36      78 0b                    JS 0x1000:2b43
-// 1000:2b38      81 fb 00 20              CMP BX,0x2000
-// 1000:2b3c      72 13                    JC 0x1000:2b51
-// 1000:2b3e      81 eb 00 40              SUB BX,0x4000
-// 1000:2b42      c3                       RET
-// 1000:2b43  LAB_1000_2b43:
-// 1000:2b43      f7 db                    NEG BX
-// 1000:2b45      81 fb 00 20              CMP BX,0x2000
-// 1000:2b49      72 04                    JC 0x1000:2b4f
-// 1000:2b4b      81 eb 00 40              SUB BX,0x4000
-// 1000:2b4f  LAB_1000_2b4f:
-// 1000:2b4f      f7 db                    NEG BX
-// 1000:2b51  LAB_1000_2b51:
-// 1000:2b51      c3                       RET
-fun_2b36 :: proc() {
-}
+// 1000:2b36 short_delta is in ship.odin.
 
 // 1000:2b52 abs_word is in ship.odin.
 
