@@ -823,20 +823,7 @@ fun_08c8 :: proc() {
 
 // 1000:0b0e key_is_up is in ship.odin.
 
-// @proc 1000:0b15
-// listing: FUN_1000_0b15
-// notes: toggle_player_count
-// status: unread
-// 1000:0b15  FUN_1000_0b15:
-// 1000:0b15      80 3e 0a 00 01           CMP byte ptr [0xa],0x1
-// 1000:0b1a      74 06                    JZ 0x1000:0b22
-// 1000:0b1c      c6 06 0a 00 01           MOV byte ptr [0xa],0x1
-// 1000:0b21      c3                       RET
-// 1000:0b22  LAB_1000_0b22:
-// 1000:0b22      c6 06 0a 00 02           MOV byte ptr [0xa],0x2
-// 1000:0b27      c3                       RET
-fun_0b15 :: proc() {
-}
+// 1000:0b15 toggle_player_count is in ship.odin.
 
 // @proc 1000:0b28
 // listing: FUN_1000_0b28

@@ -64,6 +64,7 @@ odin run src
 | `1000:1970` | `to_upper` | tested. `'a'..'z'` loses bit 5. Every other byte is unchanged |
 | `1000:0b07` | `key_is_down` | tested. ZF is set for `'+'` and for `0xD0` |
 | `1000:0b0e` | `key_is_up` | tested. ZF is set for `'-'` and for `0xC8` |
+| `1000:0b15` | `toggle_player_count` | tested. A count of 1 becomes 2. Every other value becomes 1 |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 

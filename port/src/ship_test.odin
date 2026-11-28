@@ -2014,6 +2014,23 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_toggle_player_count :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.player_count = 1
+	toggle_player_count(ds)
+	testing.expect_value(t, ds.player_count, u8(2))
+	toggle_player_count(ds)
+	testing.expect_value(t, ds.player_count, u8(1))
+	ds.player_count = 0
+	toggle_player_count(ds)
+	testing.expect_value(t, ds.player_count, u8(1))
+	ds.player_count = 5
+	toggle_player_count(ds)
+	testing.expect_value(t, ds.player_count, u8(1))
+}
+
+@(test)
 test_key_is_up :: proc(t: ^testing.T) {
 	testing.expect_value(t, key_is_up('-'), true)
 	testing.expect_value(t, key_is_up(0xC8), true)

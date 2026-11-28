@@ -1668,3 +1668,27 @@ key_is_down :: proc(al: u8) -> bool {
 key_is_up :: proc(al: u8) -> bool {
 	return al == '-' || al == 0xC8
 }
+
+// 1000:0b15 toggle_player_count.
+// The notes already use this name. A player count of 1 becomes 2.
+// Every other value, including 0, becomes 1.
+
+// @proc 1000:0b15
+// status: tested
+// Odin: toggle_player_count
+// 1000:0b15  FUN_1000_0b15:
+// 1000:0b15      80 3e 0a 00 01           CMP byte ptr [0xa],0x1
+// 1000:0b1a      74 06                    JZ 0x1000:0b22
+// 1000:0b1c      c6 06 0a 00 01           MOV byte ptr [0xa],0x1
+// 1000:0b21      c3                       RET
+// 1000:0b22  LAB_1000_0b22:
+// 1000:0b22      c6 06 0a 00 02           MOV byte ptr [0xa],0x2
+// 1000:0b27      c3                       RET
+
+toggle_player_count :: proc(ds: ^DS_Segment) {
+	if ds.player_count == 1 {
+		ds.player_count = 2
+		return
+	}
+	ds.player_count = 1
+}
