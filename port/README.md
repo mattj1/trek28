@@ -45,6 +45,7 @@ odin run src
 | `1000:218b` | `slew_impulse` | tested. Slews heading, pulls a desired impulse of 11 down to 10 while warp is 0, then stores the nibble from `step_impulse` |
 | `1000:20e3` | `apply_damage_thresholds` | tested. Damage from 8 clears flag bits 4 and 5. From `0x0C` it zeros seek. From `0x10` it stores weapons cooldown `0x18` on every call. From `0x14` it zeros `byte_2a` and `get_mine` |
 | `1000:2055` | `charge_impulse_and_heal` | tested. A side byte of 1 zeros energy. Otherwise the weapons cooldown ticks, low energy clears warp, and every fourth frame charges the actual impulse and may heal one damage |
+| `1000:210a` | `apply_energy_charge` | tested. A handicap of 3 or more halves the pending charge. Flag bits `0x44` floor energy at `0x2710`. Otherwise the charge is subtracted, a quiet frame may add 10 first, and a zero or a borrow dumps the mines and stores flag 8, or 12 when the charge was at least `0xC350`. The charge word is cleared on every path |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -52,4 +53,4 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 ## Next
 
-`1000:210a` subtracts the pending charge from energy. The death path still calls `1000:1d64`. The assembly is in `src/proc_02.odin`.
+`1000:37ac` walks the 24 records at `8A8C`, steps an alive ship, and steps a shot in flight. The assembly is in `src/proc_03.odin`.

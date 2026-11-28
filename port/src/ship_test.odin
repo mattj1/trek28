@@ -1159,6 +1159,140 @@ test_fill_mine_slot :: proc(t: ^testing.T) {
 	testing.expect_value(t, full[19][7], u8(0x5A))
 }
 
+@(test)
+test_apply_energy_charge :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ship: Ship_Record
+	ship.flags = 0x90
+	ship.energy = 1000
+	ship.pending_charge = 100
+	ds.frame_count = 0
+	ds.ids[0][4] = 2
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(910))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ship.flags, u8(0x90))
+
+	ship.flags = 0x90
+	ship.energy = 210
+	ship.pending_charge = 10
+	ds.frame_count = 1
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(200))
+	testing.expect_value(t, ship.flags, u8(0x80))
+
+	ship.flags = 0x90
+	ship.energy = 211
+	ship.pending_charge = 10
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(201))
+	testing.expect_value(t, ship.flags, u8(0x90))
+
+	ship.flags = 0x80
+	ship.energy = 1000
+	ship.pending_charge = 200
+	ds.ids[0][4] = 3
+	ds.frame_count = 1
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(900))
+
+	ship.energy = 1000
+	ship.pending_charge = 200
+	ds.ids[0][4] = 2
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(800))
+
+	ship.flags = 0x84
+	ship.energy = 0x270F
+	ship.pending_charge = 0x1000
+	ds.ids[0][4] = 0
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(0x270F))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ship.flags, u8(0x84))
+
+	ship.flags = 0x84
+	ship.energy = 0x2710
+	ship.pending_charge = 0x1000
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(0x2710))
+	testing.expect_value(t, ship.flags, u8(0x84))
+
+	ship.flags = 0x40
+	ship.energy = 20000
+	ship.pending_charge = 0x8000
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(0x4620))
+	testing.expect_value(t, ship.flags, u8(0x40))
+
+	ship.flags = 0x80
+	ship.energy = 0x88B8
+	ship.pending_charge = 0
+	ds.frame_count = 0x0100
+	ds.ids[0][4] = 0
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(0x88C2))
+
+	ship.energy = 0x88B9
+	ship.pending_charge = 0
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(0x88B9))
+
+	ship.flags = 0x90
+	ship.energy = 5
+	ship.pending_charge = 15
+	ship.mines = 0
+	ds.frame_count = 0
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(5))
+	testing.expect_value(t, ship.flags, u8(8))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+
+	ship.flags = 0xB1
+	ship.energy = 100
+	ship.pending_charge = 0xC34F
+	ship.mines = 0
+	ship.x = 0x1234
+	ship.y = 0x00AB
+	ship.plane = 3
+	ship.own_side = 2
+	ship.team = 9
+	ds.frame_count = 1
+	ds.current_side = 5
+	ds.ids[1][4] = 0
+	ds.mines[1][0][0] = 1
+	ds.mines[1][0][1] = 0x11
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.energy, u16(100))
+	testing.expect_value(t, ship.flags, u8(8))
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ds.mines[1][0][0], u8(1))
+	testing.expect_value(t, ds.mines[1][0][1], u8(0x11))
+	testing.expect_value(t, ds.mines[0][1][0], u8(0))
+
+	ship.flags = 0xB1
+	ship.energy = 100
+	ship.pending_charge = 0xC350
+	ship.mines = 2
+	ds.current_side = 5
+	apply_energy_charge(ds, &ship)
+	testing.expect_value(t, ship.flags, u8(12))
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ship.energy, u16(100))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ds.mines[1][1][0], u8(0xFA))
+	testing.expect_value(t, ds.mines[1][1][1], u8(0x34))
+	testing.expect_value(t, ds.mines[1][1][2], u8(0x12))
+	testing.expect_value(t, ds.mines[1][1][3], u8(0xAB))
+	testing.expect_value(t, ds.mines[1][1][5], u8(3))
+	testing.expect_value(t, ds.mines[1][1][6], u8(2))
+	testing.expect_value(t, ds.mines[1][1][7], u8(9))
+	testing.expect_value(t, ds.mines[1][2][0], u8(0xFA))
+	testing.expect_value(t, ds.mines[1][3][0], u8(0))
+	testing.expect_value(t, ds.ids[1][4], u8(0))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

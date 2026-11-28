@@ -137,70 +137,7 @@ fun_202f :: proc() {
 
 // 1000:20e3 apply_damage_thresholds is in ship.odin.
 
-// @proc 1000:210a
-// listing: FUN_1000_210a
-// notes: apply_energy_charge
-// status: unread
-// 1000:210a  FUN_1000_210a:
-// 1000:210a      e8 a6 02                 CALL 0x1000:23b3
-// 1000:210d      3c 03                    CMP AL,0x3
-// 1000:210f      8b 45 0c                 MOV AX,word ptr [DI + 0xc]
-// 1000:2112      72 02                    JC 0x1000:2116
-// 1000:2114      d1 e8                    SHR AX,0x1
-// 1000:2116  LAB_1000_2116:
-// 1000:2116      8b 5d 08                 MOV BX,word ptr [DI + 0x8]
-// 1000:2119      f6 05 44                 TEST byte ptr [DI],0x44
-// 1000:211c      74 20                    JZ 0x1000:213e
-// 1000:211e      d1 e8                    SHR AX,0x1
-// 1000:2120      d1 e8                    SHR AX,0x1
-// 1000:2122      3d 40 1f                 CMP AX,0x1f40
-// 1000:2125      72 04                    JC 0x1000:212b
-// 1000:2127      d1 e8                    SHR AX,0x1
-// 1000:2129      d1 e8                    SHR AX,0x1
-// 1000:212b  LAB_1000_212b:
-// 1000:212b      81 fb 10 27              CMP BX,0x2710
-// 1000:212f      72 54                    JC 0x1000:2185
-// 1000:2131      2b d8                    SUB BX,AX
-// 1000:2133      81 fb 10 27              CMP BX,0x2710
-// 1000:2137      77 19                    JA 0x1000:2152
-// 1000:2139      bb 10 27                 MOV BX,0x2710
-// 1000:213c      eb 14                    JMP 0x1000:2152
-// 1000:213e  LAB_1000_213e:
-// 1000:213e      f6 06 d2 89 03           TEST byte ptr [0x89d2],0x3
-// 1000:2143      75 09                    JNZ 0x1000:214e
-// 1000:2145      81 fb b8 88              CMP BX,0x88b8
-// 1000:2149      77 03                    JA 0x1000:214e
-// 1000:214b      83 c3 0a                 ADD BX,0xa
-// 1000:214e  LAB_1000_214e:
-// 1000:214e      2b d8                    SUB BX,AX
-// 1000:2150      76 0e                    JBE 0x1000:2160
-// 1000:2152  LAB_1000_2152:
-// 1000:2152      89 5d 08                 MOV word ptr [DI + 0x8],BX
-// 1000:2155      81 fb c8 00              CMP BX,0xc8
-// 1000:2159      77 2a                    JA 0x1000:2185
-// 1000:215b      80 25 ef                 AND byte ptr [DI],0xef
-// 1000:215e      eb 25                    JMP 0x1000:2185
-// 1000:2160  LAB_1000_2160:
-// 1000:2160      e8 6b fd                 CALL 0x1000:1ece
-//                 ; ptr table -> 1000:216b  [ptr] 1000:904c 1000:90ec 1000:918c 1000:922c
-// 1000:216b  LAB_1000_216b:
-// 1000:216b      8b f3                    MOV SI,BX
-// 1000:216d      f6 45 06 ff              TEST byte ptr [DI + 0x6],0xff
-// 1000:2171      74 05                    JZ 0x1000:2178
-// 1000:2173      e8 ee fb                 CALL 0x1000:1d64
-// 1000:2176      eb e8                    JMP 0x1000:2160
-// 1000:2178  LAB_1000_2178:
-// 1000:2178      81 7d 0c 50 c3           CMP word ptr [DI + 0xc],0xc350
-// 1000:217d      b0 08                    MOV AL,0x8
-// 1000:217f      72 02                    JC 0x1000:2183
-// 1000:2181      b0 0c                    MOV AL,0xc
-// 1000:2183  LAB_1000_2183:
-// 1000:2183      88 05                    MOV byte ptr [DI],AL
-// 1000:2185  LAB_1000_2185:
-// 1000:2185      c7 45 0c 00 00           MOV word ptr [DI + 0xc],0x0
-// 1000:218a      c3                       RET
-fun_210a :: proc() {
-}
+// 1000:210a apply_energy_charge is in ship.odin.
 
 // 1000:218b slew_impulse and 1000:21af step_impulse are in ship.odin.
 
