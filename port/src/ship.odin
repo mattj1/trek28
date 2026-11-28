@@ -2903,3 +2903,215 @@ mark_planet_contact :: proc(m: ^Machine, ship: ^Ship_Record, planet: ^[11]u8, ax
 	al := m.cs[0x330B + int(planet[0] & 0x0F)]
 	ship.byte_28 |= al
 }
+
+// 1000:1998 edit_message_line.
+// The name is inferred. message_char is CR, BS, or a byte in
+// 0x20..0x7E. Anything else returns carry. DI is the edit buffer:
+// byte 1 is the length and the text starts at byte 2. A stored
+// character writes a 0 after itself. Length 0x16, or CR, commits.
+//
+// A second byte of ':' keeps the line only when the first byte minus
+// 'A' equals local_side and the length is at least 3. The two-byte
+// prefix is not copied. Any other second byte is kept only when
+// current_side differs from local_side. The copy is a leading 1, the
+// text, and a 0. player_count above 2 inserts ',' and
+// current_side + 'A' before the 0. An empty queue slot receives it.
+// A full queue is scrolled once and the search repeats. A zero
+// countdown becomes 0x14.
+//
+// Commit, including a rejected line, clears 0x28 bytes at the original
+// DI and returns DI advanced by 0x28. Carry is clear. Backspace
+// returns DI+1. It clears the byte after the last character and
+// decrements a nonzero length. A stored character or a rejected key
+// returns DI unchanged.
+
+// @proc 1000:1998
+// status: tested
+// Odin: edit_message_line
+// 1000:1998  FUN_1000_1998:
+// 1000:1998      a0 11 a2                 MOV AL,[0xa211]
+// 1000:199b      3c 0d                    CMP AL,0xd
+// 1000:199d      74 37                    JZ 0x1000:19d6
+// 1000:199f      3c 08                    CMP AL,0x8
+// 1000:19a1      74 21                    JZ 0x1000:19c4
+// 1000:19a3      3c 20                    CMP AL,0x20
+// 1000:19a5      72 1b                    JC 0x1000:19c2
+// 1000:19a7      3c 7e                    CMP AL,0x7e
+// 1000:19a9      77 17                    JA 0x1000:19c2
+// 1000:19ab      8a 5d 01                 MOV BL,byte ptr [DI + 0x1]
+// 1000:19ae      32 ff                    XOR BH,BH
+// 1000:19b0      88 41 02                 MOV byte ptr [BX + DI + 0x2],AL
+// 1000:19b3      c6 41 03 00              MOV byte ptr [BX + DI + 0x3],0x0
+// 1000:19b7      fe 45 01                 INC byte ptr [DI + 0x1]
+// 1000:19ba      80 7d 01 16              CMP byte ptr [DI + 0x1],0x16
+// 1000:19be      73 16                    JNC 0x1000:19d6
+// 1000:19c0      f8                       CLC
+// 1000:19c1      c3                       RET
+// 1000:19c2  LAB_1000_19c2:
+// 1000:19c2      f9                       STC
+// 1000:19c3      c3                       RET
+// 1000:19c4  LAB_1000_19c4:
+// 1000:19c4      47                       INC DI
+// 1000:19c5      8a 1d                    MOV BL,byte ptr [DI]
+// 1000:19c7      32 ff                    XOR BH,BH
+// 1000:19c9      80 3d 00                 CMP byte ptr [DI],0x0
+// 1000:19cc      74 06                    JZ 0x1000:19d4
+// 1000:19ce      c6 41 01 00              MOV byte ptr [BX + DI + 0x1],0x0
+// 1000:19d2      fe 0d                    DEC byte ptr [DI]
+// 1000:19d4  LAB_1000_19d4:
+// 1000:19d4      f8                       CLC
+// 1000:19d5      c3                       RET
+// 1000:19d6  LAB_1000_19d6:
+// 1000:19d6      57                       PUSH DI
+// 1000:19d7      47                       INC DI
+// 1000:19d8      8a 0d                    MOV CL,byte ptr [DI]
+// 1000:19da      81 e1 ff 00              AND CX,0xff
+// 1000:19de      74 63                    JZ 0x1000:1a43
+// 1000:19e0      8a 45 02                 MOV AL,byte ptr [DI + 0x2]
+// 1000:19e3      3c 3a                    CMP AL,0x3a
+// 1000:19e5      75 16                    JNZ 0x1000:19fd
+// 1000:19e7      8a 45 01                 MOV AL,byte ptr [DI + 0x1]
+// 1000:19ea      2c 41                    SUB AL,0x41
+// 1000:19ec      3a 06 6f a2              CMP AL,byte ptr [0xa26f]
+// 1000:19f0      75 51                    JNZ 0x1000:1a43
+// 1000:19f2      83 e9 02                 SUB CX,0x2
+// 1000:19f5      76 4c                    JBE 0x1000:1a43
+// 1000:19f7      83 c7 02                 ADD DI,0x2
+// 1000:19fa      eb 0a                    JMP 0x1000:1a06
+// 1000:19fd  LAB_1000_19fd:
+// 1000:19fd      a0 74 a2                 MOV AL,[0xa274]
+// 1000:1a00      3a 06 6f a2              CMP AL,byte ptr [0xa26f]
+// 1000:1a04      74 3d                    JZ 0x1000:1a43
+// 1000:1a06  LAB_1000_1a06:
+// 1000:1a06      be 9e a2                 MOV SI,0xa29e
+// 1000:1a09      b0 04                    MOV AL,0x4
+// 1000:1a0b  LAB_1000_1a0b:
+// 1000:1a0b      80 3c 00                 CMP byte ptr [SI],0x0
+// 1000:1a0e      74 0c                    JZ 0x1000:1a1c
+// 1000:1a10      83 c6 28                 ADD SI,0x28
+// 1000:1a13      fe c8                    DEC AL
+// 1000:1a15      75 f4                    JNZ 0x1000:1a0b
+// 1000:1a17      e8 33 00                 CALL 0x1000:1a4d
+// 1000:1a1a      eb ea                    JMP 0x1000:1a06
+// 1000:1a1c  LAB_1000_1a1c:
+// 1000:1a1c      47                       INC DI
+// 1000:1a1d      87 f7                    XCHG DI,SI
+// 1000:1a1f      b0 01                    MOV AL,0x1
+// 1000:1a21      aa                       STOSB ES:DI
+// 1000:1a22      f3 a4                    MOVSB.REP ES:DI,SI
+// 1000:1a24      80 3e 0a 00 02           CMP byte ptr [0xa],0x2
+// 1000:1a29      76 09                    JBE 0x1000:1a34
+// 1000:1a2b      b0 2c                    MOV AL,0x2c
+// 1000:1a2d      aa                       STOSB ES:DI
+// 1000:1a2e      a0 74 a2                 MOV AL,[0xa274]
+// 1000:1a31      04 41                    ADD AL,0x41
+// 1000:1a33      aa                       STOSB ES:DI
+// 1000:1a34  LAB_1000_1a34:
+// 1000:1a34      b0 00                    MOV AL,0x0
+// 1000:1a36      aa                       STOSB ES:DI
+// 1000:1a37      80 3e e0 00 00           CMP byte ptr [0xe0],0x0
+// 1000:1a3c      75 05                    JNZ 0x1000:1a43
+// 1000:1a3e      c6 06 e0 00 14           MOV byte ptr [0xe0],0x14
+// 1000:1a43  LAB_1000_1a43:
+// 1000:1a43      5f                       POP DI
+// 1000:1a44      b0 00                    MOV AL,0x0
+// 1000:1a46      b9 28 00                 MOV CX,0x28
+// 1000:1a49      f3 aa                    STOSB.REP ES:DI
+// 1000:1a4b      f8                       CLC
+// 1000:1a4c      c3                       RET
+
+edit_message_line :: proc(ds: ^DS_Segment, di_in: u16) -> (di: u16, carry: bool) {
+	di = di_in
+	raw := transmute(^[DS_SIZE]u8)ds
+	al := ds.message_char
+	if al == 0x0D {
+		return commit_message_line(ds, di), false
+	}
+	if al == 0x08 {
+		di = add16(di, 1)
+		length := read_u8(raw, di)
+		if length != 0 {
+			write_u8(raw, add16(di, u16(length) + 1), 0)
+			write_u8(raw, di, length - 1)
+		}
+		return di, false
+	}
+	if al < 0x20 || al > 0x7E {
+		return di, true
+	}
+	length := read_u8(raw, add16(di, 1))
+	write_u8(raw, add16(di, u16(length) + 2), al)
+	write_u8(raw, add16(di, u16(length) + 3), 0)
+	length, _ = intrinsics.overflow_add(length, 1)
+	write_u8(raw, add16(di, 1), length)
+	if length >= 0x16 {
+		di = commit_message_line(ds, di)
+	}
+	return di, false
+}
+
+// Commit, including a line the side check refuses. ES is DS.
+@(private)
+commit_message_line :: proc(ds: ^DS_Segment, di: u16) -> u16 {
+	raw := transmute(^[DS_SIZE]u8)ds
+	cursor := add16(di, 1)
+	length := read_u8(raw, cursor)
+	if length != 0 {
+		count := u16(length)
+		second := read_u8(raw, add16(cursor, 2))
+		accept := false
+		if second == 0x3A {
+			first := read_u8(raw, add16(cursor, 1))
+			adjusted, _ := intrinsics.overflow_sub(first, u8(0x41))
+			if adjusted == ds.local_side && count > 2 {
+				count -= 2
+				cursor = add16(cursor, 2)
+				accept = true
+			}
+		} else if ds.current_side != ds.local_side {
+			accept = true
+		}
+		if accept {
+			cursor = add16(cursor, 1)
+			slot := u16(offset_of(DS_Segment, message_queue))
+			for {
+				found := false
+				at := slot
+				for _ in 0 ..< 4 {
+					if read_u8(raw, at) == 0 {
+						slot = at
+						found = true
+						break
+					}
+					at = add16(at, 0x28)
+				}
+				if found {
+					break
+				}
+				scroll_message_queue(ds)
+			}
+			write_u8(raw, slot, 1)
+			dest := add16(slot, 1)
+			for _ in 0 ..< int(count) {
+				write_u8(raw, dest, read_u8(raw, cursor))
+				dest = add16(dest, 1)
+				cursor = add16(cursor, 1)
+			}
+			if ds.player_count > 2 {
+				write_u8(raw, dest, 0x2C)
+				dest = add16(dest, 1)
+				letter, _ := intrinsics.overflow_add(ds.current_side, u8(0x41))
+				write_u8(raw, dest, letter)
+				dest = add16(dest, 1)
+			}
+			write_u8(raw, dest, 0)
+			if ds.countdown_00e0 == 0 {
+				ds.countdown_00e0 = 0x14
+			}
+		}
+	}
+	for i in 0 ..< 0x28 {
+		write_u8(raw, add16(di, u16(i)), 0)
+	}
+	return add16(di, 0x28)
+}

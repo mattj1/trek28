@@ -2826,6 +2826,215 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_edit_message_line :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	line := u16(offset_of(DS_Segment, message_line))
+
+	// Below space and above 0x7E set carry and leave the buffer.
+	ds.message_line[0][0] = 0xFF
+	ds.message_line[0][1] = 0
+	ds.message_char = 0x1F
+	di, carry := edit_message_line(ds, line)
+	testing.expect_value(t, carry, true)
+	testing.expect_value(t, di, line)
+	testing.expect_value(t, ds.message_line[0][0], u8(0xFF))
+	ds.message_char = 0x7F
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, true)
+	testing.expect_value(t, di, line)
+
+	// Space and 0x7E are stored. The length grows and a 0 follows the text.
+	ds.message_char = 0x20
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, line)
+	testing.expect_value(t, ds.message_line[0][1], u8(1))
+	testing.expect_value(t, ds.message_line[0][2], u8(0x20))
+	testing.expect_value(t, ds.message_line[0][3], u8(0))
+	ds.message_char = 0x7E
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, di, line)
+	testing.expect_value(t, ds.message_line[0][1], u8(2))
+	testing.expect_value(t, ds.message_line[0][3], u8(0x7E))
+	testing.expect_value(t, ds.message_line[0][4], u8(0))
+
+	// Backspace clears the byte after the last character and returns DI+1.
+	ds.message_line[0][4] = 0x99
+	ds.message_char = 0x08
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, add16(line, 1))
+	testing.expect_value(t, ds.message_line[0][1], u8(1))
+	testing.expect_value(t, ds.message_line[0][2], u8(0x20))
+	testing.expect_value(t, ds.message_line[0][3], u8(0x7E))
+	testing.expect_value(t, ds.message_line[0][4], u8(0))
+
+	// The next key enters with the original DI. Length 1 clears the leftover.
+	ds.message_char = 0x08
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, add16(line, 1))
+	testing.expect_value(t, ds.message_line[0][1], u8(0))
+	testing.expect_value(t, ds.message_line[0][2], u8(0x20))
+	testing.expect_value(t, ds.message_line[0][3], u8(0))
+
+	// Empty backspace only advances DI.
+	ds.message_char = 0x08
+	ds.message_line[1][1] = 0
+	di, carry = edit_message_line(ds, add16(line, 0x28))
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, add16(line, 0x29))
+	testing.expect_value(t, ds.message_line[1][1], u8(0))
+
+	// CR on an empty line clears the buffer and does not arm the countdown.
+	ds.countdown_00e0 = 0
+	ds.message_line[0][0] = 0xFF
+	ds.message_line[0][1] = 0
+	ds.message_line[1][0] = 0xAB
+	ds.message_char = 0x0D
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, add16(line, 0x28))
+	testing.expect_value(t, ds.message_line[0][0], u8(0))
+	testing.expect_value(t, ds.message_line[1][0], u8(0xAB))
+	testing.expect_value(t, ds.message_queue[0][0], u8(0))
+	testing.expect_value(t, ds.countdown_00e0, u8(0))
+
+	// The same side, and no colon, clears the line without enqueueing.
+	ds.current_side = 0
+	ds.local_side = 0
+	ds.message_line[0][0] = 1
+	ds.message_line[0][1] = 2
+	ds.message_line[0][2] = 'H'
+	ds.message_line[0][3] = 'I'
+	ds.message_char = 0x0D
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, ds.message_queue[0][0], u8(0))
+	testing.expect_value(t, ds.message_line[0][2], u8(0))
+	testing.expect_value(t, ds.countdown_00e0, u8(0))
+
+	// A different side enqueues the text and arms a zero countdown.
+	ds.current_side = 1
+	ds.local_side = 0
+	ds.message_line[0][1] = 2
+	ds.message_line[0][2] = 'H'
+	ds.message_line[0][3] = 'i'
+	ds.message_line[0][4] = 0x99
+	ds.message_char = 0x0D
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, add16(line, 0x28))
+	testing.expect_value(t, ds.message_queue[0][0], u8(1))
+	testing.expect_value(t, ds.message_queue[0][1], u8('H'))
+	testing.expect_value(t, ds.message_queue[0][2], u8('i'))
+	testing.expect_value(t, ds.message_queue[0][3], u8(0))
+	testing.expect_value(t, ds.message_queue[0][4], u8(0))
+	testing.expect_value(t, ds.countdown_00e0, u8(0x14))
+	testing.expect_value(t, ds.message_line[0][0], u8(0))
+	testing.expect_value(t, ds.message_line[1][0], u8(0xAB))
+
+	// A later line fills the next empty slot. A live countdown stays.
+	ds.countdown_00e0 = 5
+	ds.message_line[0][1] = 1
+	ds.message_line[0][2] = 'Z'
+	ds.message_char = 0x0D
+	_, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, ds.message_queue[1][0], u8(1))
+	testing.expect_value(t, ds.message_queue[1][1], u8('Z'))
+	testing.expect_value(t, ds.message_queue[1][2], u8(0))
+	testing.expect_value(t, ds.message_queue[0][1], u8('H'))
+	testing.expect_value(t, ds.countdown_00e0, u8(5))
+
+	// "A:" names local side 0 and is stripped. Length 2 is refused.
+	ds.local_side = 0
+	ds.current_side = 0
+	ds.message_line[0][1] = 2
+	ds.message_line[0][2] = 'A'
+	ds.message_line[0][3] = ':'
+	ds.message_char = 0x0D
+	_, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, ds.message_queue[2][0], u8(0))
+	testing.expect_value(t, ds.countdown_00e0, u8(5))
+
+	ds.message_line[0][1] = 3
+	ds.message_line[0][2] = 'A'
+	ds.message_line[0][3] = ':'
+	ds.message_line[0][4] = 'Q'
+	_, carry = edit_message_line(ds, line)
+	testing.expect_value(t, ds.message_queue[2][0], u8(1))
+	testing.expect_value(t, ds.message_queue[2][1], u8('Q'))
+	testing.expect_value(t, ds.message_queue[2][2], u8(0))
+
+	// A prefix for another side is cleared and not queued.
+	ds.message_line[0][1] = 3
+	ds.message_line[0][2] = 'B'
+	ds.message_line[0][3] = ':'
+	ds.message_line[0][4] = 'Q'
+	_, carry = edit_message_line(ds, line)
+	testing.expect_value(t, ds.message_queue[3][0], u8(0))
+	testing.expect_value(t, ds.message_line[0][2], u8(0))
+
+	// player_count above 2 appends the side letter. 2 does not.
+	ds.player_count = 3
+	ds.current_side = 2
+	ds.local_side = 0
+	ds.message_line[0][1] = 1
+	ds.message_line[0][2] = 'M'
+	ds.message_queue[3][0] = 0
+	ds.message_char = 0x0D
+	_, _ = edit_message_line(ds, line)
+	testing.expect_value(t, ds.message_queue[3][0], u8(1))
+	testing.expect_value(t, ds.message_queue[3][1], u8('M'))
+	testing.expect_value(t, ds.message_queue[3][2], u8(','))
+	testing.expect_value(t, ds.message_queue[3][3], u8('C'))
+	testing.expect_value(t, ds.message_queue[3][4], u8(0))
+
+	// A full queue scrolls, and the new line lands on the cleared row.
+	ds.player_count = 2
+	ds.current_side = 1
+	for row in 0 ..< 4 {
+		ds.message_queue[row][0] = 1
+		ds.message_queue[row][1] = u8(row + 1)
+	}
+	ds.message_line[0][1] = 1
+	ds.message_line[0][2] = 'N'
+	ds.message_char = 0x0D
+	_, _ = edit_message_line(ds, line)
+	testing.expect_value(t, ds.message_queue[0][1], u8(2))
+	testing.expect_value(t, ds.message_queue[1][1], u8(3))
+	testing.expect_value(t, ds.message_queue[2][1], u8(4))
+	testing.expect_value(t, ds.message_queue[3][0], u8(1))
+	testing.expect_value(t, ds.message_queue[3][1], u8('N'))
+	testing.expect_value(t, ds.message_queue[3][2], u8(0))
+
+	// The 0x16th character commits. Twenty-one 'A's and a 'B'.
+	ds.player_count = 1
+	ds.current_side = 3
+	ds.local_side = 0
+	for row in 0 ..< 4 {
+		ds.message_queue[row][0] = 0
+	}
+	ds.message_line[0][1] = 0x15
+	for i in 0 ..< 0x15 {
+		ds.message_line[0][2 + i] = 'A'
+	}
+	ds.message_char = 'B'
+	di, carry = edit_message_line(ds, line)
+	testing.expect_value(t, carry, false)
+	testing.expect_value(t, di, add16(line, 0x28))
+	testing.expect_value(t, ds.message_queue[0][0], u8(1))
+	testing.expect_value(t, ds.message_queue[0][1], u8('A'))
+	testing.expect_value(t, ds.message_queue[0][0x15], u8('A'))
+	testing.expect_value(t, ds.message_queue[0][0x16], u8('B'))
+	testing.expect_value(t, ds.message_queue[0][0x17], u8(0))
+	testing.expect_value(t, ds.message_line[0][1], u8(0))
+}
+
+@(test)
 test_mark_planet_contact :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)
