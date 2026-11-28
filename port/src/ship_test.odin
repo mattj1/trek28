@@ -2826,6 +2826,34 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_set_base_view :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.current_side = 0
+	ds.side_flags[0] = 0x03
+	set_base_view(ds)
+	testing.expect_value(t, ds.side_flags[0], u8(0x13))
+	testing.expect_value(t, ds.side_flags[1], u8(0))
+
+	set_base_view(ds)
+	testing.expect_value(t, ds.side_flags[0], u8(0x13))
+
+	ds.current_side = 3
+	ds.side_flags[3] = 0xE8
+	set_base_view(ds)
+	testing.expect_value(t, ds.side_flags[3], u8(0xF8))
+
+	// Side 5 selects side_flags[1].
+	ds.current_side = 5
+	ds.side_flags[1] = 0x50
+	set_base_view(ds)
+	testing.expect_value(t, ds.side_flags[1], u8(0x50 | 0x10))
+	testing.expect_value(t, ds.side_flags[0], u8(0x13))
+	testing.expect_value(t, ds.side_flags[2], u8(0))
+}
+
+@(test)
 test_beep :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)
