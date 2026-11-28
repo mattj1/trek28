@@ -1633,3 +1633,21 @@ to_upper :: proc(al: u8) -> u8 {
 	}
 	return al
 }
+
+// 1000:0b07 key_is_down.
+// The notes already use this name. ZF is set when AL is '+' or 0xD0.
+// The bool is that flag: true means the key is down.
+
+// @proc 1000:0b07
+// status: tested
+// Odin: key_is_down
+// 1000:0b07  FUN_1000_0b07:
+// 1000:0b07      3c 2b                    CMP AL,0x2b
+// 1000:0b09      74 02                    JZ 0x1000:0b0d
+// 1000:0b0b      3c d0                    CMP AL,0xd0
+// 1000:0b0d  LAB_1000_0b0d:
+// 1000:0b0d      c3                       RET
+
+key_is_down :: proc(al: u8) -> bool {
+	return al == '+' || al == 0xD0
+}

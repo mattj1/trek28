@@ -819,18 +819,7 @@ fun_0882 :: proc() {
 fun_08c8 :: proc() {
 }
 
-// @proc 1000:0b07
-// listing: FUN_1000_0b07
-// notes: key_is_down
-// status: unread
-// 1000:0b07  FUN_1000_0b07:
-// 1000:0b07      3c 2b                    CMP AL,0x2b
-// 1000:0b09      74 02                    JZ 0x1000:0b0d
-// 1000:0b0b      3c d0                    CMP AL,0xd0
-// 1000:0b0d  LAB_1000_0b0d:
-// 1000:0b0d      c3                       RET
-fun_0b07 :: proc() {
-}
+// 1000:0b07 key_is_down is in ship.odin.
 
 // @proc 1000:0b0e
 // listing: FUN_1000_0b0e
