@@ -100,6 +100,7 @@ odin run src
 | `1000:2cfa` | `reach_base` | tested. The name is inferred. A dead ship returns with carry clear. A base whose state is not 4 stores pending charge `0xC350` when AX is at most `0xFA`. State 4 docks when AX is at most `0xA0`, unless a formation link is set and AX is above `0x5F`. Docking sets flag bit 2, may set bit 6 and rewrite seek, clears damage and the base blink bit, and calls `transfer_base_stock` |
 | `1000:30a4` | `scale_hit_charge` | tested. The name is inferred. A flag byte above `0x0C` returns. Otherwise that byte indexes the 13 words at `CS:30D2`. A zero word returns. The charge is the square root of the low half of `AX * 0x32`, times the word, divided by AX. `add_scaled_charge` may shrink it, and that stored amount is what the source side scores |
 | `1000:2e3d` | `resolve_shot_hit` | tested. The name is inferred. Flag bits `0x44` and a matching team return before the distance. A shot with bit 7 charges `5 * (0x1EA - AX)` inside `0x1C2`, or seven gaps plus `0x19` when bit 6 is set, and a nibble below 4 does not charge. Another shot inside `0x8C` multiplies the shot byte by `8 * (0xC8 - AX) + 0x96`. A shot of at least 4 becomes 3 and uses `0x41`, unless flag bits `0x44` are set |
+| `1000:3109` | `sweep_mines` | tested. The name is inferred. Each of 80 mine slots is measured against one ship. An empty slot, a dead ship, or a distance of at least `0x258` calls `decay_impulse`. A same-team mine inside `0x64` can be picked up, and those paths skip the decay. A different team sets byte `0x16` bit 2, and inside `0x104` charges from the impulse nibble and may clear byte `0x2A`. The score uses the mine owner and the amount `add_scaled_charge` stored |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
@@ -109,6 +110,6 @@ Word arithmetic wraps through `intrinsics.overflow_add` and `overflow_sub` in `s
 
 `1000:1ee6` updates every side. It calls `walk_planets` and `1000:202f` before `update_side_ships`. `1000:202f` ages debris and, at expiry, calls `1000:ac37`. Those stay unported until `ac37` is an explicit decision: check the embedded COM, or a stub that returns.
 
-The next closed procedures are `1000:3109`, `1000:2a26`, and `1000:4312`.
+The next closed procedures are `1000:4312` and `1000:2a26`.
 
 How to resume on another machine is in `RESUME.md`.

@@ -3693,3 +3693,176 @@ resolve_shot_hit :: proc(m: ^Machine, si, di: u16) {
 	product := u16(u32(shot) * u32(damage))
 	charge_and_score(ds, shooter, target, product)
 }
+
+// 1000:3109 sweep_mines.
+// The name is inferred. DI is one ship. team_tag starts at 0, and each
+// of the four mine sides advances it. A side has 20 slots of 8 bytes
+// at DS:904C.
+//
+// An empty slot, a dead ship, or a distance of at least 0x258 calls
+// decay_impulse and moves on. A same-team mine at most 0x64 can be
+// picked up when the owner side matches, byte 0x2A is nonzero, get-mine
+// bit 0 is set, and the ship holds fewer than 5. Holding 5 clears
+// get-mine. Those paths skip decay_impulse.
+//
+// A different team sets byte 0x16 bit 2. At most 0x104 the lifetime is
+// clamped to 2. Lifetime 1 with flag bits 0x44 clear decrements byte
+// 0x2A, and a result with bit 7 set stores 0 and charges 0x1388. The
+// impulse nibble, or 0x14 when that nibble is above 10, is shifted left
+// 6 and added to 0xC8. That amount is charged too. Both scores use the
+// mine's owner side and the amount add_scaled_charge stored. Then
+// decay_impulse runs.
+
+// @proc 1000:3109
+// status: tested
+// Odin: sweep_mines
+// 1000:3109  FUN_1000_3109:
+// 1000:3109      c6 06 82 a2 00           MOV byte ptr [0xa282],0x0
+// 1000:310e      be 4c 90                 MOV SI,0x904c
+// 1000:3111  LAB_1000_3111:
+// 1000:3111      56                       PUSH SI
+// 1000:3112      b9 14 00                 MOV CX,0x14
+// 1000:3115  LAB_1000_3115:
+// 1000:3115      51                       PUSH CX
+// 1000:3116      80 3c 00                 CMP byte ptr [SI],0x0
+// 1000:3119      74 0f                    JZ 0x1000:312a
+// 1000:311b      f6 05 80                 TEST byte ptr [DI],0x80
+// 1000:311e      74 0a                    JZ 0x1000:312a
+// 1000:3120      b1 02                    MOV CL,0x2
+// 1000:3122      e8 9f f2                 CALL 0x1000:23c4
+// 1000:3125      3d 58 02                 CMP AX,0x258
+// 1000:3128      72 03                    JC 0x1000:312d
+// 1000:312a  LAB_1000_312a:
+// 1000:312a      e9 83 00                 JMP 0x1000:31b0
+// 1000:312d  LAB_1000_312d:
+// 1000:312d      8a 5c 07                 MOV BL,byte ptr [SI + 0x7]
+// 1000:3130      3a 5d 18                 CMP BL,byte ptr [DI + 0x18]
+// 1000:3133      75 2d                    JNZ 0x1000:3162
+// 1000:3135      3d 64 00                 CMP AX,0x64
+// 1000:3138      77 79                    JA 0x1000:31b3
+// 1000:313a      8a 5c 06                 MOV BL,byte ptr [SI + 0x6]
+// 1000:313d      3a 5d 17                 CMP BL,byte ptr [DI + 0x17]
+// 1000:3140      75 71                    JNZ 0x1000:31b3
+// 1000:3142      80 7d 2a 00              CMP byte ptr [DI + 0x2a],0x0
+// 1000:3146      74 6b                    JZ 0x1000:31b3
+// 1000:3148      f6 45 22 01              TEST byte ptr [DI + 0x22],0x1
+// 1000:314c      74 65                    JZ 0x1000:31b3
+// 1000:314e      80 7d 06 05              CMP byte ptr [DI + 0x6],0x5
+// 1000:3152      72 06                    JC 0x1000:315a
+// 1000:3154      c6 45 22 00              MOV byte ptr [DI + 0x22],0x0
+// 1000:3158      eb 59                    JMP 0x1000:31b3
+// 1000:315a  LAB_1000_315a:
+// 1000:315a      c6 04 00                 MOV byte ptr [SI],0x0
+// 1000:315d      fe 45 06                 INC byte ptr [DI + 0x6]
+// 1000:3160      eb 51                    JMP 0x1000:31b3
+// 1000:3162  LAB_1000_3162:
+// 1000:3162      80 4d 16 04              OR byte ptr [DI + 0x16],0x4
+// 1000:3166      3d 04 01                 CMP AX,0x104
+// 1000:3169      77 45                    JA 0x1000:31b0
+// 1000:316b      80 3c 02                 CMP byte ptr [SI],0x2
+// 1000:316e      76 03                    JBE 0x1000:3173
+// 1000:3170      c6 04 02                 MOV byte ptr [SI],0x2
+// 1000:3173  LAB_1000_3173:
+// 1000:3173      f6 05 44                 TEST byte ptr [DI],0x44
+// 1000:3176      75 1a                    JNZ 0x1000:3192
+// 1000:3178      80 3c 01                 CMP byte ptr [SI],0x1
+// 1000:317b      75 15                    JNZ 0x1000:3192
+// 1000:317d      fe 4d 2a                 DEC byte ptr [DI + 0x2a]
+// 1000:3180      79 10                    JNS 0x1000:3192
+// 1000:3182      c6 45 2a 00              MOV byte ptr [DI + 0x2a],0x0
+// 1000:3186      b8 88 13                 MOV AX,0x1388
+// 1000:3189      e8 ef f1                 CALL 0x1000:237b
+// 1000:318c      8a 5c 06                 MOV BL,byte ptr [SI + 0x6]
+// 1000:318f      e8 42 fd                 CALL 0x1000:2ed4
+// 1000:3192  LAB_1000_3192:
+// 1000:3192      8a 45 0b                 MOV AL,byte ptr [DI + 0xb]
+// 1000:3195      25 0f 00                 AND AX,0xf
+// 1000:3198      3d 0a 00                 CMP AX,0xa
+// 1000:319b      76 03                    JBE 0x1000:31a0
+// 1000:319d      b8 14 00                 MOV AX,0x14
+// 1000:31a0  LAB_1000_31a0:
+// 1000:31a0      b1 06                    MOV CL,0x6
+// 1000:31a2      d3 e0                    SHL AX,CL
+// 1000:31a4      05 c8 00                 ADD AX,0xc8
+// 1000:31a7      e8 d1 f1                 CALL 0x1000:237b
+// 1000:31aa      8a 5c 06                 MOV BL,byte ptr [SI + 0x6]
+// 1000:31ad      e8 24 fd                 CALL 0x1000:2ed4
+// 1000:31b0  LAB_1000_31b0:
+// 1000:31b0      e8 1e 00                 CALL 0x1000:31d1
+// 1000:31b3  LAB_1000_31b3:
+// 1000:31b3      83 c6 08                 ADD SI,0x8
+// 1000:31b6      59                       POP CX
+// 1000:31b7      49                       DEC CX
+// 1000:31b8      74 03                    JZ 0x1000:31bd
+// 1000:31ba      e9 58 ff                 JMP 0x1000:3115
+// 1000:31bd  LAB_1000_31bd:
+// 1000:31bd      5e                       POP SI
+// 1000:31be      81 c6 a0 00              ADD SI,0xa0
+// 1000:31c2      fe 06 82 a2              INC byte ptr [0xa282]
+// 1000:31c6      80 3e 82 a2 04           CMP byte ptr [0xa282],0x4
+// 1000:31cb      73 03                    JNC 0x1000:31d0
+// 1000:31cd      e9 41 ff                 JMP 0x1000:3111
+// 1000:31d0  LAB_1000_31d0:
+// 1000:31d0      c3                       RET
+
+sweep_mines :: proc(m: ^Machine, di: u16) {
+	charge_owner :: proc(ds: ^DS_Segment, ship: ^Ship_Record, owner: u8, amount: u16) {
+		scored := add_scaled_charge(ship, amount)
+		add_score_div100(ds, owner, scored)
+	}
+
+	ds := transmute(^DS_Segment)&m.ds
+	ship := transmute(^Ship_Record)&m.ds[di]
+	ds.team_tag = 0
+	mines_base := int(offset_of(DS_Segment, mines))
+	for side in 0 ..< 4 {
+		for slot in 0 ..< 20 {
+			mine := &ds.mines[side][slot]
+			if mine[0] == 0 || ship.flags & 0x80 == 0 {
+				decay_impulse(ship)
+				continue
+			}
+			mine_at := u16(mines_base + side * 0xA0 + slot * 8)
+			ax, _ := distance_if_same_plane(m, mine_at, di, 2)
+			if ax >= 0x258 {
+				decay_impulse(ship)
+				continue
+			}
+			if mine[7] == ship.team {
+				if ax <= 0x64 && mine[6] == ship.own_side && ship.byte_2a != 0 && ship.get_mine & 1 != 0 {
+					if ship.mines >= 5 {
+						ship.get_mine = 0
+					} else {
+						mine[0] = 0
+						ship.mines += 1
+					}
+				}
+				continue
+			}
+			ship.byte_16 |= 4
+			if ax > 0x104 {
+				decay_impulse(ship)
+				continue
+			}
+			if mine[0] > 2 {
+				mine[0] = 2
+			}
+			if ship.flags & 0x44 == 0 && mine[0] == 1 {
+				next, _ := intrinsics.overflow_sub(ship.byte_2a, 1)
+				ship.byte_2a = next
+				if next & 0x80 != 0 {
+					ship.byte_2a = 0
+					charge_owner(ds, ship, mine[6], 0x1388)
+				}
+			}
+			nibble := u16(ship.impulse & 0x0F)
+			if nibble > 10 {
+				nibble = 0x14
+			}
+			amount := add16(shl_word(nibble, 6), 0xC8)
+			charge_owner(ds, ship, mine[6], amount)
+			decay_impulse(ship)
+		}
+		ds.team_tag += 1
+	}
+}

@@ -4169,6 +4169,305 @@ test_resolve_shot_hit :: proc(t: ^testing.T) {
 	testing.expect_value(t, shooter.pending_charge, u16(0))
 }
 
+@(test)
+test_sweep_mines :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+	di := u16(offset_of(DS_Segment, ships))
+	ship := &ds.ships[0][0]
+
+	set_mine :: proc(mine: ^[8]u8, life: u8, gap: u16, plane, owner, team: u8) {
+		y := add16(0x1000, gap)
+		mine[0] = life
+		mine[1] = 0x00
+		mine[2] = 0x10
+		mine[3] = u8(y)
+		mine[4] = u8(y >> 8)
+		mine[5] = plane
+		mine[6] = owner
+		mine[7] = team
+	}
+
+	reset :: proc(ds: ^DS_Segment, ship: ^Ship_Record) {
+		ds.mines = {}
+		ds.side_score = {}
+		ds.team_tag = 0xFF
+		ship^ = {}
+		ship.flags = 0x80
+		ship.x = 0x1000
+		ship.y = 0x1000
+		ship.plane = 1
+		ship.seek = 1
+		ship.team = 1
+		ship.own_side = 0
+		ship.get_mine = 1
+		ship.byte_2a = 1
+	}
+
+	// Empty slots still call decay_impulse. Nibble 15 falls to 6.
+	reset(ds, ship)
+	ship.seek = 0
+	ship.byte_16 = 4
+	ship.byte_2a = 3
+	ship.impulse = 0x0F
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.impulse, u8(6))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ds.team_tag, u8(4))
+
+	// Every same-team slot fails get-mine and skips decay, so nibble 15 stays.
+	reset(ds, ship)
+	ship.seek = 0
+	ship.byte_16 = 4
+	ship.byte_2a = 3
+	ship.impulse = 0x0F
+	ship.get_mine = 0
+	for &side in ds.mines {
+		for &mine in side {
+			set_mine(&mine, 1, 0, 1, 0, 1)
+		}
+	}
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.impulse, u8(0x0F))
+	testing.expect_value(t, ship.byte_2a, u8(3))
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ds.mines[3][19][0], u8(1))
+	testing.expect_value(t, ds.team_tag, u8(4))
+
+	// A dead ship never reads the mine. A close enemy mine does not charge.
+	reset(ds, ship)
+	ship.flags = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ds.mines[0][0][0], u8(1))
+	testing.expect_value(t, ship.byte_16, u8(0))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ds.side_score[2], u16(0))
+
+	// Gap 0x64 is picked up. Gap 0x68 is the same team and is left alone.
+	reset(ds, ship)
+	ship.mines = 2
+	ship.byte_2a = 1
+	set_mine(&ds.mines[1][3], 4, 0x64, 1, 0, 1)
+	sweep_mines(m, di)
+	testing.expect_value(t, ds.mines[1][3][0], u8(0))
+	testing.expect_value(t, ship.mines, u8(3))
+	testing.expect_value(t, ship.get_mine, u8(1))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ship.byte_16, u8(0))
+
+	reset(ds, ship)
+	ship.mines = 2
+	ship.seek = 0
+	ship.byte_16 = 4
+	ship.byte_2a = 3
+	ship.impulse = 7
+	for &side in ds.mines {
+		for &mine in side {
+			set_mine(&mine, 4, 0, 1, 2, 1)
+		}
+	}
+	set_mine(&ds.mines[1][3], 4, 0x68, 1, 0, 1)
+	sweep_mines(m, di)
+	testing.expect_value(t, ds.mines[1][3][0], u8(4))
+	testing.expect_value(t, ship.mines, u8(2))
+	testing.expect_value(t, ship.impulse, u8(7))
+
+	// Owner, byte 0x2A, and get-mine each refuse the pickup and skip decay.
+	reset(ds, ship)
+	ship.seek = 0
+	ship.byte_16 = 4
+	ship.byte_2a = 3
+	ship.impulse = 7
+	for &side in ds.mines {
+		for &mine in side {
+			set_mine(&mine, 1, 0, 1, 2, 1)
+		}
+	}
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ship.impulse, u8(7))
+	testing.expect_value(t, ds.mines[0][0][0], u8(1))
+
+	reset(ds, ship)
+	ship.byte_2a = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 0, 1)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(1))
+
+	reset(ds, ship)
+	ship.get_mine = 0x02
+	set_mine(&ds.mines[0][0], 1, 0, 1, 0, 1)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ship.get_mine, u8(0x02))
+
+	// Holding 5 clears get-mine. Two free slots fill, and the third clears it.
+	reset(ds, ship)
+	ship.mines = 5
+	ship.get_mine = 0x05
+	set_mine(&ds.mines[0][0], 1, 0, 1, 0, 1)
+	set_mine(&ds.mines[0][1], 1, 0, 1, 0, 1)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, ship.get_mine, u8(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(1))
+	testing.expect_value(t, ds.mines[0][1][0], u8(1))
+
+	reset(ds, ship)
+	ship.mines = 3
+	ship.get_mine = 0x05
+	set_mine(&ds.mines[0][0], 1, 0, 1, 0, 1)
+	set_mine(&ds.mines[0][1], 1, 0, 1, 0, 1)
+	set_mine(&ds.mines[0][2], 1, 0, 1, 0, 1)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.mines, u8(5))
+	testing.expect_value(t, ship.get_mine, u8(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(0))
+	testing.expect_value(t, ds.mines[0][1][0], u8(0))
+	testing.expect_value(t, ds.mines[0][2][0], u8(1))
+
+	// A different plane and gap 0x258 stay outside. Gap 0x254 sets bit 2 only.
+	reset(ds, ship)
+	set_mine(&ds.mines[0][0], 5, 0, 2, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_16, u8(0))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(5))
+
+	reset(ds, ship)
+	set_mine(&ds.mines[0][0], 5, 0x258, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_16, u8(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(5))
+
+	reset(ds, ship)
+	ship.seek = 1
+	set_mine(&ds.mines[0][0], 5, 0x254, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_16, u8(4))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(5))
+	testing.expect_value(t, ds.side_score[2], u16(0))
+
+	// 0x108 sets the bit and decays. 0x104 clamps lifetime 3 to 2 and charges 0xC8.
+	reset(ds, ship)
+	ship.seek = 0
+	ship.byte_2a = 3
+	ship.impulse = 7
+	set_mine(&ds.mines[0][0], 5, 0x108, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_16, u8(4))
+	testing.expect_value(t, ship.impulse, u8(6))
+	testing.expect_value(t, ship.pending_charge, u16(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(5))
+
+	reset(ds, ship)
+	ship.impulse = 0
+	set_mine(&ds.mines[0][4], 3, 0x104, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ds.mines[0][4][0], u8(2))
+	testing.expect_value(t, ship.byte_2a, u8(1))
+	testing.expect_value(t, ship.pending_charge, u16(0xC8))
+	testing.expect_value(t, ship.damage, u8(0))
+	testing.expect_value(t, ds.side_score[2], u16(2))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	// Nibble 10 scores 8. Nibble 11 and 15 both use 0x14 and score 15.
+	reset(ds, ship)
+	ship.impulse = 0xA0 | 10
+	set_mine(&ds.mines[2][0], 3, 0, 1, 1, 0)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.pending_charge, u16(0x348))
+	testing.expect_value(t, ship.damage, u8(0))
+	testing.expect_value(t, ds.side_score[1], u16(8))
+	testing.expect_value(t, ds.mines[2][0][0], u8(2))
+
+	reset(ds, ship)
+	ship.impulse = 11
+	set_mine(&ds.mines[2][0], 3, 0, 1, 1, 0)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.pending_charge, u16(0x5C8))
+	testing.expect_value(t, ship.damage, u8(1))
+	testing.expect_value(t, ds.side_score[1], u16(15))
+
+	reset(ds, ship)
+	ship.impulse = 0x1F
+	set_mine(&ds.mines[2][0], 4, 0, 1, 1, 0)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.pending_charge, u16(0x5C8))
+	testing.expect_value(t, ds.mines[2][0][0], u8(2))
+	testing.expect_value(t, ds.side_score[1], u16(15))
+
+	// Lifetime 1 decrements byte 0x2A. Bit 7 of that result also charges 0x1388.
+	reset(ds, ship)
+	ship.byte_2a = 1
+	ship.impulse = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_2a, u8(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(1))
+	testing.expect_value(t, ship.pending_charge, u16(0xC8))
+	testing.expect_value(t, ds.side_score[2], u16(2))
+
+	reset(ds, ship)
+	ship.byte_2a = 0
+	ship.impulse = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_2a, u8(0))
+	testing.expect_value(t, ship.pending_charge, u16(0x1388 + 0xC8))
+	testing.expect_value(t, ship.damage, u8(4))
+	testing.expect_value(t, ds.side_score[2], u16(52))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+
+	reset(ds, ship)
+	ship.byte_2a = 0x80
+	ship.impulse = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_2a, u8(0x7F))
+	testing.expect_value(t, ship.pending_charge, u16(0xC8))
+	testing.expect_value(t, ds.side_score[2], u16(2))
+
+	reset(ds, ship)
+	ship.byte_2a = 0x81
+	ship.impulse = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 2, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.byte_2a, u8(0))
+	testing.expect_value(t, ship.pending_charge, u16(0x1388 + 0xC8))
+	testing.expect_value(t, ds.side_score[2], u16(52))
+
+	// Flag bits 0x44 skip only the byte 0x2A charge. An owner of 4 does not score.
+	reset(ds, ship)
+	ship.flags = 0xC4
+	ship.byte_2a = 5
+	ship.impulse = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 4, 3)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.flags, u8(0xC4))
+	testing.expect_value(t, ship.byte_2a, u8(5))
+	testing.expect_value(t, ship.byte_16, u8(4))
+	testing.expect_value(t, ship.pending_charge, u16(0xC8))
+	testing.expect_value(t, ds.side_score[0], u16(0))
+	testing.expect_value(t, ds.mines[0][0][0], u8(1))
+
+	// byte_34 shrinks both charges, and the score uses those stored amounts.
+	reset(ds, ship)
+	ship.byte_2a = 0
+	ship.byte_34 = 1
+	ship.impulse = 0
+	set_mine(&ds.mines[0][0], 1, 0, 1, 3, 9)
+	sweep_mines(m, di)
+	testing.expect_value(t, ship.pending_charge, u16(0x4E2 + 0x32))
+	testing.expect_value(t, ship.damage, u8(1))
+	testing.expect_value(t, ds.side_score[3], u16(14))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
