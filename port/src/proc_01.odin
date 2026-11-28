@@ -727,33 +727,7 @@ fun_1998 :: proc() {
 
 // 1000:1a4d scroll_message_queue is in ship.odin.
 
-// @proc 1000:1a68
-// listing: FUN_1000_1a68
-// status: unread
-// 1000:1a68  FUN_1000_1a68:
-// 1000:1a68      b8 01 00                 MOV AX,0x1
-// 1000:1a6b      bb 5a a2                 MOV BX,0xa25a
-// 1000:1a6e      eb 27                    JMP 0x1000:1a97
-// 1000:1a71      80 25 01                 AND byte ptr [DI],0x1
-// 1000:1a74      80 35 01                 XOR byte ptr [DI],0x1
-// 1000:1a77      c3                       RET
-// 1000:1a78      b0 02                    MOV AL,0x2
-// 1000:1a7a      eb 0a                    JMP 0x1000:1a86
-// 1000:1a7c      b0 04                    MOV AL,0x4
-// 1000:1a7e      eb 06                    JMP 0x1000:1a86
-// 1000:1a80      b0 06                    MOV AL,0x6
-// 1000:1a82      eb 02                    JMP 0x1000:1a86
-// 1000:1a84      b0 07                    MOV AL,0x7
-// 1000:1a86  LAB_1000_1a86:
-// 1000:1a86      8a 26 74 a2              MOV AH,byte ptr [0xa274]
-// 1000:1a8a      32 26 6f a2              XOR AH,byte ptr [0xa26f]
-// 1000:1a8e      80 e4 03                 AND AH,0x3
-// 1000:1a91      75 03                    JNZ 0x1000:1a96
-// 1000:1a93      a2 70 a2                 MOV [0xa270],AL
-// 1000:1a96  LAB_1000_1a96:
-// 1000:1a96      c3                       RET
-fun_1a68 :: proc() {
-}
+// 1000:1a68 beep is in ship.odin.
 
 // 1000:1a97 store_if_local_ship is in ship.odin.
 

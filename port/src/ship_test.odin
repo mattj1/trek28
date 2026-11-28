@@ -2825,6 +2825,37 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 	testing.expect_value(t, raw[0], u8(0xAB))
 }
 
+@(test)
+test_beep :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.current_side = 0
+	ds.local_side = 0
+	ds.sound_beep = 0x0006
+	ds.sound_mid = 0x1111
+	beep(ds)
+	testing.expect_value(t, ds.sound_beep, u16(1))
+	testing.expect_value(t, ds.sound_mid, u16(0x1111))
+
+	// Side 4 matches side 0.
+	ds.current_side = 4
+	ds.sound_beep = 0
+	beep(ds)
+	testing.expect_value(t, ds.sound_beep, u16(1))
+
+	ds.current_side = 1
+	ds.local_side = 0
+	ds.sound_beep = 0x0004
+	beep(ds)
+	testing.expect_value(t, ds.sound_beep, u16(0x0004))
+
+	ds.current_side = 2
+	ds.local_side = 2
+	beep(ds)
+	testing.expect_value(t, ds.sound_beep, u16(1))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0

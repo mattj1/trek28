@@ -2515,3 +2515,38 @@ store_desired_heading :: proc(ship: ^Ship_Record, ch: u8) {
 	shifted := u8(u16(ch) << 4)
 	ship.heading = (ship.heading & 0x0F) | shifted
 }
+
+// 1000:1a68 beep.
+// The name is inferred. AX is 1 and BX is sound_beep, then control
+// jumps to store_if_local_ship. An unmatched key and a failed formation
+// both enter here. The bytes from 1a71 through 1a96 stay unread.
+
+// @proc 1000:1a68
+// status: tested
+// Odin: beep
+// 1000:1a68  FUN_1000_1a68:
+// 1000:1a68      b8 01 00                 MOV AX,0x1
+// 1000:1a6b      bb 5a a2                 MOV BX,0xa25a
+// 1000:1a6e      eb 27                    JMP 0x1000:1a97
+// 1000:1a71      80 25 01                 AND byte ptr [DI],0x1
+// 1000:1a74      80 35 01                 XOR byte ptr [DI],0x1
+// 1000:1a77      c3                       RET
+// 1000:1a78      b0 02                    MOV AL,0x2
+// 1000:1a7a      eb 0a                    JMP 0x1000:1a86
+// 1000:1a7c      b0 04                    MOV AL,0x4
+// 1000:1a7e      eb 06                    JMP 0x1000:1a86
+// 1000:1a80      b0 06                    MOV AL,0x6
+// 1000:1a82      eb 02                    JMP 0x1000:1a86
+// 1000:1a84      b0 07                    MOV AL,0x7
+// 1000:1a86  LAB_1000_1a86:
+// 1000:1a86      8a 26 74 a2              MOV AH,byte ptr [0xa274]
+// 1000:1a8a      32 26 6f a2              XOR AH,byte ptr [0xa26f]
+// 1000:1a8e      80 e4 03                 AND AH,0x3
+// 1000:1a91      75 03                    JNZ 0x1000:1a96
+// 1000:1a93      a2 70 a2                 MOV [0xa270],AL
+// 1000:1a96  LAB_1000_1a96:
+// 1000:1a96      c3                       RET
+
+beep :: proc(ds: ^DS_Segment) {
+	store_if_local_ship(ds, u16(offset_of(DS_Segment, sound_beep)), 1)
+}
