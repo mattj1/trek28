@@ -92,6 +92,7 @@ odin run src
 | `1000:41fa` | `place_planet_coords` | tested. The name is inferred. A planet pair is kept when `reject_near_planet` and `reject_near_base` (`BP` `0x3E8`, `DX` `0x1770`) both accept it. Either rejection draws a new pair |
 | `1000:3e2a` | `discount_seek_distance` | tested. The name is inferred. Each energy threshold the ship fails to clear, from `0x61A8` down to `0x0FA0`, subtracts `0x12C` from AX while AX is at least `0x12C` |
 | `1000:2be8` | `hit_base` | tested. The name is inferred. AX above `0xA0` returns. Bit 7 of the base flag is set. A shot below 4 returns. Otherwise the ship's side scores `0x1388`, the shot becomes 3, and base energy loses `0x1F4`. A negative result is stored as 0. `0x8000 - 0x1F4` stays `0x7E0C`. The local base points `sound_list` at `0x00EE` |
+| `1000:2ef3` | `cancel_shots_between_sides` | tested. The name is inferred. Each side's four ships are compared with every ship of a later side, through `cancel_close_shots`. Extra records are not included |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 

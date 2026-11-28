@@ -2826,6 +2826,73 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_cancel_shots_between_sides :: proc(t: ^testing.T) {
+	m := new(Machine)
+	defer free(m)
+	load_embedded(m)
+	ds := transmute(^DS_Segment)&m.ds
+
+	arm_shot :: proc(ship: ^Ship_Record, shot: u8, y: u16) {
+		ship.shot = shot
+		ship.shot_x = 100
+		ship.shot_y = y
+		ship.shot_level = 1
+	}
+	clear_shots :: proc(ds: ^DS_Segment) {
+		for side in 0 ..< 4 {
+			for index in 0 ..< 4 {
+				ds.ships[side][index].shot = 0
+			}
+		}
+		for index in 0 ..< 8 {
+			ds.extra_records[index].shot = 0
+		}
+	}
+
+	// Two ships of one side are never paired.
+	clear_shots(ds)
+	arm_shot(&ds.ships[0][0], 5, 200)
+	arm_shot(&ds.ships[0][1], 6, 200)
+	cancel_shots_between_sides(m)
+	testing.expect_value(t, ds.ships[0][0].shot, u8(5))
+	testing.expect_value(t, ds.ships[0][1].shot, u8(6))
+
+	// Side 0 against side 3, and a shot below 4 on the same spot, stay distinct.
+	clear_shots(ds)
+	arm_shot(&ds.ships[0][0], 4, 200)
+	arm_shot(&ds.ships[0][1], 2, 200)
+	arm_shot(&ds.ships[3][3], 6, 200)
+	cancel_shots_between_sides(m)
+	testing.expect_value(t, ds.ships[0][0].shot, u8(3))
+	testing.expect_value(t, ds.ships[0][1].shot, u8(2))
+	testing.expect_value(t, ds.ships[3][3].shot, u8(3))
+
+	// The last group is side 2 against side 3.
+	clear_shots(ds)
+	arm_shot(&ds.ships[2][1], 4, 200)
+	arm_shot(&ds.ships[3][0], 0x7F, 200)
+	cancel_shots_between_sides(m)
+	testing.expect_value(t, ds.ships[2][1].shot, u8(3))
+	testing.expect_value(t, ds.ships[3][0].shot, u8(3))
+
+	// A Y gap of 0x200 is too far, so those shots stay.
+	clear_shots(ds)
+	arm_shot(&ds.ships[1][0], 4, 200)
+	arm_shot(&ds.ships[2][0], 5, 200 + 0x200)
+	cancel_shots_between_sides(m)
+	testing.expect_value(t, ds.ships[1][0].shot, u8(4))
+	testing.expect_value(t, ds.ships[2][0].shot, u8(5))
+
+	// Extra records are outside the walk.
+	clear_shots(ds)
+	arm_shot(&ds.extra_records[0], 5, 200)
+	arm_shot(&ds.ships[0][0], 5, 200)
+	cancel_shots_between_sides(m)
+	testing.expect_value(t, ds.extra_records[0].shot, u8(5))
+	testing.expect_value(t, ds.ships[0][0].shot, u8(5))
+}
+
+@(test)
 test_hit_base :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

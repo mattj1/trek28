@@ -593,39 +593,7 @@ fun_2e3d :: proc() {
 
 // 1000:2ed4 add_score_div100 is in ship.odin.
 
-// @proc 1000:2ef3
-// listing: FUN_1000_2ef3
-// status: unread
-// 1000:2ef3  FUN_1000_2ef3:
-// 1000:2ef3      be 64 8c                 MOV SI,0x8c64
-// 1000:2ef6      bf 50 8d                 MOV DI,0x8d50
-// 1000:2ef9      b9 0c 00                 MOV CX,0xc
-// 1000:2efc  LAB_1000_2efc:
-// 1000:2efc      51                       PUSH CX
-// 1000:2efd      57                       PUSH DI
-// 1000:2efe      56                       PUSH SI
-// 1000:2eff  LAB_1000_2eff:
-// 1000:2eff      51                       PUSH CX
-// 1000:2f00      56                       PUSH SI
-// 1000:2f01      b9 04 00                 MOV CX,0x4
-// 1000:2f04  LAB_1000_2f04:
-// 1000:2f04      e8 1d 00                 CALL 0x1000:2f24
-// 1000:2f07      83 c6 3b                 ADD SI,0x3b
-// 1000:2f0a      e2 f8                    LOOP 0x1000:2f04
-// 1000:2f0c      5e                       POP SI
-// 1000:2f0d      59                       POP CX
-// 1000:2f0e      83 c7 3b                 ADD DI,0x3b
-// 1000:2f11      e2 ec                    LOOP 0x1000:2eff
-// 1000:2f13      5e                       POP SI
-// 1000:2f14      5f                       POP DI
-// 1000:2f15      59                       POP CX
-// 1000:2f16      81 c6 ec 00              ADD SI,0xec
-// 1000:2f1a      81 c7 ec 00              ADD DI,0xec
-// 1000:2f1e      83 e9 04                 SUB CX,0x4
-// 1000:2f21      75 d9                    JNZ 0x1000:2efc
-// 1000:2f23      c3                       RET
-fun_2ef3 :: proc() {
-}
+// 1000:2ef3 cancel_shots_between_sides is in ship.odin.
 
 // 1000:2f24 cancel_close_shots is in ship.odin.
 

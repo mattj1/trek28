@@ -2798,3 +2798,63 @@ hit_base :: proc(ds: ^DS_Segment, base: ^[0x0E]u8, ship: ^Ship_Record, ax: u16) 
 	base[8] = u8(next)
 	base[9] = u8(next >> 8)
 }
+
+// 1000:2ef3 cancel_shots_between_sides.
+// The name is inferred. SI starts at ships[0][0] and DI at ships[1][0].
+// The outer count is 12, then 8, then 4. Each step compares one side's
+// four ships with each ship of every later side: side 0 against sides
+// 1..3, side 1 against sides 2..3, and side 2 against side 3. Extra
+// records are not included. The inner counts are never zero.
+
+// @proc 1000:2ef3
+// status: tested
+// Odin: cancel_shots_between_sides
+// 1000:2ef3  FUN_1000_2ef3:
+// 1000:2ef3      be 64 8c                 MOV SI,0x8c64
+// 1000:2ef6      bf 50 8d                 MOV DI,0x8d50
+// 1000:2ef9      b9 0c 00                 MOV CX,0xc
+// 1000:2efc  LAB_1000_2efc:
+// 1000:2efc      51                       PUSH CX
+// 1000:2efd      57                       PUSH DI
+// 1000:2efe      56                       PUSH SI
+// 1000:2eff  LAB_1000_2eff:
+// 1000:2eff      51                       PUSH CX
+// 1000:2f00      56                       PUSH SI
+// 1000:2f01      b9 04 00                 MOV CX,0x4
+// 1000:2f04  LAB_1000_2f04:
+// 1000:2f04      e8 1d 00                 CALL 0x1000:2f24
+// 1000:2f07      83 c6 3b                 ADD SI,0x3b
+// 1000:2f0a      e2 f8                    LOOP 0x1000:2f04
+// 1000:2f0c      5e                       POP SI
+// 1000:2f0d      59                       POP CX
+// 1000:2f0e      83 c7 3b                 ADD DI,0x3b
+// 1000:2f11      e2 ec                    LOOP 0x1000:2eff
+// 1000:2f13      5e                       POP SI
+// 1000:2f14      5f                       POP DI
+// 1000:2f15      59                       POP CX
+// 1000:2f16      81 c6 ec 00              ADD SI,0xec
+// 1000:2f1a      81 c7 ec 00              ADD DI,0xec
+// 1000:2f1e      83 e9 04                 SUB CX,0x4
+// 1000:2f21      75 d9                    JNZ 0x1000:2efc
+// 1000:2f23      c3                       RET
+
+cancel_shots_between_sides :: proc(m: ^Machine) {
+	si := u16(offset_of(DS_Segment, ships))
+	di := add16(si, 0xEC)
+	cx: u16 = 12
+	for cx != 0 {
+		side := si
+		next_di := di
+		for _ in 0 ..< int(cx) {
+			ship := side
+			for _ in 0 ..< 4 {
+				cancel_close_shots(m, ship, di)
+				ship = add16(ship, 0x3B)
+			}
+			di = add16(di, 0x3B)
+		}
+		si = add16(side, 0xEC)
+		di = add16(next_di, 0xEC)
+		cx -= 4
+	}
+}
