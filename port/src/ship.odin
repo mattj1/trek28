@@ -2650,3 +2650,37 @@ set_base_view :: proc(ds: ^DS_Segment) {
 	flag := ship_flag_ptr(ds)
 	flag^ |= 0x10
 }
+
+// 1000:197b tick_message_countdown.
+// The name is inferred. A zero countdown returns. Otherwise it
+// decrements. At zero it scrolls the message queue, and a nonempty
+// first line stores 0x14 back into the countdown.
+
+// @proc 1000:197b
+// status: tested
+// Odin: tick_message_countdown
+// 1000:197b  FUN_1000_197b:
+// 1000:197b      80 3e e0 00 00           CMP byte ptr [0xe0],0x0
+// 1000:1980      74 15                    JZ 0x1000:1997
+// 1000:1982      fe 0e e0 00              DEC byte ptr [0xe0]
+// 1000:1986      75 0f                    JNZ 0x1000:1997
+// 1000:1988      e8 c2 00                 CALL 0x1000:1a4d
+// 1000:198b      80 3e 9e a2 00           CMP byte ptr [0xa29e],0x0
+// 1000:1990      74 05                    JZ 0x1000:1997
+// 1000:1992      c6 06 e0 00 14           MOV byte ptr [0xe0],0x14
+// 1000:1997  LAB_1000_1997:
+// 1000:1997      c3                       RET
+
+tick_message_countdown :: proc(ds: ^DS_Segment) {
+	if ds.countdown_00e0 == 0 {
+		return
+	}
+	ds.countdown_00e0 -= 1
+	if ds.countdown_00e0 != 0 {
+		return
+	}
+	scroll_message_queue(ds)
+	if ds.message_queue[0][0] != 0 {
+		ds.countdown_00e0 = 0x14
+	}
+}

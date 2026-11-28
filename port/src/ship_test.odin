@@ -2826,6 +2826,42 @@ test_store_if_local_ship :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_tick_message_countdown :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	ds.countdown_00e0 = 0
+	ds.message_queue[0][0] = 0x41
+	tick_message_countdown(ds)
+	testing.expect_value(t, ds.countdown_00e0, u8(0))
+	testing.expect_value(t, ds.message_queue[0][0], u8(0x41))
+
+	ds.countdown_00e0 = 5
+	tick_message_countdown(ds)
+	testing.expect_value(t, ds.countdown_00e0, u8(4))
+	testing.expect_value(t, ds.message_queue[0][0], u8(0x41))
+
+	// Hitting zero with an empty next line leaves the countdown at 0.
+	ds.countdown_00e0 = 1
+	ds.message_queue[0][0] = 0x41
+	ds.message_queue[1][0] = 0
+	tick_message_countdown(ds)
+	testing.expect_value(t, ds.countdown_00e0, u8(0))
+	testing.expect_value(t, ds.message_queue[0][0], u8(0))
+
+	// A nonempty line after the scroll reloads 0x14.
+	ds.countdown_00e0 = 1
+	ds.message_queue[0][0] = 0x42
+	ds.message_queue[1][0] = 0x43
+	ds.message_queue[1][1] = 0x44
+	tick_message_countdown(ds)
+	testing.expect_value(t, ds.countdown_00e0, u8(0x14))
+	testing.expect_value(t, ds.message_queue[0][0], u8(0x43))
+	testing.expect_value(t, ds.message_queue[0][1], u8(0x44))
+	testing.expect_value(t, ds.message_queue[1][0], u8(0))
+}
+
+@(test)
 test_set_base_view :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

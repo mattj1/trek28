@@ -611,22 +611,7 @@ fun_1884 :: proc() {
 
 // 1000:1970 to_upper is in ship.odin.
 
-// @proc 1000:197b
-// listing: FUN_1000_197b
-// status: unread
-// 1000:197b  FUN_1000_197b:
-// 1000:197b      80 3e e0 00 00           CMP byte ptr [0xe0],0x0
-// 1000:1980      74 15                    JZ 0x1000:1997
-// 1000:1982      fe 0e e0 00              DEC byte ptr [0xe0]
-// 1000:1986      75 0f                    JNZ 0x1000:1997
-// 1000:1988      e8 c2 00                 CALL 0x1000:1a4d
-// 1000:198b      80 3e 9e a2 00           CMP byte ptr [0xa29e],0x0
-// 1000:1990      74 05                    JZ 0x1000:1997
-// 1000:1992      c6 06 e0 00 14           MOV byte ptr [0xe0],0x14
-// 1000:1997  LAB_1000_1997:
-// 1000:1997      c3                       RET
-fun_197b :: proc() {
-}
+// 1000:197b tick_message_countdown is in ship.odin.
 
 // @proc 1000:1998
 // listing: FUN_1000_1998
