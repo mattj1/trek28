@@ -1692,3 +1692,38 @@ toggle_player_count :: proc(ds: ^DS_Segment) {
 	}
 	ds.player_count = 1
 }
+
+// 1000:0b28 cycle_computer_count.
+// The notes already use this name. Bits 2–3 of mode_bits cycle
+// 00, then 04, then 0C, then back to 00. Every other bit stays.
+
+// @proc 1000:0b28
+// status: tested
+// Odin: cycle_computer_count
+// 1000:0b28  FUN_1000_0b28:
+// 1000:0b28      a0 12 00                 MOV AL,[0x12]
+// 1000:0b2b      24 0c                    AND AL,0xc
+// 1000:0b2d      75 06                    JNZ 0x1000:0b35
+// 1000:0b2f      80 0e 12 00 04           OR byte ptr [0x12],0x4
+// 1000:0b34      c3                       RET
+// 1000:0b35  LAB_1000_0b35:
+// 1000:0b35      3c 04                    CMP AL,0x4
+// 1000:0b37      75 06                    JNZ 0x1000:0b3f
+// 1000:0b39      80 0e 12 00 08           OR byte ptr [0x12],0x8
+// 1000:0b3e      c3                       RET
+// 1000:0b3f  LAB_1000_0b3f:
+// 1000:0b3f      80 26 12 00 f3           AND byte ptr [0x12],0xf3
+// 1000:0b44      c3                       RET
+
+cycle_computer_count :: proc(ds: ^DS_Segment) {
+	masked := ds.mode_bits & 0x0C
+	if masked == 0 {
+		ds.mode_bits |= 0x04
+		return
+	}
+	if masked == 0x04 {
+		ds.mode_bits |= 0x08
+		return
+	}
+	ds.mode_bits &= 0xF3
+}

@@ -825,26 +825,7 @@ fun_08c8 :: proc() {
 
 // 1000:0b15 toggle_player_count is in ship.odin.
 
-// @proc 1000:0b28
-// listing: FUN_1000_0b28
-// notes: cycle_computer_count
-// status: unread
-// 1000:0b28  FUN_1000_0b28:
-// 1000:0b28      a0 12 00                 MOV AL,[0x12]
-// 1000:0b2b      24 0c                    AND AL,0xc
-// 1000:0b2d      75 06                    JNZ 0x1000:0b35
-// 1000:0b2f      80 0e 12 00 04           OR byte ptr [0x12],0x4
-// 1000:0b34      c3                       RET
-// 1000:0b35  LAB_1000_0b35:
-// 1000:0b35      3c 04                    CMP AL,0x4
-// 1000:0b37      75 06                    JNZ 0x1000:0b3f
-// 1000:0b39      80 0e 12 00 08           OR byte ptr [0x12],0x8
-// 1000:0b3e      c3                       RET
-// 1000:0b3f  LAB_1000_0b3f:
-// 1000:0b3f      80 26 12 00 f3           AND byte ptr [0x12],0xf3
-// 1000:0b44      c3                       RET
-fun_0b28 :: proc() {
-}
+// 1000:0b28 cycle_computer_count is in ship.odin.
 
 // @proc 1000:0b45
 // listing: FUN_1000_0b45

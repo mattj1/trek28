@@ -2014,6 +2014,34 @@ test_planet_array_for_level :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_cycle_computer_count :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.mode_bits = 0
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0x04))
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0x0C))
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0))
+
+	ds.mode_bits = 0x08
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0))
+
+	ds.mode_bits = 0xF1
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0xF5))
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0xFD))
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0xF1))
+	ds.mode_bits = 0xF9
+	cycle_computer_count(ds)
+	testing.expect_value(t, ds.mode_bits, u8(0xF1))
+}
+
+@(test)
 test_toggle_player_count :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)
