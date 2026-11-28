@@ -96,6 +96,31 @@ random_base_coord :: proc(ds: ^DS_Segment) -> u16 {
 	}
 }
 
+// 1000:429b random_planet_coord.
+// The name is inferred. Same draw as random_base_coord, with the
+// accepted window [0x1F4, 0x3E0C]. Both ends are kept.
+
+// @proc 1000:429b
+// status: tested
+// Odin: random_planet_coord
+// 1000:429b  FUN_1000_429b:
+// 1000:429b      e8 dc 00                 CALL 0x1000:437a
+// 1000:429e      25 ff 3f                 AND AX,0x3fff
+// 1000:42a1      3d f4 01                 CMP AX,0x1f4
+// 1000:42a4      72 f5                    JC 0x1000:429b
+// 1000:42a6      3d 0c 3e                 CMP AX,0x3e0c
+// 1000:42a9      77 f0                    JA 0x1000:429b
+// 1000:42ab      c3                       RET
+
+random_planet_coord :: proc(ds: ^DS_Segment) -> u16 {
+	for {
+		ax := mix_rng(ds) & 0x3FFF
+		if ax >= 0x1F4 && ax <= 0x3E0C {
+			return ax
+		}
+	}
+}
+
 // 1000:43b1 step_orbit.
 // The notes already use this name. DI is one 11-byte planet.
 // Kind 0 at +08 returns with the phase and the position unchanged.

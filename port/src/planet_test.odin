@@ -84,6 +84,32 @@ test_random_base_coord :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_random_planet_coord :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+
+	// 0x03B8 is inside the planet window and below the base window.
+	ds.frame_count = 4
+	ds.rng_seed = 2
+	testing.expect_value(t, random_planet_coord(ds), u16(0x03B8))
+	testing.expect_value(t, ds.rng_seed, u16(0xC3B8))
+
+	// Seed 0 draws 0x01B8 first, below 0x1F4, then 0x3828.
+	ds.rng_seed = 0
+	testing.expect_value(t, random_planet_coord(ds), u16(0x3828))
+	testing.expect_value(t, ds.rng_seed, u16(0xB828))
+
+	ds.frame_count = 1
+	ds.rng_seed = 60160
+	testing.expect_value(t, random_planet_coord(ds), u16(0x01F4))
+	testing.expect_value(t, ds.rng_seed, u16(0x41F4))
+
+	ds.rng_seed = 46398
+	testing.expect_value(t, random_planet_coord(ds), u16(0x3E0C))
+	testing.expect_value(t, ds.rng_seed, u16(0xFE0C))
+}
+
+@(test)
 test_step_orbit :: proc(t: ^testing.T) {
 	m := new(Machine)
 	defer free(m)
