@@ -1414,7 +1414,219 @@ test_move_ships_and_shots :: proc(t: ^testing.T) {
 	testing.expect_value(t, ds.ships[2][0].y, u16(0))
 }
 
+@(test)
+test_spawn_ship :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ship: Ship_Record
+
+	// No ships left. Carry, base untouched, only the three fields cleared.
+	ship.flags = 0x80
+	ship.x = 9
+	ship.formation = 1
+	ship.byte_34 = 2
+	ship.seek = 3
+	ship.damage = 4
+	ds.current_side = 0
+	ds.bases[0][0x0A] = 0
+	set_base_energy(&ds.bases[0], 5000)
+	ds.bases[0][6] = 0x14
+	refused := spawn_ship(ds, &ship, 0)
+	testing.expect(t, refused)
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(5000))
+	testing.expect_value(t, ds.bases[0][6], u8(0x14))
+	testing.expect_value(t, ship.formation, u16(0))
+	testing.expect_value(t, ship.byte_34, u8(0))
+	testing.expect_value(t, ship.seek, u8(0))
+	testing.expect_value(t, ship.flags, u8(0x80))
+	testing.expect_value(t, ship.x, u16(9))
+	testing.expect_value(t, ship.damage, u8(4))
+
+	// Energy exactly 200 refuses and does not spend a ship.
+	ship.formation = 5
+	ship.byte_34 = 6
+	ship.seek = 7
+	ship.flags = 0x11
+	ds.bases[0][0x0A] = 3
+	set_base_energy(&ds.bases[0], 0xC8)
+	refused = spawn_ship(ds, &ship, 1)
+	testing.expect(t, refused)
+	testing.expect_value(t, ds.bases[0][0x0A], u8(3))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0xC8))
+	testing.expect_value(t, ship.formation, u16(0))
+	testing.expect_value(t, ship.byte_34, u8(0))
+	testing.expect_value(t, ship.seek, u8(0))
+	testing.expect_value(t, ship.flags, u8(0x11))
+
+	// Energy 201 spends one ship and 100 energy, then fills the record.
+	ship.flags = 0xFF
+	ship.damage = 9
+	ship.shot = 4
+	ship.word_24 = 0xABCD
+	ship.formation = 1
+	ds.bases[0][0x0A] = 3
+	set_base_energy(&ds.bases[0], 0xC9)
+	ds.bases[0][1] = 0x34
+	ds.bases[0][2] = 0x12
+	ds.bases[0][3] = 0xCD
+	ds.bases[0][4] = 0xAB
+	ds.bases[0][5] = 2
+	ds.bases[0][6] = 0x14
+	ds.bases[0][7] = 0x7D
+	ds.bases[0][0x0B] = 3
+	ds.bases[0][0x0C] = 7
+	ds.ids[0][0] = 0x41
+	ds.ids[0][4] = 4
+	ds.mode_bits = 0
+	refused = spawn_ship(ds, &ship, 1)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ds.bases[0][0x0A], u8(2))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0x65))
+	testing.expect_value(t, ds.bases[0][6], u8(0x14))
+	testing.expect_value(t, ds.bases[0][7], u8(0x7D))
+	testing.expect_value(t, ds.ids[0][4], u8(4))
+	testing.expect_value(t, ds.ids[0][0], u8(0x41))
+	testing.expect_value(t, ship.flags, u8(0x80))
+	testing.expect_value(t, ship.x, u16(0x1234))
+	testing.expect_value(t, ship.y, u16(0xABCD))
+	testing.expect_value(t, ship.homing_x, u16(0x1234))
+	testing.expect_value(t, ship.homing_y, u16(0xABCD))
+	testing.expect_value(t, ship.plane, u8(2))
+	testing.expect_value(t, ship.homing_level, u8(2))
+	testing.expect_value(t, ship.own_side, u8(3))
+	testing.expect_value(t, ship.fire_control, u8(3))
+	testing.expect_value(t, ship.team, u8(7))
+	testing.expect_value(t, ship.mines, u8(0))
+	testing.expect_value(t, ship.byte_2a, u8(0))
+	testing.expect_value(t, ship.pad_2c[0], u8(0))
+	testing.expect_value(t, ship.damage, u8(0))
+	testing.expect_value(t, ship.shot, u8(0))
+	testing.expect_value(t, ship.word_24, u16(0))
+	testing.expect_value(t, ship.formation, u16(0))
+	testing.expect_value(t, ship.byte_34, u8(0))
+	testing.expect_value(t, ship.seek, u8(0))
+	testing.expect_value(t, ship.torpedoes, u8(5))
+	testing.expect_value(t, ship.energy, u16(0x1D4C))
+	testing.expect_value(t, ship.invisibility, u8(0x63))
+	testing.expect_value(t, ship.heading, u8(0x44))
+	testing.expect_value(t, ship.impulse, u8(0x11))
+	testing.expect_value(t, ship.byte_29, u8(1))
+
+	// current_side 5 uses bases[1] and ids[1]. bases[0] stays.
+	ds.current_side = 5
+	ds.bases[0][0x0A] = 9
+	set_base_energy(&ds.bases[0], 0x1111)
+	ds.bases[0][1] = 0x01
+	ds.bases[0][2] = 0x00
+	ds.bases[1][0x0A] = 3
+	set_base_energy(&ds.bases[1], 0xC9)
+	ds.bases[1][1] = 0x34
+	ds.bases[1][2] = 0x12
+	ds.bases[1][3] = 0xCD
+	ds.bases[1][4] = 0xAB
+	ds.bases[1][5] = 2
+	ds.bases[1][6] = 0x14
+	ds.bases[1][0x0B] = 3
+	ds.bases[1][0x0C] = 7
+	ds.ids[0][4] = 9
+	ds.ids[1][4] = 4
+	ds.mode_bits = 0
+	refused = spawn_ship(ds, &ship, 0)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ds.bases[0][0x0A], u8(9))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(0x1111))
+	testing.expect_value(t, ds.bases[0][1], u8(0x01))
+	testing.expect_value(t, ds.bases[1][0x0A], u8(2))
+	testing.expect_value(t, base_energy(&ds.bases[1]), u16(0x65))
+	testing.expect_value(t, ds.ids[0][4], u8(9))
+	testing.expect_value(t, ds.ids[1][4], u8(4))
+	testing.expect_value(t, ship.x, u16(0x1234))
+	testing.expect_value(t, ship.own_side, u8(3))
+	testing.expect_value(t, ship.team, u8(7))
+	testing.expect_value(t, ship.fire_control, u8(3))
+	testing.expect_value(t, ship.plane, u8(2))
+	testing.expect_value(t, ship.homing_level, u8(2))
+	testing.expect_value(t, ship.torpedoes, u8(5))
+	testing.expect_value(t, ds.bases[1][6], u8(0x14))
+
+	// Timed bit keeps the high loadout when the handicap is not 4.
+	ds.current_side = 0
+	ds.mode_bits = 1
+	ds.ids[0][4] = 0
+	ds.bases[0][0x0A] = 2
+	set_base_energy(&ds.bases[0], 1000)
+	refused = spawn_ship(ds, &ship, 0)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ship.torpedoes, u8(5))
+	testing.expect_value(t, ship.energy, u16(0x1D4C))
+	testing.expect_value(t, ship.invisibility, u8(0x63))
+
+	ds.mode_bits = 3
+	ds.ids[0][4] = 2
+	ds.bases[0][0x0A] = 2
+	set_base_energy(&ds.bases[0], 1000)
+	refused = spawn_ship(ds, &ship, 0)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ship.torpedoes, u8(5))
+	testing.expect_value(t, ship.energy, u16(0x1D4C))
+	testing.expect_value(t, ship.invisibility, u8(0x63))
+
+	// Handicap 3, timed bit clear.
+	ds.mode_bits = 0
+	ds.ids[0][4] = 3
+	ds.bases[0][0x0A] = 2
+	set_base_energy(&ds.bases[0], 1000)
+	refused = spawn_ship(ds, &ship, 0)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ship.torpedoes, u8(2))
+	testing.expect_value(t, ship.energy, u16(0x0BB8))
+	testing.expect_value(t, ship.invisibility, u8(0x32))
+
+	// Handicap 2 and 5 both take the low loadout. 5 is not the beginner case.
+	ds.ids[0][4] = 2
+	ds.bases[0][0x0A] = 2
+	set_base_energy(&ds.bases[0], 1000)
+	refused = spawn_ship(ds, &ship, 0)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ship.torpedoes, u8(0))
+	testing.expect_value(t, ship.energy, u16(0x03E8))
+	testing.expect_value(t, ship.invisibility, u8(0x14))
+
+	ds.ids[0][4] = 5
+	ds.bases[0][0x0A] = 2
+	set_base_energy(&ds.bases[0], 1000)
+	refused = spawn_ship(ds, &ship, 0)
+	testing.expect(t, !refused)
+	testing.expect_value(t, ship.torpedoes, u8(0))
+	testing.expect_value(t, ship.energy, u16(0x03E8))
+	testing.expect_value(t, ship.invisibility, u8(0x14))
+	testing.expect_value(t, ds.ids[0][4], u8(5))
+
+	// Headings for indexes 0..3, and the wrap at index 4.
+	want := [5]u8{0x00, 0x44, 0x88, 0xCC, 0x10}
+	ds.ids[0][4] = 4
+	ds.mode_bits = 0
+	ds.bases[0][0x0A] = 5
+	set_base_energy(&ds.bases[0], 5000)
+	for index in 0 ..< 5 {
+		refused = spawn_ship(ds, &ship, u8(index))
+		testing.expect(t, !refused)
+		testing.expect_value(t, ship.heading, want[index])
+	}
+	testing.expect_value(t, ds.bases[0][0x0A], u8(0))
+	testing.expect_value(t, base_energy(&ds.bases[0]), u16(4500))
+}
+
 clear_charge :: proc(ship: ^Ship_Record) {
 	ship.pending_charge = 0
 	ship.damage = 0
+}
+set_base_energy :: proc(base: ^[0x0E]u8, energy: u16) {
+	base[8] = u8(energy)
+	base[9] = u8(energy >> 8)
+}
+
+base_energy :: proc(base: ^[0x0E]u8) -> u16 {
+	return u16(base[8]) | u16(base[9]) << 8
 }

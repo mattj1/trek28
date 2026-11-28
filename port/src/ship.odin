@@ -1222,3 +1222,164 @@ move_ships_and_shots :: proc(ds: ^DS_Segment) {
 		}
 	}
 }
+
+// 1000:4459 spawn_ship.
+// The notes already use this name. DI is the ship and CL is its index in
+// the side, 0..3. Carry set means the base refused the spawn.
+//
+// Formation, byte 34, and seek are cleared before either check. No ships
+// left, or base energy at or below 200, returns carry and leaves the rest
+// of the record and the base alone. Otherwise the base spends one ship and
+// 100 energy. The repeat store then zeroes the 0x3B record at DI, which
+// wipes those three stores. The fill copies the base's side byte to +17
+// and +2B, the team, and the plane to +05 and +31, then the base position
+// into the ship and the homing words. Flags become 0x80 and impulse 0x11.
+// Handicap 4, or mode bit 0, keeps 5 torpedoes, energy 0x1D4C, and
+// invisibility 0x63. Handicap 3 steps down to 2, 0x0BB8, and 0x32. Any
+// other handicap stores 0, 0x03E8, and 0x14. The heading byte is the index
+// times 68, computed with 8-bit adds, so an index of 4 wraps to 0x10.
+// 1000:1ece's base table is bases[current_side & 3].
+
+// @proc 1000:4459
+// status: tested
+// Odin: spawn_ship
+// 1000:4459  FUN_1000_4459:
+// 1000:4459      c7 45 32 00 00           MOV word ptr [DI + 0x32],0x0
+// 1000:445e      c6 45 34 00              MOV byte ptr [DI + 0x34],0x0
+// 1000:4462      c6 45 11 00              MOV byte ptr [DI + 0x11],0x0
+// 1000:4466      e8 65 da                 CALL 0x1000:1ece
+//                 ; ptr table -> 1000:4471  [ptr] 1000:9014 1000:9022 1000:9030 1000:903e
+// 1000:4471  LAB_1000_4471:
+// 1000:4471      8b f3                    MOV SI,BX
+// 1000:4473      80 7c 0a 00              CMP byte ptr [SI + 0xa],0x0
+// 1000:4477      75 02                    JNZ 0x1000:447b
+// 1000:4479      f9                       STC
+// 1000:447a      c3                       RET
+// 1000:447b  LAB_1000_447b:
+// 1000:447b      81 7c 08 c8 00           CMP word ptr [SI + 0x8],0xc8
+// 1000:4480      77 02                    JA 0x1000:4484
+// 1000:4482      f9                       STC
+// 1000:4483      c3                       RET
+// 1000:4484  LAB_1000_4484:
+// 1000:4484      fe 4c 0a                 DEC byte ptr [SI + 0xa]
+// 1000:4487      83 6c 08 64              SUB word ptr [SI + 0x8],0x64
+// 1000:448b      57                       PUSH DI
+// 1000:448c      51                       PUSH CX
+// 1000:448d      32 c0                    XOR AL,AL
+// 1000:448f      b9 3b 00                 MOV CX,0x3b
+// 1000:4492      f3 aa                    STOSB.REP ES:DI
+// 1000:4494      59                       POP CX
+// 1000:4495      5f                       POP DI
+// 1000:4496      8a 44 0b                 MOV AL,byte ptr [SI + 0xb]
+// 1000:4499      88 45 17                 MOV byte ptr [DI + 0x17],AL
+// 1000:449c      88 45 2b                 MOV byte ptr [DI + 0x2b],AL
+// 1000:449f      8a 44 0c                 MOV AL,byte ptr [SI + 0xc]
+// 1000:44a2      88 45 18                 MOV byte ptr [DI + 0x18],AL
+// 1000:44a5      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
+// 1000:44a8      88 45 05                 MOV byte ptr [DI + 0x5],AL
+// 1000:44ab      88 45 31                 MOV byte ptr [DI + 0x31],AL
+// 1000:44ae      c6 05 80                 MOV byte ptr [DI],0x80
+// 1000:44b1      c6 45 2c 00              MOV byte ptr [DI + 0x2c],0x0
+// 1000:44b5      8b 44 01                 MOV AX,word ptr [SI + 0x1]
+// 1000:44b8      89 45 01                 MOV word ptr [DI + 0x1],AX
+// 1000:44bb      89 45 2d                 MOV word ptr [DI + 0x2d],AX
+// 1000:44be      8b 44 03                 MOV AX,word ptr [SI + 0x3]
+// 1000:44c1      89 45 03                 MOV word ptr [DI + 0x3],AX
+// 1000:44c4      89 45 2f                 MOV word ptr [DI + 0x2f],AX
+// 1000:44c7      c6 45 06 00              MOV byte ptr [DI + 0x6],0x0
+// 1000:44cb      c6 45 2a 00              MOV byte ptr [DI + 0x2a],0x0
+// 1000:44cf      e8 e1 de                 CALL 0x1000:23b3
+// 1000:44d2      c6 45 07 05              MOV byte ptr [DI + 0x7],0x5
+// 1000:44d6      c7 45 08 4c 1d           MOV word ptr [DI + 0x8],0x1d4c
+// 1000:44db      c6 45 0f 63              MOV byte ptr [DI + 0xf],0x63
+// 1000:44df      3c 04                    CMP AL,0x4
+// 1000:44e1      74 25                    JZ 0x1000:4508
+// 1000:44e3      f6 06 12 00 01           TEST byte ptr [0x12],0x1
+// 1000:44e8      75 1e                    JNZ 0x1000:4508
+// 1000:44ea      c6 45 07 02              MOV byte ptr [DI + 0x7],0x2
+// 1000:44ee      c7 45 08 b8 0b           MOV word ptr [DI + 0x8],0xbb8
+// 1000:44f3      c6 45 0f 32              MOV byte ptr [DI + 0xf],0x32
+// 1000:44f7      3c 03                    CMP AL,0x3
+// 1000:44f9      74 0d                    JZ 0x1000:4508
+// 1000:44fb      c6 45 07 00              MOV byte ptr [DI + 0x7],0x0
+// 1000:44ff      c7 45 08 e8 03           MOV word ptr [DI + 0x8],0x3e8
+// 1000:4504      c6 45 0f 14              MOV byte ptr [DI + 0xf],0x14
+// 1000:4508  LAB_1000_4508:
+// 1000:4508      8a c1                    MOV AL,CL
+// 1000:450a      02 c0                    ADD AL,AL
+// 1000:450c      02 c0                    ADD AL,AL
+// 1000:450e      02 c0                    ADD AL,AL
+// 1000:4510      02 c0                    ADD AL,AL
+// 1000:4512      02 c1                    ADD AL,CL
+// 1000:4514      02 c0                    ADD AL,AL
+// 1000:4516      02 c0                    ADD AL,AL
+// 1000:4518      88 45 0a                 MOV byte ptr [DI + 0xa],AL
+// 1000:451b      c6 45 0b 11              MOV byte ptr [DI + 0xb],0x11
+// 1000:451f      c6 45 29 01              MOV byte ptr [DI + 0x29],0x1
+// 1000:4523      f8                       CLC
+// 1000:4524      c3                       RET
+
+spawn_ship :: proc(ds: ^DS_Segment, ship: ^Ship_Record, index: u8) -> bool {
+	ship.formation = 0
+	ship.byte_34 = 0
+	ship.seek = 0
+
+	base := &ds.bases[ds.current_side & 3]
+	if base[0x0A] == 0 {
+		return true
+	}
+	energy := u16(base[8]) | u16(base[9]) << 8
+	if energy <= 0xC8 {
+		return true
+	}
+	base[0x0A] -= 1
+	energy = sub16(energy, 0x64)
+	base[8] = u8(energy)
+	base[9] = u8(energy >> 8)
+
+	ship^ = {}
+	ship.own_side = base[0x0B]
+	ship.fire_control = base[0x0B]
+	ship.team = base[0x0C]
+	ship.plane = base[5]
+	ship.homing_level = base[5]
+	ship.flags = 0x80
+	ship.pad_2c[0] = 0
+	bx := u16(base[1]) | u16(base[2]) << 8
+	by := u16(base[3]) | u16(base[4]) << 8
+	ship.x = bx
+	ship.homing_x = bx
+	ship.y = by
+	ship.homing_y = by
+	ship.mines = 0
+	ship.byte_2a = 0
+
+	handicap := read_handicap(ds)
+	ship.torpedoes = 5
+	ship.energy = 0x1D4C
+	ship.invisibility = 0x63
+	if handicap != 4 && ds.mode_bits & 1 == 0 {
+		ship.torpedoes = 2
+		ship.energy = 0x0BB8
+		ship.invisibility = 0x32
+		if handicap != 3 {
+			ship.torpedoes = 0
+			ship.energy = 0x03E8
+			ship.invisibility = 0x14
+		}
+	}
+
+	// AL = CL; four adds double it, one adds CL, two more double it.
+	heading := index
+	heading, _ = intrinsics.overflow_add(heading, heading)
+	heading, _ = intrinsics.overflow_add(heading, heading)
+	heading, _ = intrinsics.overflow_add(heading, heading)
+	heading, _ = intrinsics.overflow_add(heading, heading)
+	heading, _ = intrinsics.overflow_add(heading, index)
+	heading, _ = intrinsics.overflow_add(heading, heading)
+	heading, _ = intrinsics.overflow_add(heading, heading)
+	ship.heading = heading
+	ship.impulse = 0x11
+	ship.byte_29 = 1
+	return false
+}

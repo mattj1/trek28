@@ -1,6 +1,6 @@
 package trek
 
-// Procedures 1000:3fd1 through 1000:4459.
+// Procedures 1000:3fd1 through 1000:43b1.
 // 1000:4530 through 1000:580c are in draw.odin.
 // The assembly is the listing. The body is empty until the procedure is translated.
 // A notes line is a name already supported by the annotation notes.
@@ -555,87 +555,7 @@ fun_437a :: proc() {
 fun_43b1 :: proc() {
 }
 
-// @proc 1000:4459
-// listing: FUN_1000_4459
-// notes: spawn_ship
-// status: unread
-// 1000:4459  FUN_1000_4459:
-// 1000:4459      c7 45 32 00 00           MOV word ptr [DI + 0x32],0x0
-// 1000:445e      c6 45 34 00              MOV byte ptr [DI + 0x34],0x0
-// 1000:4462      c6 45 11 00              MOV byte ptr [DI + 0x11],0x0
-// 1000:4466      e8 65 da                 CALL 0x1000:1ece
-//                 ; ptr table -> 1000:4471  [ptr] 1000:9014 1000:9022 1000:9030 1000:903e
-// 1000:4471  LAB_1000_4471:
-// 1000:4471      8b f3                    MOV SI,BX
-// 1000:4473      80 7c 0a 00              CMP byte ptr [SI + 0xa],0x0
-// 1000:4477      75 02                    JNZ 0x1000:447b
-// 1000:4479      f9                       STC
-// 1000:447a      c3                       RET
-// 1000:447b  LAB_1000_447b:
-// 1000:447b      81 7c 08 c8 00           CMP word ptr [SI + 0x8],0xc8
-// 1000:4480      77 02                    JA 0x1000:4484
-// 1000:4482      f9                       STC
-// 1000:4483      c3                       RET
-// 1000:4484  LAB_1000_4484:
-// 1000:4484      fe 4c 0a                 DEC byte ptr [SI + 0xa]
-// 1000:4487      83 6c 08 64              SUB word ptr [SI + 0x8],0x64
-// 1000:448b      57                       PUSH DI
-// 1000:448c      51                       PUSH CX
-// 1000:448d      32 c0                    XOR AL,AL
-// 1000:448f      b9 3b 00                 MOV CX,0x3b
-// 1000:4492      f3 aa                    STOSB.REP ES:DI
-// 1000:4494      59                       POP CX
-// 1000:4495      5f                       POP DI
-// 1000:4496      8a 44 0b                 MOV AL,byte ptr [SI + 0xb]
-// 1000:4499      88 45 17                 MOV byte ptr [DI + 0x17],AL
-// 1000:449c      88 45 2b                 MOV byte ptr [DI + 0x2b],AL
-// 1000:449f      8a 44 0c                 MOV AL,byte ptr [SI + 0xc]
-// 1000:44a2      88 45 18                 MOV byte ptr [DI + 0x18],AL
-// 1000:44a5      8a 44 05                 MOV AL,byte ptr [SI + 0x5]
-// 1000:44a8      88 45 05                 MOV byte ptr [DI + 0x5],AL
-// 1000:44ab      88 45 31                 MOV byte ptr [DI + 0x31],AL
-// 1000:44ae      c6 05 80                 MOV byte ptr [DI],0x80
-// 1000:44b1      c6 45 2c 00              MOV byte ptr [DI + 0x2c],0x0
-// 1000:44b5      8b 44 01                 MOV AX,word ptr [SI + 0x1]
-// 1000:44b8      89 45 01                 MOV word ptr [DI + 0x1],AX
-// 1000:44bb      89 45 2d                 MOV word ptr [DI + 0x2d],AX
-// 1000:44be      8b 44 03                 MOV AX,word ptr [SI + 0x3]
-// 1000:44c1      89 45 03                 MOV word ptr [DI + 0x3],AX
-// 1000:44c4      89 45 2f                 MOV word ptr [DI + 0x2f],AX
-// 1000:44c7      c6 45 06 00              MOV byte ptr [DI + 0x6],0x0
-// 1000:44cb      c6 45 2a 00              MOV byte ptr [DI + 0x2a],0x0
-// 1000:44cf      e8 e1 de                 CALL 0x1000:23b3
-// 1000:44d2      c6 45 07 05              MOV byte ptr [DI + 0x7],0x5
-// 1000:44d6      c7 45 08 4c 1d           MOV word ptr [DI + 0x8],0x1d4c
-// 1000:44db      c6 45 0f 63              MOV byte ptr [DI + 0xf],0x63
-// 1000:44df      3c 04                    CMP AL,0x4
-// 1000:44e1      74 25                    JZ 0x1000:4508
-// 1000:44e3      f6 06 12 00 01           TEST byte ptr [0x12],0x1
-// 1000:44e8      75 1e                    JNZ 0x1000:4508
-// 1000:44ea      c6 45 07 02              MOV byte ptr [DI + 0x7],0x2
-// 1000:44ee      c7 45 08 b8 0b           MOV word ptr [DI + 0x8],0xbb8
-// 1000:44f3      c6 45 0f 32              MOV byte ptr [DI + 0xf],0x32
-// 1000:44f7      3c 03                    CMP AL,0x3
-// 1000:44f9      74 0d                    JZ 0x1000:4508
-// 1000:44fb      c6 45 07 00              MOV byte ptr [DI + 0x7],0x0
-// 1000:44ff      c7 45 08 e8 03           MOV word ptr [DI + 0x8],0x3e8
-// 1000:4504      c6 45 0f 14              MOV byte ptr [DI + 0xf],0x14
-// 1000:4508  LAB_1000_4508:
-// 1000:4508      8a c1                    MOV AL,CL
-// 1000:450a      02 c0                    ADD AL,AL
-// 1000:450c      02 c0                    ADD AL,AL
-// 1000:450e      02 c0                    ADD AL,AL
-// 1000:4510      02 c0                    ADD AL,AL
-// 1000:4512      02 c1                    ADD AL,CL
-// 1000:4514      02 c0                    ADD AL,AL
-// 1000:4516      02 c0                    ADD AL,AL
-// 1000:4518      88 45 0a                 MOV byte ptr [DI + 0xa],AL
-// 1000:451b      c6 45 0b 11              MOV byte ptr [DI + 0xb],0x11
-// 1000:451f      c6 45 29 01              MOV byte ptr [DI + 0x29],0x1
-// 1000:4523      f8                       CLC
-// 1000:4524      c3                       RET
-fun_4459 :: proc() {
-}
+// 1000:4459 spawn_ship is in ship.odin.
 
 // 1000:4530 through 1000:580c are in draw.odin.
 
