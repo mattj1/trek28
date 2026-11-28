@@ -2191,6 +2191,51 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_end_two_player_sides :: proc(t: ^testing.T) {
+	ds := new(DS_Segment)
+	defer free(ds)
+	ds.player_count = 1
+	ds.side_end[0] = 1
+	ds.side_end[2] = 7
+	ds.side_end[3] = 8
+	end_two_player_sides(ds)
+	testing.expect_value(t, ds.side_end[0], u8(1))
+	testing.expect_value(t, ds.side_end[1], u8(0))
+	testing.expect_value(t, ds.side_end[2], u8(7))
+	testing.expect_value(t, ds.side_end[3], u8(8))
+
+	ds.player_count = 2
+	ds.side_end[0] = 0
+	end_two_player_sides(ds)
+	testing.expect_value(t, ds.side_end[2], u8(7))
+	testing.expect_value(t, ds.side_end[3], u8(8))
+
+	ds.side_end[0] = 1
+	end_two_player_sides(ds)
+	testing.expect_value(t, ds.side_end[0], u8(1))
+	testing.expect_value(t, ds.side_end[1], u8(0))
+	testing.expect_value(t, ds.side_end[2], u8(3))
+	testing.expect_value(t, ds.side_end[3], u8(3))
+
+	ds.side_end[0] = 0
+	ds.side_end[1] = 0x80
+	ds.side_end[2] = 1
+	ds.side_end[3] = 2
+	end_two_player_sides(ds)
+	testing.expect_value(t, ds.side_end[0], u8(0))
+	testing.expect_value(t, ds.side_end[1], u8(0x80))
+	testing.expect_value(t, ds.side_end[2], u8(3))
+	testing.expect_value(t, ds.side_end[3], u8(3))
+
+	ds.player_count = 0
+	ds.side_end[2] = 0
+	ds.side_end[3] = 0
+	end_two_player_sides(ds)
+	testing.expect_value(t, ds.side_end[2], u8(0))
+	testing.expect_value(t, ds.side_end[3], u8(0))
+}
+
+@(test)
 test_add_energy_score :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

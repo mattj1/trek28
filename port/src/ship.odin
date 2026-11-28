@@ -2287,3 +2287,32 @@ add_energy_score :: proc(ds: ^DS_Segment) {
 		ds.side_score[side] = total
 	}
 }
+
+// 1000:16e9 end_two_player_sides.
+// The name is inferred. When player_count is 2 and the word at 89E0
+// (side_end[0] and side_end[1]) is nonzero, side_end[2] and side_end[3]
+// become 3. The first two bytes stay as they were.
+
+// @proc 1000:16e9
+// status: tested
+// Odin: end_two_player_sides
+// 1000:16e9  FUN_1000_16e9:
+// 1000:16e9      80 3e 0a 00 02           CMP byte ptr [0xa],0x2
+// 1000:16ee      75 0d                    JNZ 0x1000:16fd
+// 1000:16f0      83 3e e0 89 00           CMP word ptr [0x89e0],0x0
+// 1000:16f5      74 06                    JZ 0x1000:16fd
+// 1000:16f7      c7 06 e2 89 03 03        MOV word ptr [0x89e2],0x303
+// 1000:16fd  LAB_1000_16fd:
+// 1000:16fd      c3                       RET
+
+end_two_player_sides :: proc(ds: ^DS_Segment) {
+	if ds.player_count != 2 {
+		return
+	}
+	word := u16(ds.side_end[0]) | u16(ds.side_end[1]) << 8
+	if word == 0 {
+		return
+	}
+	ds.side_end[2] = 3
+	ds.side_end[3] = 3
+}

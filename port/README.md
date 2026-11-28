@@ -78,6 +78,7 @@ odin run src
 | `1000:1cdb` | `apply_warp` | tested. The name is inferred. Seek bit 7 is cleared. Flag bits `0x44` force the actual impulse nibble to 11, then the byte is stored with desired nibble 11. Warp above `0x5A` becomes `0x64`. Otherwise it gains 10 |
 | `1000:1d0f` | `emergency_stop` | tested. The name is inferred. The actual impulse nibble, or `0x14` when that nibble is above 10, is shifted left 5 and charged. Warp and the impulse byte are cleared |
 | `1000:1696` | `add_energy_score` | tested. The name is inferred. Each side adds round(energy / 100) for its four living ships and round(base energy / 10). A dead ship adds nothing. The total is added to that side's score and wraps |
+| `1000:16e9` | `end_two_player_sides` | tested. The name is inferred. When two players are in and the word at `side_end[0]` is nonzero, `side_end[2]` and `side_end[3]` become 3 |
 
 `Ship_Record` in `src/ds.odin` is one ship. `DS_Segment.ships` is `[4][4]Ship_Record` and `extra_records` is `[8]Ship_Record`. `Machine.ds` stays a raw segment for the image copy and for an offset that is only known at runtime.
 
