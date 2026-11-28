@@ -2191,6 +2191,72 @@ test_to_upper :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_apply_warp :: proc(t: ^testing.T) {
+	ship: Ship_Record
+	ship.flags = 0
+	ship.impulse = 0x03
+	ship.warp = 0
+	ship.seek = 0xFF
+	ship.energy = 0x1111
+	apply_warp(&ship)
+	testing.expect_value(t, ship.seek, u8(0x7F))
+	testing.expect_value(t, ship.impulse, u8(0xB3))
+	testing.expect_value(t, ship.warp, u8(10))
+	testing.expect_value(t, ship.energy, u16(0x1111))
+
+	ship.seek = 0x1F
+	ship.impulse = 0x07
+	ship.warp = 0x50
+	apply_warp(&ship)
+	testing.expect_value(t, ship.seek, u8(0x1F))
+	testing.expect_value(t, ship.impulse, u8(0xB7))
+	testing.expect_value(t, ship.warp, u8(0x5A))
+
+	ship.warp = 0x5A
+	ship.impulse = 0x01
+	apply_warp(&ship)
+	testing.expect_value(t, ship.impulse, u8(0xB1))
+	testing.expect_value(t, ship.warp, u8(0x64))
+
+	ship.flags = 0
+	ship.warp = 0x5B
+	ship.impulse = 0x02
+	apply_warp(&ship)
+	testing.expect_value(t, ship.impulse, u8(0xB2))
+	testing.expect_value(t, ship.warp, u8(0x64))
+
+	ship.warp = 0xFF
+	ship.impulse = 0
+	apply_warp(&ship)
+	testing.expect_value(t, ship.impulse, u8(0xB0))
+	testing.expect_value(t, ship.warp, u8(0x64))
+
+	ship.flags = 0x04
+	ship.impulse = 0x01
+	ship.warp = 0
+	ship.seek = 0x80
+	apply_warp(&ship)
+	testing.expect_value(t, ship.seek, u8(0))
+	testing.expect_value(t, ship.impulse, u8(0xBB))
+	testing.expect_value(t, ship.warp, u8(10))
+	testing.expect_value(t, ship.flags, u8(0x04))
+
+	ship.flags = 0x40
+	ship.impulse = 0x0F
+	ship.warp = 9
+	apply_warp(&ship)
+	testing.expect_value(t, ship.impulse, u8(0xBB))
+	testing.expect_value(t, ship.warp, u8(19))
+
+	ship.flags = 0x01
+	ship.impulse = 0x05
+	ship.warp = 1
+	apply_warp(&ship)
+	testing.expect_value(t, ship.impulse, u8(0xB5))
+	testing.expect_value(t, ship.warp, u8(11))
+}
+
+@(test)
 test_add_score_div100 :: proc(t: ^testing.T) {
 	ds := new(DS_Segment)
 	defer free(ds)

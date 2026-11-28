@@ -992,36 +992,7 @@ fun_1c41 :: proc() {
 
 // 1000:1cc3 set_invisible_bit is in ship.odin.
 
-// @proc 1000:1cdb
-// listing: FUN_1000_1cdb
-// status: unread
-// 1000:1cdb  FUN_1000_1cdb:
-// 1000:1cdb      80 64 11 7f              AND byte ptr [SI + 0x11],0x7f
-// 1000:1cdf      8a 44 0b                 MOV AL,byte ptr [SI + 0xb]
-// 1000:1ce2      24 0f                    AND AL,0xf
-// 1000:1ce4      f6 04 44                 TEST byte ptr [SI],0x44
-// 1000:1ce7      74 02                    JZ 0x1000:1ceb
-// 1000:1ce9      b0 0b                    MOV AL,0xb
-// 1000:1ceb  LAB_1000_1ceb:
-// 1000:1ceb      0c b0                    OR AL,0xb0
-// 1000:1ced      88 44 0b                 MOV byte ptr [SI + 0xb],AL
-// 1000:1cf0      8a 44 14                 MOV AL,byte ptr [SI + 0x14]
-// 1000:1cf3      3c 5a                    CMP AL,0x5a
-// 1000:1cf5      77 05                    JA 0x1000:1cfc
-// 1000:1cf7      80 44 14 0a              ADD byte ptr [SI + 0x14],0xa
-// 1000:1cfb      c3                       RET
-// 1000:1cfc  LAB_1000_1cfc:
-// 1000:1cfc      c6 44 14 64              MOV byte ptr [SI + 0x14],0x64
-// 1000:1d00      c3                       RET
-// 1000:1d01  LAB_1000_1d01:
-// 1000:1d01      e8 8e 01                 CALL 0x1000:1e92
-// 1000:1d04      e8 08 00                 CALL 0x1000:1d0f
-// 1000:1d07      8b 74 32                 MOV SI,word ptr [SI + 0x32]
-// 1000:1d0a      23 f6                    AND SI,SI
-// 1000:1d0c      75 f3                    JNZ 0x1000:1d01
-// 1000:1d0e      c3                       RET
-fun_1cdb :: proc() {
-}
+// 1000:1cdb apply_warp is in ship.odin.
 
 // @proc 1000:1d0f
 // listing: FUN_1000_1d0f
